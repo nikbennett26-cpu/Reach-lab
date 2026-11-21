@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420">
+ <rect width="1200" height="420" fill="#0e0e0f"/>
+ <g transform="translate(40,34) scale(0.68)">
+  <g fill="#ff3d1f"><rect x="240" y="262" width="13" height="128" rx="6.5"/><circle cx="246.5" cy="392" r="12"/><rect x="298" y="252" width="10" height="72" rx="5"/><circle cx="303" cy="326" r="9.5"/><rect x="162" y="400" width="12" height="44" rx="6"/><circle cx="168" cy="446" r="11"/></g>
+ <g fill="none" stroke="#f2efe8" stroke-linecap="round" stroke-linejoin="round">
+   <path d="M168 392 L176 128" stroke-width="50"/>
+   <path d="M176 136 C250 112 360 112 360 186 C360 254 262 262 186 250" stroke-width="44"/>
+   <path d="M232 256 C268 300 312 352 382 392 L404 384" stroke-width="46"/>
+  </g>
+  <circle cx="404" cy="128" r="16" fill="#ff3d1f"/>
+ </g>
+ <text x="410" y="230" font-family="Roboto Condensed, Roboto" font-stretch="condensed" font-weight="800" font-size="150" letter-spacing="4" fill="#f2efe8">REACH LAB</text>
+ <rect x="414" y="262" width="96" height="8" fill="#ff3d1f"/>
+ <text x="530" y="290" font-family="Roboto Condensed, Roboto" font-stretch="condensed" font-weight="600" font-size="44" letter-spacing="14" fill="#9a968e">BY RSM</text>
+</svg>

@@ -1,5 +1,7 @@
 # Reach Lab by RSM
 
+![Reach Lab by RSM](brand/wordmark.png)
+
 A graffiti handstyle practice app: real pens, inks and surfaces, in your browser.
 
 **Open it:** https://nikbennett26-cpu.github.io/reach-lab/
