@@ -565,8 +565,17 @@ const grav={x:0,y:1,m:1,live:false};
 /* device axes -> screen axes: in landscape the sensor's 'down' is the screen's side */
 const scrAng=()=>{let a=0;try{a=(screen.orientation&&typeof screen.orientation.angle==='number')?screen.orientation.angle:(typeof window.orientation==='number'?window.orientation:0)}catch(e){}return((a%360)+360)%360*Math.PI/180};
 const scrRot=(x,y)=>{const t=scrAng(),c=Math.cos(t),s=Math.sin(t);return{x:x*c+y*s,y:-x*s+y*c}};
-addEventListener('devicemotion',e=>{const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;const r0=scrRot(-(a.x||0)/9.81,(a.y||0)/9.81),gx=r0.x,gy=r0.y;if(!grav.live){grav.live=true;grav.x=gx;grav.y=gy}grav.x+=(gx-grav.x)*.08;grav.y+=(gy-grav.y)*.08;grav.m=Math.min(1,Math.hypot(grav.x,grav.y))});
-const gDir=()=>{if(!grav.live)return{x:0,y:1,m:1};const k=Math.max(0,.35-grav.m)*3,x=grav.x,y=grav.y+k,m=Math.hypot(x,y)||1e-6;return{x:x/m,y:y/m,m:Math.max(grav.m,.35)}};
+/* self-calibrating: try the 4 possible sensor->screen rotations and keep the one whose 'down'
+   sits lowest on screen on average. The OS rotates the UI to stay upright, so true gravity
+   lives in the lower half of the screen; this survives any browser's axis/sign quirks. */
+const gCal={ey:[0,0,0,0],k:-1};
+const rotK=(x,y,k)=>k===0?{x,y}:k===1?{x:y,y:-x}:k===2?{x:-x,y:-y}:{x:-y,y:x};
+addEventListener('devicemotion',e=>{const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;const vx=-(a.x||0)/9.81,vy=(a.y||0)/9.81;
+ if(gCal.k<0){const r=scrRot(vx,vy);let best=0,bd=-9;for(let k=0;k<4;k++){const q=rotK(vx,vy,k),d=-Math.hypot(q.x-r.x,q.y-r.y);if(d>bd){bd=d;best=k}}gCal.k=best;gCal.ey=[0,0,0,0];gCal.ey[best]=.25}
+ for(let k=0;k<4;k++)gCal.ey[k]+=(rotK(vx,vy,k).y-gCal.ey[k])*.03;
+ let top=gCal.k;for(let k=0;k<4;k++)if(gCal.ey[k]>gCal.ey[top]+.3)top=k;gCal.k=top;
+ const r0=rotK(vx,vy,gCal.k),gx=r0.x,gy=r0.y;if(!grav.live){grav.live=true;grav.x=gx;grav.y=gy}grav.x+=(gx-grav.x)*.08;grav.y+=(gy-grav.y)*.08;grav.m=Math.min(1,Math.hypot(grav.x,grav.y))});
+window.__rlG=()=>[gDir(),gCal.k];const gDir=()=>{if(!grav.live)return{x:0,y:1,m:1};const k=Math.max(0,.35-grav.m)*3,x=grav.x,y=grav.y+k,m=Math.hypot(x,y)||1e-6;return{x:x/m,y:y/m,m:Math.max(grav.m,.35)}};
 function drip(x,y,vol,o){if(!upright||drips.length>(rainSet.has(cur.id)?420:120)||vol<.1)return;const s=surfAt(x,y);if(s.absorb>.8)return;const ty=o?o.ty:pen.ink;
  if(o&&o.et)etchOn=true;drips.push({et:o&&o.et,x,y,vol,v0:vol,wet:s.wet,t0:o&&o.delay?performance.now()+o.delay:0,al:o&&o.al,r:o&&o.r?o.r:DYEINK[ty]?Math.max(.6,Math.min(1.6,R()*(.03+Math.random()*.07))):Math.max(.9,Math.min(3.6,R()*(.06+Math.random()*.16))),col:o?o.col:INK[ty]&&INK[ty].etch&&ETCHABLE[s.id]?'#e4ded0':(INK[ty]&&INK[ty].future&&Math.random()<.65?color:color),ink:INK[ty],comp:o?'source-over':null,wk:o?(ty==='fluid'?'fluid':ty):pen.wet||pen.ink,id:Object.keys(INK).indexOf(ty)+1,ph:Math.random()*9})}
 const wetQ=[];
@@ -947,7 +956,7 @@ const METAL={'#b9bdc2':'silver','#c4c8cc':'silver','#c9a24a':'gold','#a3a8ad':'s
 let metalOn=false;const tilt={x:0,y:0,tx:0,ty:0};let gyro=false,gyroAsked=false,flakeC=null;
 function cloneC(c){const k=document.createElement('canvas');k.width=c.width;k.height=c.height;k.getContext('2d').drawImage(c,0,0);return k}
 function putMetal(c){const x=metal.x;x.save();x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,metal.c.width,metal.c.height);if(c)x.drawImage(c,0,0);x.restore();metalOn=!!c;dirty=true}
-const oriB={g:null,b:null};addEventListener('orientationchange',()=>{oriB.g=null;motB.x=null;grav.live=false});try{screen.orientation&&screen.orientation.addEventListener('change',()=>{oriB.g=null;motB.x=null;grav.live=false})}catch(e){}addEventListener('deviceorientation',e=>{if(e.gamma==null&&e.beta==null)return;gyro=true;sensorAt=performance.now();const g=e.gamma||0,b=e.beta||0;if(oriB.g===null){oriB.g=g;oriB.b=b}oriB.g+=(g-oriB.g)*.008;oriB.b+=(b-oriB.b)*.008;{const r=scrRot((g-oriB.g)/18,(b-oriB.b)/18);tilt.tx=Math.max(-1.5,Math.min(1.5,r.x));tilt.ty=Math.max(-1.5,Math.min(1.5,r.y))}});
+const oriB={g:null,b:null};addEventListener('orientationchange',()=>{oriB.g=null;motB.x=null;grav.live=false;gCal.k=-1});try{screen.orientation&&screen.orientation.addEventListener('change',()=>{oriB.g=null;motB.x=null;grav.live=false;gCal.k=-1})}catch(e){}addEventListener('deviceorientation',e=>{if(e.gamma==null&&e.beta==null)return;gyro=true;sensorAt=performance.now();const g=e.gamma||0,b=e.beta||0;if(oriB.g===null){oriB.g=g;oriB.b=b}oriB.g+=(g-oriB.g)*.008;oriB.b+=(b-oriB.b)*.008;{const r=scrRot((g-oriB.g)/18,(b-oriB.b)/18);tilt.tx=Math.max(-1.5,Math.min(1.5,r.x));tilt.ty=Math.max(-1.5,Math.min(1.5,r.y))}});
 let motionOK=false,sensorAt=0,toldNoSensor=0;
 function askGyro(){if(motionOK)return;try{const D=window.DeviceOrientationEvent,M=window.DeviceMotionEvent;
  if(D&&typeof D.requestPermission==='function')D.requestPermission().then(r=>{if(r==='granted')motionOK=true}).catch(()=>{});
