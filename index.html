@@ -562,8 +562,11 @@ let lastShake=0;try{window.addEventListener('devicemotion',e=>{const a=e.acceler
 let upright=true;const drips=[];
 /* screen-plane gravity from the phone's accelerometer (low-passed so shaking doesn't jerk the runs) */
 const grav={x:0,y:1,m:1,live:false};
-addEventListener('devicemotion',e=>{const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;const gx=-(a.x||0)/9.81,gy=(a.y||0)/9.81;if(!grav.live){grav.live=true;grav.x=gx;grav.y=gy}grav.x+=(gx-grav.x)*.08;grav.y+=(gy-grav.y)*.08;grav.m=Math.min(1,Math.hypot(grav.x,grav.y))});
-const gDir=()=>{if(!grav.live)return{x:0,y:1,m:1};const m=Math.hypot(grav.x,grav.y)||1e-6;return{x:grav.x/m,y:grav.y/m,m:grav.m}};
+/* device axes -> screen axes: in landscape the sensor's 'down' is the screen's side */
+const scrAng=()=>{let a=0;try{a=(screen.orientation&&typeof screen.orientation.angle==='number')?screen.orientation.angle:(typeof window.orientation==='number'?window.orientation:0)}catch(e){}return((a%360)+360)%360*Math.PI/180};
+const scrRot=(x,y)=>{const t=scrAng(),c=Math.cos(t),s=Math.sin(t);return{x:x*c+y*s,y:-x*s+y*c}};
+addEventListener('devicemotion',e=>{const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;const r0=scrRot(-(a.x||0)/9.81,(a.y||0)/9.81),gx=r0.x,gy=r0.y;if(!grav.live){grav.live=true;grav.x=gx;grav.y=gy}grav.x+=(gx-grav.x)*.08;grav.y+=(gy-grav.y)*.08;grav.m=Math.min(1,Math.hypot(grav.x,grav.y))});
+const gDir=()=>{if(!grav.live)return{x:0,y:1,m:1};const k=Math.max(0,.35-grav.m)*3,x=grav.x,y=grav.y+k,m=Math.hypot(x,y)||1e-6;return{x:x/m,y:y/m,m:Math.max(grav.m,.35)}};
 function drip(x,y,vol,o){if(!upright||drips.length>(rainSet.has(cur.id)?420:120)||vol<.1)return;const s=surfAt(x,y);if(s.absorb>.8)return;const ty=o?o.ty:pen.ink;
  if(o&&o.et)etchOn=true;drips.push({et:o&&o.et,x,y,vol,v0:vol,wet:s.wet,t0:o&&o.delay?performance.now()+o.delay:0,al:o&&o.al,r:o&&o.r?o.r:DYEINK[ty]?Math.max(.6,Math.min(1.6,R()*(.03+Math.random()*.07))):Math.max(.9,Math.min(3.6,R()*(.06+Math.random()*.16))),col:o?o.col:INK[ty]&&INK[ty].etch&&ETCHABLE[s.id]?'#e4ded0':(INK[ty]&&INK[ty].future&&Math.random()<.65?color:color),ink:INK[ty],comp:o?'source-over':null,wk:o?(ty==='fluid'?'fluid':ty):pen.wet||pen.ink,id:Object.keys(INK).indexOf(ty)+1,ph:Math.random()*9})}
 const wetQ=[];
@@ -944,7 +947,7 @@ const METAL={'#b9bdc2':'silver','#c4c8cc':'silver','#c9a24a':'gold','#a3a8ad':'s
 let metalOn=false;const tilt={x:0,y:0,tx:0,ty:0};let gyro=false,gyroAsked=false,flakeC=null;
 function cloneC(c){const k=document.createElement('canvas');k.width=c.width;k.height=c.height;k.getContext('2d').drawImage(c,0,0);return k}
 function putMetal(c){const x=metal.x;x.save();x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,metal.c.width,metal.c.height);if(c)x.drawImage(c,0,0);x.restore();metalOn=!!c;dirty=true}
-const oriB={g:null,b:null};addEventListener('deviceorientation',e=>{if(e.gamma==null&&e.beta==null)return;gyro=true;sensorAt=performance.now();const g=e.gamma||0,b=e.beta||0;if(oriB.g===null){oriB.g=g;oriB.b=b}oriB.g+=(g-oriB.g)*.008;oriB.b+=(b-oriB.b)*.008;tilt.tx=Math.max(-1.5,Math.min(1.5,(g-oriB.g)/18));tilt.ty=Math.max(-1.5,Math.min(1.5,(b-oriB.b)/18))});
+const oriB={g:null,b:null};addEventListener('orientationchange',()=>{oriB.g=null;motB.x=null;grav.live=false});try{screen.orientation&&screen.orientation.addEventListener('change',()=>{oriB.g=null;motB.x=null;grav.live=false})}catch(e){}addEventListener('deviceorientation',e=>{if(e.gamma==null&&e.beta==null)return;gyro=true;sensorAt=performance.now();const g=e.gamma||0,b=e.beta||0;if(oriB.g===null){oriB.g=g;oriB.b=b}oriB.g+=(g-oriB.g)*.008;oriB.b+=(b-oriB.b)*.008;{const r=scrRot((g-oriB.g)/18,(b-oriB.b)/18);tilt.tx=Math.max(-1.5,Math.min(1.5,r.x));tilt.ty=Math.max(-1.5,Math.min(1.5,r.y))}});
 let motionOK=false,sensorAt=0,toldNoSensor=0;
 function askGyro(){if(motionOK)return;try{const D=window.DeviceOrientationEvent,M=window.DeviceMotionEvent;
  if(D&&typeof D.requestPermission==='function')D.requestPermission().then(r=>{if(r==='granted')motionOK=true}).catch(()=>{});
@@ -953,7 +956,7 @@ function askGyro(){if(motionOK)return;try{const D=window.DeviceOrientationEvent,
 for(const ev of ['click','touchend'])addEventListener(ev,askGyro,{capture:true,passive:true});
 const motB={x:null,y:null};addEventListener('devicemotion',e=>{const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;sensorAt=performance.now();if(gyro)return;
  const gx=a.x/9.81*90,gy=a.y/9.81*90;if(motB.x===null){motB.x=gx;motB.y=gy}motB.x+=(gx-motB.x)*.008;motB.y+=(gy-motB.y)*.008;
- tilt.tx=Math.max(-1.5,Math.min(1.5,-(gx-motB.x)/18));tilt.ty=Math.max(-1.5,Math.min(1.5,(gy-motB.y)/18));tilt.live=true});
+ {const r=scrRot(-(gx-motB.x)/18,(gy-motB.y)/18);tilt.tx=Math.max(-1.5,Math.min(1.5,r.x));tilt.ty=Math.max(-1.5,Math.min(1.5,r.y))}tilt.live=true});
 addEventListener('pointermove',e=>{if(gyro||tilt.live)return;tilt.tx=(e.clientX/innerWidth-.5)*1.6;tilt.ty=(e.clientY/innerHeight-.5)*1.2},{passive:true});
 function flakes(){if(flakeC)return flakeC;const S=96,c=document.createElement('canvas');c.width=c.height=S;const x=c.getContext('2d');let r=987654321;const rnd=()=>(r=(Math.imul(r,1103515245)+12345)>>>0)/4294967296;
  for(let i=0;i<260;i++){x.fillStyle=`rgba(255,255,255,${.25+.75*rnd()})`;const z=.6+rnd()*1.4;x.fillRect(rnd()*S,rnd()*S,z,z)}return flakeC=c}
