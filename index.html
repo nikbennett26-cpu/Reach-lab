@@ -585,14 +585,14 @@ addEventListener('devicemotion',e=>{const a=e.accelerationIncludingGravity;if(!a
  for(let k=0;k<4;k++)gCal.ey[k]+=(rotK(vx,vy,k).y-gCal.ey[k])*.03;
  let top=gCal.k;for(let k=0;k<4;k++)if(gCal.ey[k]>gCal.ey[top]+.3)top=k;gCal.k=top;
  const r0=rotK(vx,vy,gCal.k),gx=r0.x,gy=r0.y;if(!grav.live){grav.live=true;grav.x=gx;grav.y=gy}grav.x+=(gx-grav.x)*.08;grav.y+=(gy-grav.y)*.08;grav.m=Math.min(1,Math.hypot(grav.x,grav.y))});
-window.__rlG=()=>[gDir(),gCal.k];window.__rlP=()=>({PENS,pen,openSheet});const gDir=()=>{if(!grav.live)return{x:0,y:1,m:1};const k=Math.max(0,.35-grav.m)*3,x=grav.x,y=grav.y+k,m=Math.hypot(x,y)||1e-6;return{x:x/m,y:y/m,m:Math.max(grav.m,.35)}};
+window.__rlG=()=>[gDir(),gCal.k];window.__rlD=()=>({drips:drips.length,spreads:spreads.length,cells:rainCells.length});window.__rlP=()=>({PENS,pen,openSheet});const gDir=()=>{if(!grav.live)return{x:0,y:1,m:1};const k=Math.max(0,.35-grav.m)*3,x=grav.x,y=grav.y+k,m=Math.hypot(x,y)||1e-6;return{x:x/m,y:y/m,m:Math.max(grav.m,.35)}};
 function drip(x,y,vol,o){if(!upright||drips.length>(rainSet.has(cur.id)?420:120)||vol<.1)return;const s=surfAt(x,y);if(s.absorb>.8)return;const ty=o?o.ty:pen.ink;
  if(o&&o.et)etchOn=true;drips.push({et:o&&o.et,x,y,vol,v0:vol,wet:s.wet,t0:o&&o.delay?performance.now()+o.delay:0,al:o&&o.al,r:o&&o.r?o.r:DYEINK[ty]?Math.max(.6,Math.min(1.6,R()*(.03+Math.random()*.07))):Math.max(.9,Math.min(3.6,R()*(.06+Math.random()*.16))),col:o?o.col:INK[ty]&&INK[ty].etch&&ETCHABLE[s.id]?'#e4ded0':(INK[ty]&&INK[ty].future&&Math.random()<.65?color:color),ink:INK[ty],comp:o?'source-over':null,wk:o?(ty==='fluid'?'fluid':ty):pen.wet||pen.ink,id:Object.keys(INK).indexOf(ty)+1,ph:Math.random()*9})}
 const wetQ=[];
 function wetReact(rc,gain=1){const FW=baked.c.width,FH=baked.c.height,keys=Object.keys(INK);let id,bk;
  const X0=rc?Math.max(0,Math.floor(rc.x*dpr)):0,Y0=rc?Math.max(0,Math.floor(rc.y*dpr)):0,W2=rc?Math.min(FW-X0,Math.ceil(rc.w*dpr)):FW,H2=rc?Math.min(FH-Y0,Math.ceil(rc.h*dpr)):FH;if(W2<1||H2<1)return;
  try{id=idm.x.getImageData(X0,Y0,W2,H2).data;bk=baked.x.getImageData(X0,Y0,W2,H2).data}catch(_){return}
- const wets=Object.keys(WET).filter(k=>WET[k].active).map(k=>WET[k].x.getImageData(X0,Y0,W2,H2).data),st=Math.round(9*dpr);if(!rc)wetQ.length=0;const n0=wetQ.length;
+ const wets=Object.keys(WET).filter(k=>WET[k].active).map(k=>WET[k].x.getImageData(X0,Y0,W2,H2).data),st=Math.round((rc?9:15)*dpr);if(!rc)wetQ.length=0;const n0=wetQ.length;
  for(let y=0;y<H2;y+=st)for(let x=0;x<W2;x+=st){const j=(y*W2+x)*4;if(rc&&(Math.random()>.55||Math.hypot(x-W2/2,y-H2/2)>W2/2))continue;if(id[j+3]<80)continue;const ty=keys[Math.round(id[j]/20)-1];if(!ty)continue;
   let w=0;for(const d of wets)w=Math.max(w,d[j+3]/255);const ink=INK[ty],str=w>.05?(1-ink.wrep)*Math.min(1,w*1.5)*.85+.15:(ty==='water'?.32:0);
   if(str>0)wetQ.push({x:(X0+x)/dpr+(Math.random()-.5)*6,y:(Y0+y)/dpr+(Math.random()-.5)*6,str:str*gain,ty,col:`rgb(${bk[j]},${bk[j+1]},${bk[j+2]})`})}
@@ -602,8 +602,8 @@ function wetReact(rc,gain=1){const FW=baked.c.width,FH=baked.c.height,keys=Objec
  toast(wetQ.length?(wv?'Water hits the wet ink — it thins and runs':'Dry water-based paint softens and runs'):'All the ink is dry and waterproof — nothing moves')}
 function wetStep(){if(!wetQ.length)return;const n=Math.max(4,Math.ceil(wetQ.length/90));
  for(const q of wetQ.splice(0,n)){const s=surfAt(q.x,q.y),ink=INK[q.ty],p={x:q.x,y:q.y};
-  restoreBg(p,q.str*.16,9);smear(baked,p,{x:q.x+(Math.random()-.5)*2,y:q.y+3+q.str*5*(1-s.absorb*.6)},q.str*.45,8);
-  if(Math.random()<q.str*.17*ink.run*(1-s.absorb))drip(q.x,q.y+2,.3+q.str*.7,{ty:q.ty,col:q.col,r:.7+q.str*1.6})}
+  restoreBg(p,q.str*.06,9);smear(baked,p,{x:q.x+(Math.random()-.5)*2,y:q.y+2+q.str*3*(1-s.absorb*.6)},q.str*.25,8);
+  if(Math.random()<q.str*.05*ink.run*(1-s.absorb))drip(q.x,q.y+2,.2+q.str*.45,{ty:q.ty,col:q.col,al:.55,r:.45+q.str*.9})}
  dirty=true}
 const blooms=[],feathC={};
 let feathM=null;function feather(col){if(feathC[col])return feathC[col];const S=96;
@@ -683,15 +683,15 @@ let rainSpT=0;
 function rainSpread(i,ty,sol){const cx=(i%GW)*C+C/2,cy=Math.floor(i/GW)*C+C/2,R0=46,x0=Math.max(0,Math.floor(cx-R0)),y0=Math.max(0,Math.floor(cy-R0)),w=Math.min(W,Math.ceil(cx+R0))-x0,h=Math.min(H,Math.ceil(cy+R0*1.4))-y0;if(w<8||h<8)return;
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(baked.c,x0*dpr,y0*dpr,w*dpr,h*dpr,0,0,w,h);x.globalCompositeOperation='destination-in';x.drawImage(idm.c,x0*dpr,y0*dpr,w*dpr,h*dpr,0,0,w,h);
  const g=x.createRadialGradient(cx-x0,cy-y0,0,cx-x0,cy-y0,R0*.9);g.addColorStop(0,'#000');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,0,w,h);
- const n0=spreads.length;addSpread(c,x0,y0,w,h,ty,surfAt(cx,cy),.7*sol);const sp=spreads[n0];if(sp){sp.D*=1.9;sp.T*=1.3;sp.keep=1}}
+ const n0=spreads.length;addSpread(c,x0,y0,w,h,ty,surfAt(cx,cy),.38*sol);const sp=spreads[n0];if(sp){sp.D*=1.25;sp.T*=1.3;sp.keep=1}}
 function runRain(dt){if(!rainSet.has(cur.id)||!upright)return;
- if((rainSpT-=dt)<=0&&rainCells&&rainCells.length&&spreads.length<36){rainSpT=.35;const keys=Object.keys(INK);for(let k=0;k<3;k++){const i=rainCells[Math.floor(Math.random()*rainCells.length)],ty=keys[inkG[i]-1],so=RSOL[ty]||[.5,.05],sol=(wg[i]>.05?so[0]:so[1]*1.6)*rainLeft[i];if(sol>.08&&SPD[ty]){rainSpread(i,ty,Math.min(1,sol));rainLeft[i]*=.92}}}
+ if((rainSpT-=dt)<=0&&rainCells&&rainCells.length&&spreads.length<12){rainSpT=.7;const keys=Object.keys(INK);for(let k=0;k<1;k++){const i=rainCells[Math.floor(Math.random()*rainCells.length)],ty=keys[inkG[i]-1],so=RSOL[ty]||[.5,.05],sol=(wg[i]>.05?so[0]:so[1]*1.6)*rainLeft[i];if(sol>.12&&SPD[ty]){rainSpread(i,ty,Math.min(1,sol));rainLeft[i]*=.8}}}
  if((rainScan-=dt)<=0){rainScan=.4;rainCells=[];for(let i=0;i<inkG.length;i++)if(inkG[i]&&rainLeft[i]>.04)rainCells.push(i)}
- if(!rainCells.length)return;rainAcc+=dt*Math.min(55,6+rainCells.length*.2);const keys=Object.keys(INK);
+ if(!rainCells.length)return;rainAcc+=dt*Math.min(6,1.5+rainCells.length*.02);const keys=Object.keys(INK);
  while(rainAcc>=1){rainAcc--;const i=rainCells[Math.floor(Math.random()*rainCells.length)],ty=keys[inkG[i]-1],sol=RSOL[ty]||[.5,.05],p=(wg[i]>.05?sol[0]:sol[1])*rainLeft[i];
   if(Math.random()>p)continue;const x=(i%GW)*C+Math.random()*C,y=Math.floor(i/GW)*C+Math.random()*C,col=colG[i];if(!col||col[0]!=='#')continue;
-  drip(x,y,.7+Math.random()*1.9*rainLeft[i],{ty,col,r:.55+Math.random()*Math.random()*2.4,delay:Math.random()*250});
-  rainLeft[i]*=.8;if(Math.random()<.2)restoreBg({x,y},.012*sol[0],4)}}
+  drip(x,y,.25+Math.random()*.6*rainLeft[i],{ty,col,al:.5,r:.4+Math.random()*Math.random()*1.1,delay:Math.random()*250});
+  rainLeft[i]*=.3;for(const o of [-2,-1,1,2]){const j=i+o;if(j>=0&&j<rainLeft.length)rainLeft[j]*=.5}if(Math.random()<.2)restoreBg({x,y},.012*sol[0],4)}}
 function runDrips(dt){if(!drips.length)return;
  for(let i=drips.length-1;i>=0;i--){const d=drips[i];if(d.t0&&performance.now()<d.t0)continue;const s=surfAt(d.x,d.y),gr=(s.id==='shutter'&&(d.y%11.636)<2.4)||(s.id==='tiles'&&((d.y%64)<3||(d.x%64)<3)),G=gDir(),still=G.m<.18,sp=(40+d.vol*45)*(1-s.absorb*.6)*(1-s.rough*.5)*(d.wet?1.7:1)*(gr?.18:1)*Math.max(0,(G.m-.15)/.85),y0=d.y,x0=d.x;
   if(!d.gx){d.gx=G.x;d.gy=G.y}d.gx+=(G.x-d.gx)*Math.min(1,dt*3);d.gy+=(G.y-d.gy)*Math.min(1,dt*3);d.x+=d.gx*sp*dt;d.y+=d.gy*sp*dt;if(still)d.vol-=dt*.15;d.vol-=dt*((.28+s.absorb*.9+s.rough*.5)*(d.wet?.75:1)+(gr?.7:0));if(d.wet)d.r=Math.max(.8,d.r*(1-dt*.03));if(d.et)d.r=Math.max(.45,d.r*(1-dt*.9));const wob=Math.sin((d.x+d.y)*.05+d.ph)*(d.wet?.7:.5)*(1+s.rough*2.5),xw=d.x-d.gy*wob,yw=d.y+d.gx*wob,px0=x0-d.gy*wob,py0=y0+d.gx*wob,done=d.vol<=0||d.y>H||d.y<-10||d.x<-10||d.x>W+10;
@@ -945,7 +945,7 @@ function spreadFromStroke(s,ty){const pad=Math.ceil(Math.sqrt(4*(SPD[ty]||10)*1.
  const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(stk.c,x*dpr,y*dpr,w*dpr,h*dpr,0,0,w,h);addSpread(c,x,y,w,h,ty,s,1)}
 function spreadFromWall(){const s=bands[0].s;for(const k in WET){if(!WET[k].active||!SPD[k])continue;const sc=.5,w=Math.ceil(W*sc),h=Math.ceil(H*sc),c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');
   x.drawImage(baked.c,0,0,w,h);x.globalCompositeOperation='destination-in';x.drawImage(WET[k].c,0,0,w,h);x.drawImage(idm.c,0,0,w,h);
-  const sp=(addSpread(c,0,0,w,h,k,s,.7),spreads[spreads.length-1]);if(sp){sp.sc=sc}}}
+  const sp=(addSpread(c,0,0,w,h,k,s,.28),spreads[spreads.length-1]);if(sp){sp.sc=sc;sp.D*=.6}}}
 function runSpreads(now){if(!spreads.length)return;const bx=baked.x;
  for(let i=spreads.length-1;i>=0;i--){const p=spreads[i],t=(now-p.t0)/1000,sc=p.sc||1;
   if(t>p.T){tideLine(p);spreads.splice(i,1);continue}
