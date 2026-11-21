@@ -154,7 +154,6 @@ td.num{text-align:right;white-space:nowrap}
    </div>
    <div class="grp">
     <button class="tb" id="wipeT" aria-label="Wipe wall clean"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M6 16l8-11 5 4-7 9H8z"/></svg>Wipe</button>
-    <button class="tb" id="undo"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 010 10h-3"/></svg>Undo</button>
     <button class="tb" id="moreBtn" aria-label="More"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>More</button>
    </div>
   </footer>
@@ -234,7 +233,7 @@ td.num{text-align:right;white-space:nowrap}
 
 <script>
 {
-const MM=4, TAU=Math.PI*2, dpr=Math.max(1,Math.min(2,window.devicePixelRatio||1,Math.sqrt(1.8e6/Math.max(1,innerWidth*innerHeight)))), TS=Math.round(256*dpr);
+const MM=4, TAU=Math.PI*2, dpr=Math.max(1,Math.min(2,window.devicePixelRatio||1,Math.sqrt(1.35e6/Math.max(1,innerWidth*innerHeight)))), TS=Math.round(256*dpr);
 const $=s=>document.querySelector(s);
 const clamp=(v,a=0,b=1)=>v<a?a:v>b?b:v;
 const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
@@ -716,10 +715,10 @@ function stamp(x,y,spd,e){const s=surfAt(x,y),ink=INK[pen.ink],f=flowNow(e),star
  if(!demo&&DYEINK[pen.ink]){const n=stroke.sn=(stroke.sn||0)+1,ck=((x/5)|0)*4099+((y/5)|0),cm=stroke.cm||(stroke.cm=new Map()),gap=R()*2.6/Math.max(.6,pen.w*MM*.28)+10,o=cm.get(ck);if(o===undefined)cm.set(ck,n);else if(n-o>gap){tipCtx=ovl.x;ovl.x.fillStyle=inkPat(s,curCol(),q);tipPath(0,x,y);ovl.x.fill();tipCtx=null;stroke.ov=1}}if(stroke.ink.future)poolAt(x,y,R(),stroke.v);
  if(!demo&&(pen.valve||pen.squeeze)&&pressNow>.62&&f>.75&&Math.random()<.03*(pressNow-.55)*ink.drip*(1-s.absorb))drip(x+(Math.random()-.5)*R()*.8,y+R()*.35,.5+pressNow*.7);if(!stroke.lp||Math.abs(x-stroke.lp.x)+Math.abs(y-stroke.lp.y)>3){stroke.lp={x,y};(stroke.pts=stroke.pts||[]).push(x,y)}{const r=R()*3+6;stroke.x0=Math.min(stroke.x0,x-r);stroke.y0=Math.min(stroke.y0,y-r);stroke.x1=Math.max(stroke.x1,x+r);stroke.y1=Math.max(stroke.y1,y+r)}
  if(pen.squeeze&&f>.85&&!demo&&Math.random()<.012*ink.drip*(1-s.absorb))drip(x,y+R()*.4,.4+Math.random()*.6)}
-function begin(p,e){leanSen=0;leanNow=leanSet;stroke={p0:{x:p.x,y:p.y},x0:1e9,y0:1e9,x1:-1e9,y1:-1e9,ink:INK[pen.ink],n:0,s:surfAt(p.x,p.y),dwell:0,bead:0,low:0,gaps:[...Array.from({length:Math.max(3,Math.min(pen.dauber?46:16,Math.round(R()/(pen.dauber?3.2:2.2))))},()=>({o:Math.random()*2-1,w:.5+Math.random()*1.4,s:.4+Math.random()*.6}))]};downT=performance.now();lastMove=downT;
+function begin(p,e){leanSen=0;leanNow=leanSet;stroke={p0:{x:p.x,y:p.y},x0:1e9,y0:1e9,x1:-1e9,y1:-1e9,ink:INK[pen.ink],n:0,s:surfAt(p.x,p.y),dwell:0,bead:0,low:0,gaps:[...Array.from({length:Math.max(3,Math.min(pen.dauber?18:16,Math.round(R()/(pen.dauber?5:2.2))))},()=>({o:Math.random()*2-1,w:.5+Math.random()*1.4,s:.4+Math.random()*.6}))]};downT=performance.now();lastMove=downT;
  saidSolv=0;if(pen.capped){pen.capped=false;renderCap()}pen.idle=0;if(pen.tipDry>.25)toast(pen.tipDry>.7?'Left uncapped — the tip has dried out. Keep drawing to wet it again':'The tip has started to dry — the first strokes come out scratchy');
  if(pen.valve&&pen.flow>1.1){blob(p.x,p.y,R()*(1.2+(pen.flow-1.1)*5),stroke.s);toast('Over-primed — the valve dumped a blob');pen.flow=1;showFlow()}
- stamp(p.x,p.y,0,e);if(flowNow(e)>.5&&!pen.metal){tipScale=1.14;stamp(p.x,p.y,0,e);tipScale=1}stroke.vx=stroke.vy=stroke.v=0;dirty=true}
+ stamp(p.x,p.y,0,e);stroke.vx=stroke.vy=stroke.v=0;dirty=true}
 function feed(p,ev){const S=stroke;if(!S.sp){S.sp={x:p.x,y:p.y,t:p.t};S.q0=S.q1=S.cp=S.sp;return}
  S.sp={x:p.x,y:p.y,t:p.t};const q0=S.q0,q1=S.q1,q2=S.sp,m1={x:(q0.x+q1.x)/2,y:(q0.y+q1.y)/2},m2={x:(q1.x+q2.x)/2,y:(q1.y+q2.y)/2};
  const L=Math.hypot(q1.x-m1.x,q1.y-m1.y)+Math.hypot(m2.x-q1.x,m2.y-q1.y);if(L<.4){S.q0=q1;S.q1=q2;return}const n=Math.max(1,Math.ceil(L/2.5)),dt=Math.max(1,q2.t-q1.t);let prev=S.cp;
@@ -732,14 +731,14 @@ function streaks(a,b,sv){if(!stroke||!stroke.gaps)return;const dx=b.x-a.x,dy=b.y
  (stroke.sq=stroke.sq||[]).push({a,b,nx,ny,hw,sv,rail});flushStreaks(b,false)}
 function flushStreaks(cur,all){if(!stroke||!stroke.sq)return;const depth=(pen.tip==='chisel'?Math.max(pen.w,pen.th):pen.w)*MM*.6+2,x=stk.x;
  while(stroke.sq.length&&(all||Math.hypot(stroke.sq[0].b.x-cur.x,stroke.sq[0].b.y-cur.y)>depth)){const q=stroke.sq.shift();
-  if(q.sv<.04){for(const g of stroke.gaps)g.lx=undefined;continue}
+  if(q.sv<.1){for(const g of stroke.gaps)g.lx=undefined;continue}
   x.save();x.globalCompositeOperation='destination-out';x.lineCap='butt';x.lineJoin='round';
   for(const g of stroke.gaps){const o=g.o*q.hw*.94,ex=q.b.x+q.nx*o,ey=q.b.y+q.ny*o,sx=g.lx===undefined?q.a.x+q.nx*o:g.lx,sy=g.lx===undefined?q.a.y+q.ny*o:g.ly;g.lx=ex;g.ly=ey;
    x.globalAlpha=clamp(q.sv*1.5*g.s);x.lineWidth=Math.max(.5,g.w*(.5+q.sv*2));x.beginPath();x.moveTo(sx,sy);x.lineTo(ex,ey);x.stroke()}
   if(q.rail>.04){const S=stroke;x.globalAlpha=clamp(q.rail*1.1);x.lineWidth=q.hw*2*(.35+.45*q.rail);x.lineCap='round';x.beginPath();x.moveTo(S.rlx===undefined?q.a.x:S.rlx,S.rlx===undefined?q.a.y:S.rly);x.lineTo(q.b.x,q.b.y);x.stroke();S.rlx=q.b.x;S.rly=q.b.y}else stroke.rlx=undefined;
   x.restore()}}
 function seg(a,b,e,dt){const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d<.01)return;
- const step=pen.tip==='chisel'?Math.max(.9,pen.th*MM*.11):Math.max(.6,pen.w*MM*(pen.dauber?.05:pen.w>12?.12:.28)),spd=d/Math.max(dt,1);
+ const step=pen.tip==='chisel'?Math.max(.9,pen.th*MM*.11):Math.max(.6,pen.w*MM*(pen.dauber?.075:pen.w>12?.12:.28)),spd=d/Math.max(dt,1);
  const ivx=dx/Math.max(dt,1),ivy=dy/Math.max(dt,1);stroke.vx=.6*stroke.vx+.4*ivx;stroke.vy=.6*stroke.vy+.4*ivy;stroke.v=Math.hypot(stroke.vx,stroke.vy);
  if(!demo){const sf=surfAt(b.x,b.y);fricS=sf;fricV=fricV*.7+spd*.3;
   if(sf.id==='shutter'||sf.id==='tiles'){const rk=sf.id==='tiles'?Math.floor(b.x/64)+','+Math.floor(b.y/64):Math.floor(b.y/11.636);if(stroke.ridge!==undefined&&rk!==stroke.ridge){tick();try{navigator.vibrate&&navigator.vibrate(4)}catch(_){}}stroke.ridge=rk}
@@ -754,7 +753,9 @@ function seg(a,b,e,dt){const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d<.01)
   if(stroke.rev>0&&!stroke.ink.solid){stroke.rev-=d;const w=wetAt(b.x,b.y);smear(stk,a,b,.38,R()*1.05);if(w>.15)smear(baked,a,b,.55*w,R()*1.2);if(!saidRev++)toast('Going back over wet ink drags it along')}}
  stroke.acc=(stroke.acc||0)+d;let k=0;
  while(stroke.acc>=step){stroke.acc-=step;k+=step;const t=Math.min(1,k/d);stamp(a.x+dx*t,a.y+dy*t,spd,e)}
- {const f=flowNow(e),s2=surfAt(b.x,b.y),ik=INK[pen.ink],fs=clamp(spd/3);streaks(a,b,pen.dauber?clamp(.45-pen.life)*1.4+clamp(.6-f)*1.2+pen.tipDry*.9+(1-pen.mix)*.6:ik.fluid?pen.tipDry*.9+(pen.shake?(1-pen.mix)*.7:0)+(pen.life<.15?(.15-pen.life)*4:0):clamp((.55-f)*1.8)+(pen.metal?0:leanNow*.4)+(ik.solid?s2.rough*1.5:0)+pen.tipDry*.9+(pen.shake?(1-pen.mix)*.7:0)+(pen.life<.15?(.15-pen.life)*4:0)+fs*(pen.valve?.1:pen.squeeze?.03:.07)*(1-s2.absorb*.4)+(s2.wet&&ik.wrep>.3?ik.wrep*.6:0)+s2.repel*ik.bead*.15)}
+ {const f=flowNow(e),s2=surfAt(b.x,b.y),ik=INK[pen.ink],fs=clamp(spd/3);/* streaks only when the pen genuinely needs it: under-shaken (<65% mixed), starved of ink, running dry or a dried tip — never from speed */
+ const unmix=pen.shake?clamp(.65-pen.mix)*1.6:0,dryT=clamp(pen.tipDry-.3)*1.1,low=pen.life<.15?(.15-pen.life)*4:0;
+ streaks(a,b,pen.dauber?clamp(.45-pen.life)*1.4+clamp(.4-f)*1.4+dryT+unmix:ik.fluid?dryT+unmix+low:clamp((.32-f)*2.4)+(pen.metal?0:clamp(leanNow-.25)*.6)+(ik.solid?s2.rough*1.5:0)+dryT+unmix+low+(s2.wet&&ik.wrep>.3?ik.wrep*.6:0)+s2.repel*ik.bead*.15)}
  if(!demo){const s=surfAt(b.x,b.y),use=d*Math.sqrt(R()/6)*(.5+s.absorb*1.4)*(1+s.rough*.5);
   if(pen.valve){pen.flow=Math.max(0,pen.flow-use*.00012);{const tg=(pen.adjust?.45+pen.vs*.15:.8)+(pressNow-.35)*.5;if(pen.flow<tg)pen.flow+=(tg-pen.flow)*Math.min(1,d*.006)*lifeF();else if(pen.adjust&&pen.flow>tg)pen.flow=Math.max(tg,pen.flow-d*.002)}}
   const L0=pen.life;pen.life=Math.max(0,pen.life-use/(4000*(pen.cap||10)));if(L0>.15&&pen.life<=.15)toast('Running low — the barrel is nearly empty');if(L0>0&&pen.life===0)toast('Empty. Time for a new pen');
@@ -848,8 +849,9 @@ function toolMove(a,b){if(tool==='spray')return;toolAcc+=Math.hypot(b.x-a.x,b.y-
 const hist=[];
 const snapPool=[];function poolC(src){let c=snapPool.pop();if(!c)c=document.createElement('canvas');if(c.width!==src.width||c.height!==src.height){c.width=src.width;c.height=src.height}const x=c.getContext('2d');x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='copy';x.globalAlpha=1;x.drawImage(src,0,0);x.globalCompositeOperation='source-over';return c}
 let readySnap=null,snapT=0;const takeSnap=()=>[poolC(baked.c),poolC(idm.c),inkG.slice(),colG.slice(),metalOn?poolC(metal.c):null,etchOn?poolC(etchL.c):null,fjOn?poolC(fjL.c):null];
-function prepSnap(){clearTimeout(snapT);snapT=setTimeout(()=>{if(down)return;if(readySnap)for(const k of [0,1,4,5,6])if(readySnap[k]&&snapPool.length<12)snapPool.push(readySnap[k]);readySnap=takeSnap()},60)}
-function push(){clearTimeout(snapT);hist.push(readySnap||takeSnap());readySnap=null;if(hist.length>8){const o=hist.shift();for(const k of [0,1,4,5,6])if(o[k]&&snapPool.length<12)snapPool.push(o[k])}}
+function prepSnap(){return;clearTimeout(snapT);snapT=setTimeout(()=>{if(down)return;if(readySnap)for(const k of [0,1,4,5,6])if(readySnap[k]&&snapPool.length<12)snapPool.push(readySnap[k]);readySnap=takeSnap()},60)}
+function push(){}/* undo removed */
+function push_old(){clearTimeout(snapT);hist.push(readySnap||takeSnap());readySnap=null;if(hist.length>5){const o=hist.shift();for(const k of [0,1,4,5,6])if(o[k]&&snapPool.length<4)snapPool.push(o[k])}}
 function undo(){setTimeout(prepSnap,0);drips.length=0;bleedL.length=0;bleedQ.length=0;blooms.length=0;wetQ.length=0;chromes.length=0;const h=hist.pop();if(!h)return toast('Nothing to undo');for(const [o,c] of [[baked,h[0]],[idm,h[1]]]){o.x.save();o.x.setTransform(1,0,0,1,0,0);o.x.clearRect(0,0,o.c.width,o.c.height);o.x.drawImage(c,0,0);o.x.restore()}if(h[2]&&h[2].length===inkG.length){inkG.set(h[2]);colG=h[3]}putMetal(h[4]);putFJ(h[6]);putEtch(h[5]);clearWet();dirty=true}
 function clearWet(){if(wg)wg.fill(0);for(const k in WET){const w=WET[k];w.x.save();w.x.setTransform(1,0,0,1,0,0);w.x.clearRect(0,0,w.c.width,w.c.height);w.x.restore();w.active=false}}
 function resetBoard(){if(washG)washG.fill(0);if(typeof putFJ==='function')putFJ(null);setTimeout(prepSnap,0);drips.length=0;if(typeof usedPens!=='undefined')usedPens.clear();if(rainLeft)rainLeft.fill(0);if(typeof etches!=='undefined'){etches.length=0;putEtch(null)}if(typeof shifts!=='undefined')shifts.length=0;putMetal(null);if(typeof spreads!=='undefined')spreads.length=0;if(inkG)inkG.fill(0);if(typeof bleedL!=='undefined')bleedL.length=0;ghost.x.save();ghost.x.setTransform(1,0,0,1,0,0);ghost.x.clearRect(0,0,ghost.c.width,ghost.c.height);ghost.x.restore();if(typeof bleedQ!=='undefined'){bleedQ.length=0;ghostSeen.clear()}if(typeof blooms!=='undefined')blooms.length=0;if(water)water.fill(0);waterOn=false;if(typeof wetQ!=='undefined')wetQ.length=0;chromes.length=0;buildBands();renderBg();baked.x.save();baked.x.setTransform(1,0,0,1,0,0);baked.x.clearRect(0,0,baked.c.width,baked.c.height);baked.x.drawImage(bg.c,0,0);baked.x.restore();
@@ -875,7 +877,7 @@ const mv=e=>{if(e.type==='pointermove'&&RAW&&down&&e.pointerId===downId&&tool===
 cv.addEventListener('pointermove',mv);if(RAW)cv.addEventListener('pointerrawupdate',mv);
 const up=e=>{livePt=predPt=null;ptrs.delete(e.pointerId);if(twist&&ptrs.size<2){twist=null;dirty=true;return}
  if(!down||e.pointerId!==downId)return;down=false;friction(false,0,cur);if(tool==='draw'){if(stroke&&!demo)feedEnd();if(stroke&&last&&!demo&&INK[pen.ink].fluid){const tap=stroke.x1-stroke.x0<4&&stroke.y1-stroke.y0<4;tipScale=tap?1.45:1.15;stamp(last.x,last.y,0,null);tipScale=1}
- else if(stroke&&last&&!demo){if(performance.now()-lastMove>120&&!pen.metal&&!INK[pen.ink].solid&&flowNow(null)>.45){tipScale=1.12;stamp(last.x,last.y,0,null);tipScale=1;if(!pen.squeeze)blob(last.x,last.y,R()*.62,surfAt(last.x,last.y))}flick()}end();save()}prepSnap()};
+ else if(stroke&&last&&!demo){if(performance.now()-lastMove>450&&!pen.metal&&!INK[pen.ink].solid&&flowNow(null)>.45){tipScale=1.05;stamp(last.x,last.y,0,null);tipScale=1}flick()}end();save()}prepSnap()};
 function flick(){const v=stroke.v;if(v<.45||performance.now()-lastMove>70)return;
  const len=Math.min(110,v*48),ux=stroke.vx/v,uy=stroke.vy/v,n=Math.ceil(len/1.2);
  for(let i=1;i<=n;i++){const k=i/n,k0=(i-1)/n;tipScale=Math.max(.08,1-k*.92);stamp(last.x+ux*len*k,last.y+uy*len*k,v,null);streaks({x:last.x+ux*len*k0,y:last.y+uy*len*k0},{x:last.x+ux*len*k,y:last.y+uy*len*k},k*k*1.1)}
@@ -894,12 +896,12 @@ function frame(now){const dt=(now-prev)/1000;prev=now;if(!down&&now-lastSnapAt>9
  if(waterOn){let any=false;const k=dt*(bands[0]&&bands[0].s.absorb>.3?.06:.04);for(let i=0;i<water.length;i++)if(water[i]>0){water[i]=Math.max(0,water[i]-k);if(water[i]>0)any=true}
   if(!any)waterOn=false;const im=wctx.createImageData(GW,GH_);for(let i=0;i<water.length;i++){im.data[i*4+1]=8;im.data[i*4+2]=16;im.data[i*4+3]=Math.min(255,water[i]*48)}wctx.putImageData(im,0,0);dirty=true}
  if(mist.length){for(let i=mist.length-1;i>=0;i--)if(now-mist[i].t0>420)mist.splice(i,1);dirty=true}
- if(down&&stroke&&now-lastMove>220&&last){stroke.dwell+=dt;if(tool==='draw'&&!pen.squeeze&&!pen.metal&&!stroke.ink.solid&&stroke.dwell>.1&&stroke.dwell<1.5){const f=flowNow(null);if(f>.4){tipScale=1+Math.min(stroke.ink.fluid?.14:.45,stroke.dwell*(stroke.ink.fluid?.15:.4)*f);stamp(last.x,last.y,0,null);tipScale=1}}if(pen.valve){stroke.priming=1;stroke.primeAcc=(stroke.primeAcc||0)+dt;if(stroke.primeAcc>(stroke.pumped?.28:.3)){stroke.primeAcc=0;stroke.pumped=1;pump(last)}dirty=true}const s=surfAt(last.x,last.y),ink=stroke.ink,b=ink.bleed*s.absorb;
+ if(down&&stroke&&now-lastMove>220&&last){stroke.dwell+=dt;if(tool==='draw'&&!pen.squeeze&&!pen.metal&&!stroke.ink.solid&&stroke.dwell>.45&&stroke.dwell<2){const f=flowNow(null);if(f>.4){tipScale=1+Math.min(stroke.ink.fluid?.08:.22,(stroke.dwell-.45)*(stroke.ink.fluid?.1:.2)*f);stamp(last.x,last.y,0,null);tipScale=1}}if(pen.valve){stroke.priming=1;stroke.primeAcc=(stroke.primeAcc||0)+dt;if(stroke.primeAcc>(stroke.pumped?.28:.3)){stroke.primeAcc=0;stroke.pumped=1;pump(last)}dirty=true}const s=surfAt(last.x,last.y),ink=stroke.ink,b=ink.bleed*s.absorb;
   if(b>.03&&stroke.dwell<4){bleedAt(last.x,last.y,R()*(1+b*(1.1+stroke.dwell*1.4)),b*.035,s.gx);dirty=true}
-  if(ink.future)poolAt(last.x,last.y,R()*1.25,0);if(pen.squeeze&&stroke.dwell>.35&&stroke.dwell<2.5){blob(last.x,last.y,R()*(pen.dauber?Math.min(.45,.25+stroke.dwell*.1):ink.fluid?Math.min(.95,.6+stroke.dwell*.25):pen.w>8?.55+stroke.dwell*.35:1+stroke.dwell*1.6),s);if(!ink.fluid&&Math.random()<dt*3*ink.drip)drip(last.x+(Math.random()-.5)*R(),last.y+R()*.5,.6+stroke.dwell*.5);dirty=true}}
+  if(ink.future)poolAt(last.x,last.y,R()*1.25,0);if(pen.squeeze&&stroke.dwell>.6&&stroke.dwell<2.5){blob(last.x,last.y,R()*(pen.dauber?Math.min(.45,.25+stroke.dwell*.1):ink.fluid?Math.min(.95,.6+stroke.dwell*.25):pen.w>8?.55+stroke.dwell*.35:1+stroke.dwell*1.6),s);if(!ink.fluid&&Math.random()<dt*3*ink.drip)drip(last.x+(Math.random()-.5)*R(),last.y+R()*.5,.6+stroke.dwell*.5);dirty=true}}
  for(const k in WET){const w=WET[k];if(!w.active)continue;w.acc+=dt;const kk=1-Math.exp(-w.acc/(TAUS[k]*(bands[0]&&bands[0].s.wet?2.5:1)));
   if(kk>.06){w.x.save();w.x.setTransform(1,0,0,1,0,0);w.x.globalCompositeOperation='destination-out';w.x.globalAlpha=kk;w.x.fillRect(0,0,w.c.width,w.c.height);w.x.restore();w.acc=0}
-  if(now>w.until){w.x.save();w.x.setTransform(1,0,0,1,0,0);w.x.clearRect(0,0,w.c.width,w.c.height);w.x.restore();w.active=false}dirty=true}
+  if(now>w.until){w.c.width=w.c.height=1;w.active=false}dirty=true}
  if(wgOn){let any=false;for(let i=0;i<wg.length;i++){if(wg[i]>0){wg[i]*=Math.exp(-dt/wt[i]);if(wg[i]<.02)wg[i]=0;else any=true}}wgOn=any}
  if(uiDirty&&now-uiT>140){uiDirty=false;uiT=now;showFlow()}if(down&&stroke&&fricS)friction(true,fricV,fricS);
  for(let i=bleedL.length-1;i>=0;i--){const L=bleedL[i];if(now-L.t0>=L.dur){const g=baked.x;g.save();g.setTransform(1,0,0,1,0,0);g.globalAlpha=L.a;g.drawImage(L.c,L.x,L.y);g.restore();bleedL.splice(i,1)}dirty=true}
@@ -1126,6 +1128,7 @@ function renderTop(){renderCap();$('#penMini').innerHTML=penSVG(pen);$('#penName
 const boards={},recent=[];
 function snap(){const c=document.createElement('canvas'),i=document.createElement('canvas');c.width=i.width=baked.c.width;c.height=i.height=baked.c.height;c.getContext('2d').drawImage(baked.c,0,0);i.getContext('2d').drawImage(idm.c,0,0);return[c,i,inkG.slice(),colG.slice(),cloneC(metal.c),cloneC(etchL.c),fjOn?cloneC(fjL.c):null]}
 const bkey=()=>cur.id;
+window.__rlSel=(id,sid)=>{if(id){pen=PENS.find(p=>p.id===id);color=pen.colors[0];pen.life=1;pen.mix=1;pen.flow=1;pen.capped=false;pen.tipDry=0;renderTop()}if(sid)goSurface(SURF.find(q=>q.id===sid))};
 function goSurface(a,b,c){const r=goSurfaceInner(a,b,c);prepSnap();return r}
 function goSurfaceInner(s){if(s===cur)return;for(const L of bleedL){const g=baked.x;g.save();g.setTransform(1,0,0,1,0,0);g.globalAlpha=L.a;g.drawImage(L.c,L.x,L.y);g.restore()}bleedL.length=0;wetQ.length=0;chromes.forEach(finChrome);chromes.length=0;const k0=bkey();boards[k0]=snap();recent.unshift(k0);for(const id of recent.splice(6))if(!recent.includes(id))delete boards[id];
 cur=s;resetBoard();const b=boards[bkey()];if(b){for(const [o,c] of [[baked,b[0]],[idm,b[1]]]){o.x.save();o.x.setTransform(1,0,0,1,0,0);o.x.drawImage(c,0,0);o.x.restore()}if(b[2]&&b[2].length===inkG.length){inkG.set(b[2]);colG=b[3]}putMetal(b[4]);putFJ(b[6]);putEtch(b[5])}
@@ -1196,8 +1199,8 @@ $('#capBtn').addEventListener('click',()=>{audio();pen.capped=!pen.capped;pen.id
 $('#age1').addEventListener('click',()=>age(1));$('#age12').addEventListener('click',()=>age(12));
 $('#newpen').addEventListener('click',()=>{if(pen.empty&&!pen.fill)return toast('Fill it with an ink first');audio();pen.life=1;pen.fray=0;pen.round=0;pen.mush=0;pen.tipDry=0;pen.dirtAmt=0;pen.capped=true;renderCap();pen.flow=.2;pen.mix=.2;showFlow();showMix();save();toast(`Fresh ${pen.brand} ${pen.name} — shake and prime it`);rattle()});
 $('#snd').addEventListener('click',e=>{muted=!muted;e.currentTarget.textContent=muted?'Sound off':'Sound on';e.currentTarget.setAttribute('aria-pressed',!muted);if(!muted)audio()});
-$('#undo').addEventListener('click',undo);$('#clear').addEventListener('click',()=>{resetBoard();closeSheets();toast('Wall wiped clean')});
-$('#wipeT').addEventListener('click',()=>{push();resetBoard();toast('Wall wiped clean — Undo brings it back')});
+$('#clear').addEventListener('click',()=>{resetBoard();closeSheets();toast('Wall wiped clean')});
+$('#wipeT').addEventListener('click',()=>{push();resetBoard();toast('Wall wiped clean')});
 $('#surfs').addEventListener('click',e=>{const b=e.target.closest('.sc');if(!b)return;goSurface(SURF.find(s=>s.id===b.dataset.id));closeSheets()});
 const step=d=>{goSurface(SURF[(SURF.indexOf(cur)+d+SURF.length)%SURF.length]);toast(cur.name)};
 $('#wetBtn').addEventListener('click',()=>{const was=wetSet.has(cur.id),rain=rainSet.has(cur.id);
@@ -1236,7 +1239,7 @@ setTimeout(maybeGetApp,2500);
 $('#coachBtn').addEventListener('click',()=>{closeSheets();coach.hidden=false});
 $('#shakeBtn').addEventListener('click',()=>shake());
 $('#scrim').addEventListener('click',closeSheets);
-document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')step(1);if(e.key==='ArrowLeft')step(-1);if(e.key==='Escape')closeSheets();if(e.key==='p'||e.key==='P'){audio();pump(null)}if(e.key==='s'||e.key==='S')shake();if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo()}});
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')step(1);if(e.key==='ArrowLeft')step(-1);if(e.key==='Escape')closeSheets();if(e.key==='p'||e.key==='P'){audio();pump(null)}if(e.key==='s'||e.key==='S')shake();if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault()}});
 const ro=new ResizeObserver(()=>{layout()});ro.observe(cv);
 
 /* ---------- boot ---------- */
