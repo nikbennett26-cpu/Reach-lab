@@ -213,7 +213,7 @@ td.num{text-align:right;white-space:nowrap}
   <h2>Settings</h2>
   <div class="row"><button class="btn pri" id="bookSave">Save to blackbook</button><button class="btn" id="bookOpen">Open blackbook</button><button class="btn" id="wallShare">Share wall</button></div>
   <div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button></div>
-  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><button class="btn" id="calBtn">Calibrate finger</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (29) · heavy thick ink</div></div>
+  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><button class="btn" id="calBtn">Calibrate finger</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (30) · uneven ghost, dirtier buff</div></div>
   <div id="tipsBox"><div class="row" style="justify-content:space-between;align-items:center"><span class="lbl">Tips</span><button class="btn" id="tipsClear">Clear</button></div><ol id="tipsList" class="small" style="margin:0 0 12px;padding-left:20px;max-height:180px;overflow:auto;line-height:1.45"><li style="opacity:.6">Tips from your drawing show up here.</li></ol></div>
   <div class="row"><span class="lbl">Weather the wall</span><button class="btn" id="age1">+1 month</button><button class="btn" id="age12">+1 year</button></div>
   <p class="small">A simulation: widths from maker and retailer specs where marked, dry times sped up, surface physics modelled rather than measured.</p>
@@ -717,6 +717,7 @@ const ghostRet={t:0,x0:1e9,y0:1e9,x1:-1,y1:-1,k:0,cap:0,vio:0};
 setInterval(()=>{if(!ghostRet.t||performance.now()-ghostRet.t<1400||down)return;const x0=Math.max(0,Math.floor(ghostRet.x0)),y0=Math.max(0,Math.floor(ghostRet.y0)),w=Math.min(ghost.c.width,Math.ceil(ghostRet.x1))-x0,h=Math.min(ghost.c.height,Math.ceil(ghostRet.y1))-y0,k=ghostRet.k;
  const vio=ghostRet.vio;ghostRet.t=0;ghostRet.x0=ghostRet.y0=1e9;ghostRet.x1=ghostRet.y1=-1;ghostRet.k=0;ghostRet.cap=0;ghostRet.vio=0;if(w<4||h<4||k<.02)return;
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${1.4*dpr}px)`}catch(_){}x.drawImage(ghost.c,x0,y0,w,h,0,0,w,h);x.filter='none';
+ try{const im=x.getImageData(0,0,w,h),dd=im.data,th=(pad.th||0)+Math.PI/2,cx=Math.cos(th),sy=Math.sin(th),ph=Math.random()*9,S=3.2*dpr;for(let i=0;i<dd.length;i+=4){if(!dd[i+3])continue;const px=(i>>2)%w,py=(i>>2)/w|0,u=(px*cx+py*sy)/S;dd[i+3]*=.62+.38*(.5+.5*Math.sin(u+ph))*(.6+.4*Math.sin(u*.37+ph*2))}x.putImageData(im,0,0)}catch(_){}
  const g=ghost.x;g.save();g.setTransform(1,0,0,1,0,0);g.clearRect(x0,y0,w,h);g.restore();
  bleedL.push({c,x:x0,y:y0,t0:performance.now()+300,dur:4500,a:k});if(!saidGhost++)toast('The tag is ghosting back through the buff')},500);
 let saidGhost=0;const buffC={};
@@ -738,7 +739,9 @@ function buffAt(a,b){const R2=44,D=Math.round(2*R2*dpr),t=tcan(D,'bt'),ty=inkAt(
   u.x.globalCompositeOperation='source-over';if(!ghostRet.cap){ghostRet.cap=1;const gx=ghost.x,W2=ghost.c.width,H2=ghost.c.height;gx.save();gx.setTransform(1,0,0,1,0,0);gx.clearRect(0,0,W2,H2);gx.drawImage(baked.c,0,0);gx.globalCompositeOperation='destination-in';gx.drawImage(idm.c,0,0);gx.restore();
    /* per pixel: only inks that really ghost keep a ghost, at their own strength; dark stain dyes come back violet */
    try{const g=gx.getImageData(0,0,W2,H2),gd=g.data,id=idm.x.getImageData(0,0,W2,H2).data,keys=Object.keys(INK),mx=.34;
-    for(let i=0;i<gd.length;i+=4){if(!gd[i+3])continue;const t=keys[Math.round(id[i]/20)-1],k=GHOST[t]||0;if(!k){gd[i+3]=0;continue}gd[i+3]=gd[i+3]*k/mx;
+    const CS=Math.round(46*dpr),gw=Math.ceil(W2/CS)+2,gh=Math.ceil(H2/CS)+2,nz=new Float32Array(gw*gh);for(let q=0;q<nz.length;q++)nz[q]=Math.pow(Math.random(),1.3);
+    const vn=(x,y)=>{const fx=x/CS,fy=y/CS,ix=fx|0,iy=fy|0,tx=fx-ix,ty=fy-iy,sx=tx*tx*(3-2*tx),sy=ty*ty*(3-2*ty),a=nz[iy*gw+ix],b=nz[iy*gw+ix+1],c=nz[(iy+1)*gw+ix],d=nz[(iy+1)*gw+ix+1];return a+(b-a)*sx+(c-a)*sy+(a-b-c+d)*sx*sy};
+    for(let i=0;i<gd.length;i+=4){if(!gd[i+3])continue;const t=keys[Math.round(id[i]/20)-1],k=GHOST[t]||0;if(!k){gd[i+3]=0;continue}const px=(i>>2)%W2,py=(i>>2)/W2|0;gd[i+3]=Math.min(255,gd[i+3]*k/mx*(.35+1.35*vn(px,py)));
      if((t==='stain'||t==='bleed')&&(gd[i]+gd[i+1]+gd[i+2])<170){gd[i]=gd[i]*.2+73;gd[i+1]=gd[i+1]*.2+50;gd[i+2]=gd[i+2]*.2+141}}
     gx.putImageData(g,0,0)}catch(_){}}
   if(vio)ghostRet.vio=1;ghostRet.t=performance.now();ghostRet.x0=Math.min(ghostRet.x0,X);ghostRet.y0=Math.min(ghostRet.y0,Y);ghostRet.x1=Math.max(ghostRet.x1,X+D);ghostRet.y1=Math.max(ghostRet.y1,Y+D);ghostRet.k=Math.max(ghostRet.k,ty&&GHOST[ty]?.34:0)}
@@ -747,9 +750,9 @@ function buffAt(a,b){const R2=44,D=Math.round(2*R2*dpr),t=tcan(D,'bt'),ty=inkAt(
  t.x.drawImage(bg.c,(b.x-R2)*dpr,(b.y-R2)*dpr,D,D,0,0,D,D);t.x.globalAlpha=g;t.x.drawImage(ghost.c,(b.x-R2)*dpr,(b.y-R2)*dpr,D,D,0,0,D,D);t.x.globalAlpha=1;soft(t.c,D/2);
  baked.x.save();baked.x.setTransform(1,0,0,1,0,0);baked.x.globalAlpha=.24;baked.x.drawImage(t.c,(b.x-R2)*dpr,(b.y-R2)*dpr);baked.x.restore();
  /* the pad picks up dissolved dye and smears it out as a wide, soft cloud along the rub direction */
- if(ty&&cc&&cc[0]==='#'&&DYEB[ty]){const wc=vio?'#8f7ad8':mixHex(cc,'#ffffff',lum(hex(cc))<.25?.25:.4);pad.col=pad.col?mixHex(pad.col,wc,.25):wc;pad.load=Math.min(1,pad.load+DYEB[ty]*.3)}
- if(pad.load>.03&&pad.col){const th=L>.5?Math.atan2(b.y-a.y,b.x-a.x):pad.th||0;pad.th=th;const bx=baked.x,rx=R2*(1.5+Math.random()*.4),ry=R2*(.95+Math.random()*.3);
-  bx.save();bx.globalAlpha=Math.min(.16,.11*pad.load);bx.translate(b.x+(Math.random()-.5)*10,b.y+(Math.random()-.5)*10);bx.rotate(th);bx.drawImage(feather(qh(...hex(pad.col))),-rx,-ry,2*rx,2*ry);bx.restore();
+ if(ty&&cc&&cc[0]==='#'&&DYEB[ty]){const wc=mixHex(vio?'#8f7ad8':mixHex(cc,'#ffffff',lum(hex(cc))<.25?.25:.4),'#5f5242',.32);pad.col=pad.col?mixHex(pad.col,wc,.25):wc;pad.load=Math.min(1,pad.load+DYEB[ty]*.3)}
+ if(pad.load>.03&&pad.col){const th=L>.5?Math.atan2(b.y-a.y,b.x-a.x):pad.th||0;pad.th=th;const bx=baked.x,rx=R2*(1.9+Math.random()*.7),ry=R2*(1.15+Math.random()*.45);
+  bx.save();bx.globalAlpha=Math.min(.2,.13*pad.load)*(.55+Math.random()*.9);bx.translate(b.x+(Math.random()-.5)*10,b.y+(Math.random()-.5)*10);bx.rotate(th);bx.drawImage(feather(qh(...hex(pad.col))),-rx,-ry,2*rx,2*ry);bx.restore();
   if(++buffN%9===0){const st=Math.random()*TAU;bx.save();bx.globalAlpha=.05*pad.load;bx.strokeStyle=pad.col;bx.lineWidth=1.1;bx.beginPath();bx.ellipse(b.x,b.y,rx*.9,ry*.8,th,st,st+Math.PI*(.5+Math.random()*.8));bx.stroke();bx.restore()}
   /* solvent runs down carrying tinted dye */
   }
