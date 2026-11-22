@@ -213,7 +213,7 @@ td.num{text-align:right;white-space:nowrap}
   <h2>Settings</h2>
   <div class="row"><button class="btn pri" id="bookSave">Save to blackbook</button><button class="btn" id="bookOpen">Open blackbook</button><button class="btn" id="wallShare">Share wall</button></div>
   <div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button></div>
-  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><button class="btn" id="calBtn">Calibrate finger</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (33) · Hand Mixed multicolour sticks</div></div>
+  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><button class="btn" id="calBtn">Calibrate finger</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (34) · paint sticks drag & crumble</div></div>
   <div id="tipsBox"><div class="row" style="justify-content:space-between;align-items:center"><span class="lbl">Tips</span><button class="btn" id="tipsClear">Clear</button></div><ol id="tipsList" class="small" style="margin:0 0 12px;padding-left:20px;max-height:180px;overflow:auto;line-height:1.45"><li style="opacity:.6">Tips from your drawing show up here.</li></ol></div>
   <div class="row"><span class="lbl">Weather the wall</span><button class="btn" id="age1">+1 month</button><button class="btn" id="age12">+1 year</button></div>
   <p class="small">A simulation: widths from maker and retailer specs where marked, dry times sped up, surface physics modelled rather than measured.</p>
@@ -818,6 +818,22 @@ function multiFill(x,y){const M=pen.multi,n=M.length,r=R()*1.02,st=stroke||{};
  for(let k=0;k<=K;k++){const l=(k/K*2-1)*r,b=Math.sqrt(Math.max(0,r*r-l*l)),px=-mx*b+nx*l,py=-my*b+ny*l,t=(((Math.atan2(py,px)-a)/6.2832)%1+1)%1,ci=Math.min(n-1,Math.floor(t*n));
   if(ci!==prev&&k>0)g.addColorStop(Math.max(0,(k-.5)/K-.001),M[prev]);g.addColorStop(k===0?0:(k-.5)/K,M[ci]);prev=ci}
  g.addColorStop(1,M[prev]);return g}
+/* PAINT-STICK DRAG: a solid stick only marks the high points of the wall's tooth. Grain is anchored to the wall
+   (the same pits skip every pass), denser when pressing lightly, moving fast or on rough walls, and heaviest at the rim
+   so edges break up into ragged crumbs like oil-stick/crayon tags */
+let GRN=null;function grainPat(lv){if(!GRN){const N=256,v=new Float32Array(N*N),rnd=()=>Math.random();
+  const oct=(cell,amp)=>{const g=N/cell,G=[];for(let i=0;i<g*g;i++)G.push(rnd());for(let y=0;y<N;y++)for(let x=0;x<N;x++){const fx=x/cell,fy=y/cell,x0=fx|0,y0=fy|0,tx=fx-x0,ty=fy-y0,sx=tx*tx*(3-2*tx),sy=ty*ty*(3-2*ty),a=G[(y0%g)*g+x0%g],b=G[(y0%g)*g+(x0+1)%g],c=G[((y0+1)%g)*g+x0%g],d=G[((y0+1)%g)*g+(x0+1)%g];v[y*N+x]+=amp*((a*(1-sx)+b*sx)*(1-sy)+(c*(1-sx)+d*sx)*sy)}};
+  oct(32,.35);oct(8,.35);oct(2,.2);for(let i=0;i<N*N;i++)v[i]+=rnd()*.1;
+  GRN=[];for(let L=0;L<10;L++){const c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d'),im=x.createImageData(N,N),th=.22+L*.045;
+   for(let i=0;i<N*N;i++)im.data[i*4+3]=v[i]<th?255:v[i]<th+.02?120:0;x.putImageData(im,0,0);const p=stk.x.createPattern(c,'repeat');try{p.setTransform(new DOMMatrix().scale(.5))}catch(e){}GRN.push(p)}}
+ return GRN[Math.max(0,Math.min(9,Math.round(lv*9)))]}
+function stickDrag(x,y,s,fast){const r=pen.w*MM/2*curScale,X=stk.x,op=pen.multi?.45:1,
+  d=clamp((.04+(1-pressNow)*.34+fast*.14+s.rough*.6+(s.absorb||0)*.15)*op);
+ X.save();X.globalCompositeOperation='destination-out';
+ if(d>.05){X.fillStyle=grainPat(d);X.beginPath();X.arc(x,y,r*1.01,0,TAU);X.fill()}
+ /* bitten edge: small nicks out of the rim */for(let i=0,k=1+Math.round(d*4);i<k;i++){const a=Math.random()*TAU,q=r*(.97+Math.random()*.08);X.beginPath();X.arc(x+Math.cos(a)*q,y+Math.sin(a)*q,.6+Math.random()*(1+d*2.2),0,TAU);X.fill()}
+ X.restore();
+ /* stray crumbs knocked off the stick */if(!demo&&Math.random()<.04+d*.1){const a=Math.random()*TAU,q=r*(1.08+Math.random()*.55);X.save();X.fillStyle=pen.multi?pen.multi[(Math.random()*pen.multi.length)|0]:curCol();X.beginPath();X.arc(x+Math.cos(a)*q,y+Math.sin(a)*q,.5+Math.random()*1.2,0,TAU);X.fill();X.restore()}}
 function stamp(x,y,spd,e){if(pen.multi&&stroke)stroke.mDist=(stroke.mDist||0)+1;const s=surfAt(x,y),ink=INK[pen.ink],f=flowNow(e),starve=clamp((.55-f)*1.8+pen.tipDry*.95+(ink.solid?s.rough*1.2:0)),fast=clamp(spd/3);
  curScale=tipScale*(pen.adjust?.9+clamp(f-.5,0,.8)*.22:1)*(pen.ink==='alcohol'&&!pen.squeeze?1-fast*.12:1)*(pen.dauber?.38+pressNow*.55:!pen.metal?.85+pressNow*.43:1)*(spd<.12&&f>.7&&s.absorb<.3&&!pen.metal?1.05:1)*(1+(pen.mush||0)*.35)*(pen.ink==='fluid'||(pen.metal&&pen.squeeze)?(stroke?(stroke.fw=(stroke.fw||1.15)*.94+(1.32-.72*clamp(((stroke.v||0)*.7+Math.min(spd,3)*.3-.06)/.9))*.06):1.15):1);
  if(!demo&&!pen.metal&&!ink.solid&&pressNow>.72){const m0=pen.mush||0;pen.mush=Math.min(1,m0+(pressNow-.72)*.0011*(1+s.rough));if(m0<.3&&pen.mush>=.3&&!saidMush++)toast('Pressing hard has mushed the nib down — lines stay fatter now')}
@@ -829,7 +845,7 @@ function stamp(x,y,spd,e){if(pen.multi&&stroke)stroke.mDist=(stroke.mDist||0)+1;
  if(pen.adjust&&!demo&&f>.8&&Math.random()<.022*Math.pow(pen.vs/5,2)*(1.15-fast)*(1-s.absorb))drip(x+(Math.random()-.5)*R()*.9,y+R()*.3,.6+Math.random()*.9*(pen.vs/5));
  if(s.wet&&!demo){stroke.wp=stroke.wp||[];if(!stroke.lw||Math.hypot(x-stroke.lw.x,y-stroke.lw.y)>4){stroke.lw={x,y};if(stroke.wp.length<500)stroke.wp.push({x,y})}}
  if(false&&s.wet&&!demo&&Math.random()<.018*ink.run)drip(x+(Math.random()-.5)*R()*1.4,y+R()*.42,.25+Math.random()*Math.random()*1.3);
- /* smooth walls take a solid film: a flat colour fill is far cheaper on the GPU than a texture pattern */stk.x.fillStyle=pen.multi?multiFill(x,y):SMOOTH(s)?curCol():inkPat(s,curCol(),q);tipPath(0,x,y);stk.x.fill();
+ /* smooth walls take a solid film: a flat colour fill is far cheaper on the GPU than a texture pattern */stk.x.fillStyle=pen.multi?multiFill(x,y):SMOOTH(s)?curCol():inkPat(s,curCol(),q);tipPath(0,x,y);stk.x.fill();if(ink.solid&&pen.tip!=='chisel')stickDrag(x,y,s,fast);
  if(!demo&&DYEINK[pen.ink]){const n=stroke.sn=(stroke.sn||0)+1,ck=((x/5)|0)*4099+((y/5)|0),cm=stroke.cm||(stroke.cm=new Map()),gap=R()*2.6/Math.max(.6,pen.w*MM*.28)+10,o=cm.get(ck);if(o===undefined)cm.set(ck,n);else if(n-o>gap){tipCtx=ovl.x;ovl.x.fillStyle=inkPat(s,curCol(),q);tipPath(0,x,y);ovl.x.fill();tipCtx=null;stroke.ov=1}}if(stroke.ink.future)poolAt(x,y,R(),stroke.v);
  if(!demo&&(pen.valve||pen.squeeze)&&pressNow>.62&&f>.75&&Math.random()<.03*(pressNow-.55)*ink.drip*(1-s.absorb))drip(x+(Math.random()-.5)*R()*.8,y+R()*.35,.5+pressNow*.7);/* super-juiced nib (flow over ~95%): excess ink sheds as drips along the line, more the wetter it is */if(!demo&&!ink.solid&&f>.95&&Math.random()<(f-.9)*.2*(ink.drip||.6)*(1-s.absorb)*(pen.w>8?1.3:1))drip(x+(Math.random()-.5)*R()*.9,y+R()*.4,.5+(f-.9)*2.2+Math.random()*.6);if(!stroke.lp||Math.abs(x-stroke.lp.x)+Math.abs(y-stroke.lp.y)>3){stroke.lp={x,y};(stroke.pts=stroke.pts||[]).push(x,y)}{const r=R()*3+6;stroke.x0=Math.min(stroke.x0,x-r);stroke.y0=Math.min(stroke.y0,y-r);stroke.x1=Math.max(stroke.x1,x+r);stroke.y1=Math.max(stroke.y1,y+r)}
  if(pen.squeeze&&f>.85&&!demo&&Math.random()<.012*ink.drip*(1-s.absorb))drip(x,y+R()*.4,.4+Math.random()*.6)}
