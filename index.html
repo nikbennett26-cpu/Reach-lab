@@ -195,7 +195,7 @@ td.num{text-align:right;white-space:nowrap}
   <h2>Settings</h2>
   <div class="row"><button class="btn pri" id="bookSave">Save to blackbook</button><button class="btn" id="bookOpen">Open blackbook</button><button class="btn" id="wallShare">Share wall</button></div>
   <div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button></div>
-  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (15) · tap to prime, pens last longer, lighter GPU</div></div>
+  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (16) · researched ghosting per ink</div></div>
   <div class="row"><span class="lbl">Weather the wall</span><button class="btn" id="age1">+1 month</button><button class="btn" id="age12">+1 year</button></div>
   <p class="small">A simulation: widths from maker and retailer specs where marked, dry times sped up, surface physics modelled rather than measured.</p>
  </section>
@@ -695,7 +695,7 @@ function stainDry(){/* new ink covers the violet cast still forming underneath, 
 const ghostRet={t:0,x0:1e9,y0:1e9,x1:-1,y1:-1,k:0,cap:0,vio:0};
 setInterval(()=>{if(!ghostRet.t||performance.now()-ghostRet.t<1400||down)return;const x0=Math.max(0,Math.floor(ghostRet.x0)),y0=Math.max(0,Math.floor(ghostRet.y0)),w=Math.min(ghost.c.width,Math.ceil(ghostRet.x1))-x0,h=Math.min(ghost.c.height,Math.ceil(ghostRet.y1))-y0,k=ghostRet.k;
  const vio=ghostRet.vio;ghostRet.t=0;ghostRet.x0=ghostRet.y0=1e9;ghostRet.x1=ghostRet.y1=-1;ghostRet.k=0;ghostRet.cap=0;ghostRet.vio=0;if(w<4||h<4||k<.02)return;
- const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${1.4*dpr}px)`}catch(_){}x.drawImage(ghost.c,x0,y0,w,h,0,0,w,h);x.filter='none';if(vio){try{const im=x.getImageData(0,0,w,h),d=im.data;for(let i=0;i<d.length;i+=4){if(!d[i+3])continue;const l=(d[i]+d[i+1]+d[i+2])/765;if(l<.22){const t=.8;d[i]=d[i]*(1-t)+91*t;d[i+1]=d[i+1]*(1-t)+63*t;d[i+2]=d[i+2]*(1-t)+176*t}}x.putImageData(im,0,0)}catch(_){}}
+ const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${1.4*dpr}px)`}catch(_){}x.drawImage(ghost.c,x0,y0,w,h,0,0,w,h);x.filter='none';
  const g=ghost.x;g.save();g.setTransform(1,0,0,1,0,0);g.clearRect(x0,y0,w,h);g.restore();
  bleedL.push({c,x:x0,y:y0,t0:performance.now()+300,dur:4500,a:k});if(!saidGhost++)toast('The tag is ghosting back through the buff')},500);
 let saidGhost=0;const buffC={};
@@ -705,13 +705,22 @@ function runBleed(now){if(!bleedQ.length)return;const bx=baked.x;
  dirty=true}
 function buffCol(){const s=bands[0].s,k=s.id;if(!buffC[k]){const m=s.mean||[140,140,140];buffC[k]='#'+m.map((v,i)=>Math.round(v*.5+[122,119,110][i]*.5).toString(16).padStart(2,'0')).join('')}return buffC[k]}
 const DYEB={solid:.02,stain:1,bleed:.9,alcohol:.55,flow:.6,future:.7,water:.2,alcpaint:.12,oil:.05,fluid:.03,chrome:.05,etch:0},pad={load:0,col:null,th:0};
-const GH={solid:.08,etch:0,future:.2,stain:.04,bleed:.04,alcohol:.18,flow:.15,water:.1,oil:.08,alcpaint:.1,fluid:.1,chrome:.06};let buffN=0;
+/* BUFF BEHAVIOUR (researched): dye inks soak in and ghost back — buff-proof stain dyes hardest; pigment paints sit on top and wipe clean;
+   glass etch is damage to the glass itself and can't be buffed. GH = residue straight after buffing, GHOST = how strongly the tag comes back. */
+const GH={solid:.02,etch:0,future:.05,stain:.04,bleed:.04,alcohol:.05,flow:.04,water:.01,oil:.01,alcpaint:.02,fluid:.01,chrome:.01};
+const GHOST={stain:.34,bleed:.3,future:.16,alcohol:.13,flow:.09};
+const GHOST_TXT=t=>GHOST[t]>=.3?'Buffs with a strong ghost — buff-proof dye stains back through':GHOST[t]>=.12?'Buffs with a faint ghost — the dye creeps back':GHOST[t]?'Buffs almost clean — only a very faint ghost':t==='etch'?'Can’t be buffed — the glass itself is frosted':'Buffs clean — pigment paint sits on top, no ghost';let buffN=0;
 function addWater(p,r,amt){for(let gy=Math.max(0,Math.floor((p.y-r)/C));gy<=Math.min(GH_-1,Math.floor((p.y+r)/C));gy++)for(let gx=Math.max(0,Math.floor((p.x-r)/C));gx<=Math.min(GW-1,Math.floor((p.x+r)/C));gx++){const d=Math.hypot(gx*C+C/2-p.x,gy*C+C/2-p.y)/r;if(d<1){const i=gy*GW+gx;water[i]=Math.min(1,water[i]+amt*(1-d))}}waterOn=true}
 function buffAt(a,b){const R2=44,D=Math.round(2*R2*dpr),t=tcan(D,'bt'),ty=inkAt(b.x,b.y),cc=colG[inkCell(b.x,b.y)],vio=(ty==='stain'||ty==='bleed')&&cc&&cc[0]==='#'&&lum(hex(cc))<.18,g=ty?GH[ty]:.1,L=Math.hypot(b.x-a.x,b.y-a.y);
  {const u=tcan(D,'bu'),X=(b.x-R2)*dpr,Y=(b.y-R2)*dpr;u.x.drawImage(baked.c,X,Y,D,D,0,0,D,D);u.x.globalCompositeOperation='destination-in';u.x.drawImage(idm.c,X,Y,D,D,0,0,D,D);
   if(vio){u.x.globalCompositeOperation='source-atop';u.x.globalAlpha=.78;u.x.fillStyle='#6b58c9';u.x.fillRect(0,0,D,D);u.x.globalAlpha=1}
-  u.x.globalCompositeOperation='source-over';if(!ghostRet.cap){ghostRet.cap=1;const gx=ghost.x;gx.save();gx.setTransform(1,0,0,1,0,0);gx.clearRect(0,0,ghost.c.width,ghost.c.height);gx.drawImage(baked.c,0,0);gx.globalCompositeOperation='destination-in';gx.drawImage(idm.c,0,0);gx.restore()}
-  if(vio)ghostRet.vio=1;ghostRet.t=performance.now();ghostRet.x0=Math.min(ghostRet.x0,X);ghostRet.y0=Math.min(ghostRet.y0,Y);ghostRet.x1=Math.max(ghostRet.x1,X+D);ghostRet.y1=Math.max(ghostRet.y1,Y+D);ghostRet.k=Math.max(ghostRet.k,(ty==='stain'||ty==='bleed')?.3:ty==='chrome'||ty==='future'?.1:ty?Math.min(.2,GH[ty]*1.2+.06):0)}
+  u.x.globalCompositeOperation='source-over';if(!ghostRet.cap){ghostRet.cap=1;const gx=ghost.x,W2=ghost.c.width,H2=ghost.c.height;gx.save();gx.setTransform(1,0,0,1,0,0);gx.clearRect(0,0,W2,H2);gx.drawImage(baked.c,0,0);gx.globalCompositeOperation='destination-in';gx.drawImage(idm.c,0,0);gx.restore();
+   /* per pixel: only inks that really ghost keep a ghost, at their own strength; dark stain dyes come back violet */
+   try{const g=gx.getImageData(0,0,W2,H2),gd=g.data,id=idm.x.getImageData(0,0,W2,H2).data,keys=Object.keys(INK),mx=.34;
+    for(let i=0;i<gd.length;i+=4){if(!gd[i+3])continue;const t=keys[Math.round(id[i]/20)-1],k=GHOST[t]||0;if(!k){gd[i+3]=0;continue}gd[i+3]=gd[i+3]*k/mx;
+     if((t==='stain'||t==='bleed')&&(gd[i]+gd[i+1]+gd[i+2])<170){gd[i]=gd[i]*.2+73;gd[i+1]=gd[i+1]*.2+50;gd[i+2]=gd[i+2]*.2+141}}
+    gx.putImageData(g,0,0)}catch(_){}}
+  if(vio)ghostRet.vio=1;ghostRet.t=performance.now();ghostRet.x0=Math.min(ghostRet.x0,X);ghostRet.y0=Math.min(ghostRet.y0,Y);ghostRet.x1=Math.max(ghostRet.x1,X+D);ghostRet.y1=Math.max(ghostRet.y1,Y+D);ghostRet.k=Math.max(ghostRet.k,ty&&GHOST[ty]?.34:0)}
  if(metal.c.width){erase(metal,b,.45,R2*1.05);shineDirty=true;if(metalOn&&++buffN%40===0)dirty=true}if(fjL.c.width)erase(fjL,b,.45,R2*1.05);
  if(L>.5){smearDir(baked,a,b,.7,R2*1.05,false);smearDir(baked,a,b,.45,R2*.6,false);smearDir(idm,a,b,.5,R2*.9,false)}
  t.x.drawImage(bg.c,(b.x-R2)*dpr,(b.y-R2)*dpr,D,D,0,0,D,D);t.x.globalAlpha=g;t.x.drawImage(ghost.c,(b.x-R2)*dpr,(b.y-R2)*dpr,D,D,0,0,D,D);t.x.globalAlpha=1;soft(t.c,D/2);
@@ -1226,7 +1235,7 @@ function dryRem(ink,s){return ink.rem[s.absorb>.3?1:0]}
 function react(s){const ink=INK[pen.ink],rgb=hex(color),bead=s.repel*ink.bead,cov=inkAlpha(ink,s)*mixF()*(1-bead*.6)*(1-s.rough*.25),m=s.mean,
  eff=ink.comp==='multiply'?m.map((v,i)=>v*rgb[i]/255):m.map((v,i)=>v+(rgb[i]-v)*cov);
  return{vis:clamp(Math.abs(lum(eff)-lum(m))*1.6),hold:1-dryRem(ink,s),bleed:clamp(ink.bleed*s.absorb),skip:clamp(s.rough*.8+bead*.5),dry:3*TAUS[pen.wet||pen.ink]*(1-s.absorb*.5)}}
-function notes(s){const ink=INK[pen.ink],o=[],bead=s.repel*ink.bead;
+function notes(s){const ink=INK[pen.ink],o=[GHOST_TXT(pen.ink)+'.'],bead=s.repel*ink.bead;
  if(bead>.3)o.push(`Beads on ${s.name.toLowerCase()} — expect patchy cover; let it dry and add a second coat.`);
  if(pen.ink==='alcohol'&&lum(s.mean)<.3)o.push('Translucent dye ink — hardly shows on a dark surface.');
  if(pen.ink==='oil'&&s.repel>0)o.push('Oil-based paint grips clean non-porous surfaces well and cures permanent.');
@@ -1245,7 +1254,7 @@ function notes(s){const ink=INK[pen.ink],o=[],bead=s.repel*ink.bead;
  return o.slice(0,4)}
 const bar=v=>`<div class="bar2"><i style="width:${Math.round(v*100)}%"></i></div>`;
 function renderReact(){const list=bands.map(b=>b.s),ink=INK[pen.ink];
- $('#spec').innerHTML=`<h2>${pen.brand} ${pen.name}</h2><p class="lbl">${pen.model}</p><dl><dt>Tip</dt><dd>${pen.tip}</dd><dt>Line width</dt><dd>${pen.width}</dd><dt>Ink</dt><dd>${pen.inkLabel||ink.label}</dd>${pen.cap?`<dt>Capacity</dt><dd>${pen.cap} ml</dd>`:''}${pen.price?`<dt>Price</dt><dd>${pen.price} (shop page)</dd>`:''}${pen.body?`<dt>Body &amp; flow</dt><dd>${pen.body}</dd>`:''}${pen.bestTxt?`<dt>Maker’s surfaces</dt><dd>${pen.bestTxt}</dd>`:''}<dt>Colours here</dt><dd>${pen.colors.length}${pen.sample?' (sample set)':''}</dd></dl><ul class="notes">${pen.facts.map(f=>`<li>${f}</li>`).join('')}</ul>`+
+ $('#spec').innerHTML=`<h2>${pen.brand} ${pen.name}</h2><p class="lbl">${pen.model}</p><dl><dt>Tip</dt><dd>${pen.tip}</dd><dt>Line width</dt><dd>${pen.width}</dd><dt>Ink</dt><dd>${pen.inkLabel||ink.label}</dd><dt>Buff</dt><dd>${GHOST_TXT(pen.ink)}</dd>${pen.cap?`<dt>Capacity</dt><dd>${pen.cap} ml</dd>`:''}${pen.price?`<dt>Price</dt><dd>${pen.price} (shop page)</dd>`:''}${pen.body?`<dt>Body &amp; flow</dt><dd>${pen.body}</dd>`:''}${pen.bestTxt?`<dt>Maker’s surfaces</dt><dd>${pen.bestTxt}</dd>`:''}<dt>Colours here</dt><dd>${pen.colors.length}${pen.sample?' (sample set)':''}</dd></dl><ul class="notes">${pen.facts.map(f=>`<li>${f}</li>`).join('')}</ul>`+
   (pen.sds?`<p class="warn">${pen.sds}</p>`:'')+(pen.src?`<p class="small">Spec source: ${pen.src}</p>`:'')+
   (pen.ink==='oil'&&pen.brand==='Pentel'?`<p class="warn">Solvent paint marker — use with ventilation and keep capped.</p>`:'');
  const rows=list.map(s=>{const r=react(s);return`<tr><td>${s.name}${pen.best&&pen.best.includes(s.id)?' <b title="On the maker’s recommended list">✓</b>':''}</td><td data-l="Visibility">${bar(r.vis)}</td><td data-l="Holds when dry">${bar(r.hold)}</td><td data-l="Bleed">${bar(r.bleed)}</td><td data-l="Skips">${bar(r.skip)}</td><td class="num" data-l="Dry (sim)">${r.dry.toFixed(1)} s</td></tr>`}).join('');
