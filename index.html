@@ -195,7 +195,7 @@ td.num{text-align:right;white-space:nowrap}
   <h2>Settings</h2>
   <div class="row"><button class="btn pri" id="bookSave">Save to blackbook</button><button class="btn" id="bookOpen">Open blackbook</button><button class="btn" id="wallShare">Share wall</button></div>
   <div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button></div>
-  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (7) · wet runs + cells, ghost returns after buff</div></div>
+  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (8) · buff runs get paler each pass</div></div>
   <div class="row"><span class="lbl">Weather the wall</span><button class="btn" id="age1">+1 month</button><button class="btn" id="age12">+1 year</button></div>
   <p class="small">A simulation: widths from maker and retailer specs where marked, dry times sped up, surface physics modelled rather than measured.</p>
  </section>
@@ -712,8 +712,8 @@ function buffAt(a,b){const R2=44,D=Math.round(2*R2*dpr),t=tcan(D,'bt'),ty=inkAt(
   if(++buffN%9===0){const st=Math.random()*TAU;bx.save();bx.globalAlpha=.05*pad.load;bx.strokeStyle=pad.col;bx.lineWidth=1.1;bx.beginPath();bx.ellipse(b.x,b.y,rx*.9,ry*.8,th,st,st+Math.PI*(.5+Math.random()*.8));bx.stroke();bx.restore()}
   /* solvent runs down carrying tinted dye */
   }
- {const ci=inkCell(b.x,b.y);if(ty&&cc&&cc[0]==='#'&&DYEB[ty]>.01){const w=washG[ci]=(washG[ci]||0)+1,str=Math.exp(-(w-1)/4),base=vio&&w>2?'#6b58c9':cc,sm0=surfAt(b.x,b.y).mean,wall='#'+sm0.map(v=>Math.round(v).toString(16).padStart(2,'0')).join(''),k=Math.min(1,DYEB[ty]+.35),col=mixHex(base,wall,Math.min(.9,1-(.15+.85*str)*k));
-  if(upright){const n=Math.random()<.09*str+.012?1:0;for(let j=0;j<n;j++)drip(b.x+(Math.random()-.5)*R2*1.7,b.y+R2*(.2+Math.random()*.55),(.5+Math.random()*1.4)*(.6+str*.8),{ty:'water',col,r:(.6+Math.random()*1.4)*(.55+str*.6),delay:Math.random()*300})}}}
+ {const ci=inkCell(b.x,b.y);if(ty&&cc&&cc[0]==='#'&&DYEB[ty]>.01){/* every pass dilutes it: the first runs carry real colour, later ones are paler, thinner, see-through water */const w=washG[ci]=(washG[ci]||0)+1,str=Math.exp(-(w-1)/6),base=vio?'#7d66cf':cc,sm0=surfAt(b.x,b.y).mean,wall='#'+sm0.map(v=>Math.round(v).toString(16).padStart(2,'0')).join(''),k=Math.min(1,DYEB[ty]+.35),col=mixHex(base,wall,Math.min(.92,1-(.12+.88*str)*k*.85));
+  if(upright){const n=Math.random()<.09*str+.012?1:0;for(let j=0;j<n;j++)drip(b.x+(Math.random()-.5)*R2*1.7,b.y+R2*(.2+Math.random()*.55),(.5+Math.random()*1.4)*(.6+str*.8),{ty:'water',col,al:.25+.6*str,r:(.5+Math.random()*1)*(.5+str*.5),delay:Math.random()*300})}}}
  {
   pad.load*=.95}
  erase(idm,b,.16,R2);if(metalOn)erase(metal,b,.025,R2);if(fjOn)erase(fjL,b,.18,R2);for(const k in WET)if(WET[k].active)erase(WET[k],b,.3,R2);addWater(b,R2*1.1,.06);
