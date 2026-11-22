@@ -195,7 +195,7 @@ td.num{text-align:right;white-space:nowrap}
   <h2>Settings</h2>
   <div class="row"><button class="btn pri" id="bookSave">Save to blackbook</button><button class="btn" id="bookOpen">Open blackbook</button><button class="btn" id="wallShare">Share wall</button></div>
   <div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button></div>
-  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (13) · starve after ~1.5 tags</div></div>
+  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (15) · tap to prime, pens last longer, lighter GPU</div></div>
   <div class="row"><span class="lbl">Weather the wall</span><button class="btn" id="age1">+1 month</button><button class="btn" id="age12">+1 year</button></div>
   <p class="small">A simulation: widths from maker and retailer specs where marked, dry times sped up, surface physics modelled rather than measured.</p>
  </section>
@@ -474,7 +474,7 @@ const mk=(rf)=>{const c=document.createElement('canvas');return{c,x:c.getContext
 const bg=mk(),baked=mk(),stk=mk(),idm=mk(),tmp=mk(),rimA=mk(),rimB=mk(),ghost=mk(),tmp2=mk(),metal=mk(),shine=mk(),pool=mk(),etchL=mk(),ovl=mk(),fjL=mk();let fjOn=false;
 INK.future=Object.assign({},INK.alcohol,{label:'Colour-shifting alcohol ink',opacity:.93,bead:.15,bleed:.5,tau:.9,comp:'source-over',rem:[.04,0],drip:1.3,future:1});TAUS.future=.9;INK.solid=Object.assign({},INK.oil,{label:'Solidified paint stick',opacity:.9,bead:.05,bleed:0,tau:3,raise:.3,comp:'source-over',rem:[.05,0],drip:0,solid:1});TAUS.solid=3;INK.etch=Object.assign({},INK.alcohol,{label:'Glass etching fluid',opacity:.22,bead:.35,bleed:.05,tau:1.5,comp:'source-over',rem:[.3,.05],drip:.9,etch:1});TAUS.etch=1.5;
 /* special-ink layers stay unallocated until that ink is used (saves 5 full-screen layers of GPU memory) */
-const LAZY=[metal,shine,pool,etchL,fjL];for(const o of LAZY){o.c.width=o.c.height=0}
+const LAZY=[metal,shine,pool,etchL,fjL];/* shine is only used by Future Juice now */for(const o of LAZY){o.c.width=o.c.height=0}
 function need(o){if(o.c.width!==baked.c.width||o.c.height!==baked.c.height){o.c.width=baked.c.width;o.c.height=baked.c.height;o.x.setTransform(dpr,0,0,dpr,0,0)}return o}
 const WET={};for(const k in TAUS){WET[k]={...mk(),active:false,acc:0,until:0};WET[k].c.width=WET[k].c.height=1}
 function wetC(k){const w=WET[k];if(w.c.width!==baked.c.width||w.c.height!==baked.c.height){w.c.width=baked.c.width;w.c.height=baked.c.height;w.x.setTransform(dpr,0,0,dpr,0,0)}return w}
@@ -564,6 +564,16 @@ function friction(on,spd,s){return;if(!AC||muted)return;try{
  const sl=s.wet?0:pen.ink==='alcohol'?1:pen.valve?.35:pen.metal?0:.5,sq=on&&p.sq?p.sq*sl*clamp(spd)*(Math.random()<.55?1:.15):0;
  fr.o.frequency.setTargetAtTime(650+Math.min(spd,3)*320,t,.02);fr.og.gain.setTargetAtTime(sq*.1,t,.015)}catch(_){}}
 function tick(){return;burst(AC.currentTime,.012,900+Math.random()*300,4,.5)}
+/* TAP TO PRIME: dab the nib on the same spot. Each quick tap pushes ink into the tip — the line goes solid again,
+   and the spot you're dabbing bleeds a blot that grows with each tap. Valve markers pump (and flood if you overdo it). */
+const tapS={x:0,y:0,t:0,n:0};let saidTap=0;
+function tapPrime(){if(tool!=='draw'||!stroke||!stroke.p0||!last)return;const now=performance.now(),mvd=Math.hypot(last.x-stroke.p0.x,last.y-stroke.p0.y);if(now-downT>260||mvd>7)return;
+ const p={x:stroke.p0.x,y:stroke.p0.y};tapS.n=(now-tapS.t<800&&Math.hypot(p.x-tapS.x,p.y-tapS.y)<34)?tapS.n+1:1;tapS.x=p.x;tapS.y=p.y;tapS.t=now;
+ if(pen.empty&&!pen.fill)return;if(pen.life<=0){toast('Empty — tapping can’t prime it. Refill it or grab a new pen');return}
+ pen.drain=Math.max(0,(pen.drain||0)-2200*tapS.n);pen.tipDry=Math.max(0,pen.tipDry-.35);if(pen.flow!==undefined&&!pen.valve)pen.flow=Math.min(1,(pen.flow||.8)+.25);
+ if(pen.valve)pump(p);
+ if(!pen.metal&&!INK[pen.ink].solid&&tapS.n>=2){const s=surfAt(p.x,p.y);blob(p.x,p.y,R()*Math.min(1.6,.55+.16*tapS.n),s);if(tapS.n>=4&&upright)drip(p.x,p.y+R()*.5,.5+.25*tapS.n*(INK[pen.ink].drip||.6))}
+ if(!saidTap++)toast('Priming — dab the tip to push ink in. The line runs solid again');uiDirty=true}
 function pump(p){if(!pen.valve)return;const lf=lifeF();if(lf<=0){toast('Empty — nothing left to prime. Grab a new pen');return}
  const was=pen.flow;pen.flow=Math.min(1.5,pen.flow+.14*lf);clack();
  if(p&&stroke){if(pen.flow>1.15){blob(p.x,p.y,R()*(.9+(pen.flow-1.1)*4),surfAt(p.x,p.y));drip(p.x,p.y+R()*.6,1.4*INK[pen.ink].drip);pen.flow=Math.max(1.05,pen.flow-.12);if(!stroke.flooded){stroke.flooded=1;toast('Flooding — lift the tip')}}
@@ -591,7 +601,7 @@ addEventListener('devicemotion',e=>{const a=e.accelerationIncludingGravity;if(!a
  for(let k=0;k<4;k++)gCal.ey[k]+=(rotK(vx,vy,k).y-gCal.ey[k])*.03;
  let top=gCal.k;for(let k=0;k<4;k++)if(gCal.ey[k]>gCal.ey[top]+.3)top=k;gCal.k=top;
  const r0=rotK(vx,vy,gCal.k),gx=r0.x,gy=r0.y;if(!grav.live){grav.live=true;grav.x=gx;grav.y=gy}grav.x+=(gx-grav.x)*.08;grav.y+=(gy-grav.y)*.08;grav.m=Math.min(1,Math.hypot(grav.x,grav.y))});
-window.__rlG=()=>[gDir(),gCal.k];window.__rlD=()=>({drips:drips.length,spreads:spreads.length,cells:rainCells.length});window.__rlP=()=>({PENS,pen,openSheet,fillPen,BOTTLES});const gDir=()=>{if(!grav.live)return{x:0,y:1,m:1};const k=Math.max(0,.35-grav.m)*3,x=grav.x,y=grav.y+k,m=Math.hypot(x,y)||1e-6;return{x:x/m,y:y/m,m:Math.max(grav.m,.35)}};
+window.__rlG=()=>[gDir(),gCal.k];window.__rlD=()=>({drips:drips.length,spreads:spreads.length,cells:rainCells.length});window.__rlP=()=>({PENS,pen,openSheet,fillPen,BOTTLES,TC});const gDir=()=>{if(!grav.live)return{x:0,y:1,m:1};const k=Math.max(0,.35-grav.m)*3,x=grav.x,y=grav.y+k,m=Math.hypot(x,y)||1e-6;return{x:x/m,y:y/m,m:Math.max(grav.m,.35)}};
 function drip(x,y,vol,o){if(!upright||drips.length>(o&&o.wash?260:60)||vol<.1)return;const s=surfAt(x,y);if(s.absorb>.8)return;const ty=o?o.ty:pen.ink;
  if(o&&o.et)etchOn=true;drips.push({wash:o&&o.wash,et:o&&o.et,x,y,vol,v0:vol,wet:s.wet,t0:o&&o.delay?performance.now()+o.delay:0,al:o&&o.al,r:Math.min(1.9,o&&o.r?o.r:DYEINK[ty]?Math.max(.5,Math.min(1.3,R()*(.025+Math.random()*.05))):Math.max(.7,Math.min(1.9,R()*(.04+Math.random()*.09)))),col:o?o.col:INK[ty]&&INK[ty].etch&&ETCHABLE[s.id]?'#e4ded0':(INK[ty]&&INK[ty].future&&Math.random()<.65?color:color),ink:INK[ty],comp:o?'source-over':null,wk:o?(ty==='fluid'?'fluid':ty):pen.wet||pen.ink,id:Object.keys(INK).indexOf(ty)+1,ph:Math.random()*9})}
 const wetQ=[];
@@ -702,7 +712,7 @@ function buffAt(a,b){const R2=44,D=Math.round(2*R2*dpr),t=tcan(D,'bt'),ty=inkAt(
   if(vio){u.x.globalCompositeOperation='source-atop';u.x.globalAlpha=.78;u.x.fillStyle='#6b58c9';u.x.fillRect(0,0,D,D);u.x.globalAlpha=1}
   u.x.globalCompositeOperation='source-over';if(!ghostRet.cap){ghostRet.cap=1;const gx=ghost.x;gx.save();gx.setTransform(1,0,0,1,0,0);gx.clearRect(0,0,ghost.c.width,ghost.c.height);gx.drawImage(baked.c,0,0);gx.globalCompositeOperation='destination-in';gx.drawImage(idm.c,0,0);gx.restore()}
   if(vio)ghostRet.vio=1;ghostRet.t=performance.now();ghostRet.x0=Math.min(ghostRet.x0,X);ghostRet.y0=Math.min(ghostRet.y0,Y);ghostRet.x1=Math.max(ghostRet.x1,X+D);ghostRet.y1=Math.max(ghostRet.y1,Y+D);ghostRet.k=Math.max(ghostRet.k,(ty==='stain'||ty==='bleed')?.3:ty==='chrome'||ty==='future'?.1:ty?Math.min(.2,GH[ty]*1.2+.06):0)}
- if(metal.c.width){erase(metal,b,.45,R2*1.05);if(metalOn&&++buffN%40===0)dirty=true}if(fjL.c.width)erase(fjL,b,.45,R2*1.05);
+ if(metal.c.width){erase(metal,b,.45,R2*1.05);shineDirty=true;if(metalOn&&++buffN%40===0)dirty=true}if(fjL.c.width)erase(fjL,b,.45,R2*1.05);
  if(L>.5){smearDir(baked,a,b,.7,R2*1.05,false);smearDir(baked,a,b,.45,R2*.6,false);smearDir(idm,a,b,.5,R2*.9,false)}
  t.x.drawImage(bg.c,(b.x-R2)*dpr,(b.y-R2)*dpr,D,D,0,0,D,D);t.x.globalAlpha=g;t.x.drawImage(ghost.c,(b.x-R2)*dpr,(b.y-R2)*dpr,D,D,0,0,D,D);t.x.globalAlpha=1;soft(t.c,D/2);
  baked.x.save();baked.x.setTransform(1,0,0,1,0,0);baked.x.globalAlpha=.24;baked.x.drawImage(t.c,(b.x-R2)*dpr,(b.y-R2)*dpr);baked.x.restore();
@@ -765,7 +775,7 @@ function stamp(x,y,spd,e){const s=surfAt(x,y),ink=INK[pen.ink],f=flowNow(e),star
  if(pen.adjust&&!demo&&f>.8&&Math.random()<.022*Math.pow(pen.vs/5,2)*(1.15-fast)*(1-s.absorb))drip(x+(Math.random()-.5)*R()*.9,y+R()*.3,.6+Math.random()*.9*(pen.vs/5));
  if(s.wet&&!demo){stroke.wp=stroke.wp||[];if(!stroke.lw||Math.hypot(x-stroke.lw.x,y-stroke.lw.y)>4){stroke.lw={x,y};if(stroke.wp.length<500)stroke.wp.push({x,y})}}
  if(false&&s.wet&&!demo&&Math.random()<.018*ink.run)drip(x+(Math.random()-.5)*R()*1.4,y+R()*.42,.25+Math.random()*Math.random()*1.3);
- stk.x.fillStyle=inkPat(s,curCol(),q);tipPath(0,x,y);stk.x.fill();
+ /* smooth walls take a solid film: a flat colour fill is far cheaper on the GPU than a texture pattern */stk.x.fillStyle=SMOOTH(s)?curCol():inkPat(s,curCol(),q);tipPath(0,x,y);stk.x.fill();
  if(!demo&&DYEINK[pen.ink]){const n=stroke.sn=(stroke.sn||0)+1,ck=((x/5)|0)*4099+((y/5)|0),cm=stroke.cm||(stroke.cm=new Map()),gap=R()*2.6/Math.max(.6,pen.w*MM*.28)+10,o=cm.get(ck);if(o===undefined)cm.set(ck,n);else if(n-o>gap){tipCtx=ovl.x;ovl.x.fillStyle=inkPat(s,curCol(),q);tipPath(0,x,y);ovl.x.fill();tipCtx=null;stroke.ov=1}}if(stroke.ink.future)poolAt(x,y,R(),stroke.v);
  if(!demo&&(pen.valve||pen.squeeze)&&pressNow>.62&&f>.75&&Math.random()<.03*(pressNow-.55)*ink.drip*(1-s.absorb))drip(x+(Math.random()-.5)*R()*.8,y+R()*.35,.5+pressNow*.7);if(!stroke.lp||Math.abs(x-stroke.lp.x)+Math.abs(y-stroke.lp.y)>3){stroke.lp={x,y};(stroke.pts=stroke.pts||[]).push(x,y)}{const r=R()*3+6;stroke.x0=Math.min(stroke.x0,x-r);stroke.y0=Math.min(stroke.y0,y-r);stroke.x1=Math.max(stroke.x1,x+r);stroke.y1=Math.max(stroke.y1,y+r)}
  if(pen.squeeze&&f>.85&&!demo&&Math.random()<.012*ink.drip*(1-s.absorb))drip(x,y+R()*.4,.4+Math.random()*.6)}
@@ -797,7 +807,7 @@ function flushStreaks(cur,all){if(!stroke||!stroke.sq)return;const depth=(pen.ti
   if(q.rail>.04){const S=stroke;x.globalAlpha=clamp(q.rail*1.1);x.lineWidth=q.hw*2*(.35+.45*q.rail);x.lineCap='round';x.beginPath();x.moveTo(S.rlx===undefined?q.a.x:S.rlx,S.rlx===undefined?q.a.y:S.rly);x.lineTo(q.b.x,q.b.y);x.stroke();S.rlx=q.b.x;S.rly=q.b.y}else stroke.rlx=undefined;
   x.restore()}}
 function seg(a,b,e,dt){const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d<.01)return;
- const step=pen.tip==='chisel'?Math.max(.9,pen.th*MM*.11):Math.max(.6,pen.w*MM*(pen.dauber?.075:pen.w>12?.12:.28)),spd=d/Math.max(dt,1);
+ const step=pen.tip==='chisel'?Math.max(.9,pen.th*MM*.11):Math.max(.6,pen.w*MM*(pen.dauber?.18:pen.w>12?.12:.28)),spd=d/Math.max(dt,1);
  const ivx=dx/Math.max(dt,1),ivy=dy/Math.max(dt,1);stroke.vx=.6*stroke.vx+.4*ivx;stroke.vy=.6*stroke.vy+.4*ivy;stroke.v=Math.hypot(stroke.vx,stroke.vy);
  if(!demo){const sf=surfAt(b.x,b.y);fricS=sf;fricV=fricV*.7+spd*.3;
   if(sf.id==='shutter'||sf.id==='tiles'){const rk=sf.id==='tiles'?Math.floor(b.x/64)+','+Math.floor(b.y/64):Math.floor(b.y/11.636);if(stroke.ridge!==undefined&&rk!==stroke.ridge){tick();try{navigator.vibrate&&navigator.vibrate(4)}catch(_){}}stroke.ridge=rk}
@@ -822,7 +832,7 @@ function seg(a,b,e,dt){const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d<.01)
  streaks(a,b,pen.dauber?clamp(.45-pen.life)*1.4+clamp(.4-f)*1.4+dryT+unmix:ik.fluid?dryT+unmix+low:clamp((.32-f)*2.4)+(pen.metal?0:clamp(leanNow-.25)*.6)+(ik.solid?s2.rough*1.5:0)+dryT+unmix+low)}
  if(!demo){const s=surfAt(b.x,b.y),use=d*Math.sqrt(R()/6)*(.5+s.absorb*1.4)*(1+s.rough*.5);
   if(pen.valve){pen.flow=Math.max(0,pen.flow-use*.00012);{const tg=(pen.adjust?.45+pen.vs*.15:.8)+(pressNow-.35)*.5;if(pen.flow<tg)pen.flow+=(tg-pen.flow)*Math.min(1,d*.006)*lifeF();else if(pen.adjust&&pen.flow>tg)pen.flow=Math.max(tg,pen.flow-d*.002)}}
-  const L0=pen.life;pen.life=Math.max(0,pen.life-use/(4000*(pen.cap||10)));if(L0>.15&&pen.life<=.15)toast('Running low — the barrel is nearly empty');if(L0>0&&pen.life===0)toast('Empty. Time for a new pen');
+  const L0=pen.life;pen.life=Math.max(0,pen.life-use/(12000*(pen.cap||10)));if(L0>.15&&pen.life<=.15)toast('Running low — the barrel is nearly empty');if(L0>0&&pen.life===0)toast('Empty. Time for a new pen');
   if(!pen.metal){const F0=pen.fray;pen.fray=Math.min(1,pen.fray+d*s.rough*s.rough*Math.min(spd,3)/2600+d*(1+Math.min(spd,3)*.25)*(DYEINK[pen.ink]?6e-6:pen.dauber?2.5e-6:pen.squeeze?3e-6:4e-6)*(1+pressNow*.6));if(F0<.3&&pen.fray>=.3)toast('The tip is starting to fray');if(F0<.7&&pen.fray>=.7)toast('Tip badly frayed — lines go ragged')}}
  dirty=true}
 const chromes=[],CHQ={glass:1,plastic:.95,wplastic:.95,painted:.9,steel:.97,shutter:.5,bus:.95,mirror:1,stainless:.85,ebox:.45,tiles:.9,paper:.12};
@@ -866,7 +876,7 @@ function end(){if(!stroke)return;flushStreaks(null,true);const ink=stroke.ink,s=
  const w=wetC(pen.wet||pen.ink);w.x.save();w.x.setTransform(1,0,0,1,0,0);w.x.globalAlpha=1-s.absorb*.5;w.x.drawImage(stk.c,0,0);w.x.globalAlpha=1;w.x.globalCompositeOperation='source-in';w.x.fillStyle='#fff';w.x.fillRect(0,0,w.c.width,w.c.height);w.x.restore();
  w.active=true;w.until=performance.now()+TAUS[pen.wet||pen.ink]*4500*(s.wet?2.5:1);
  {const amt=1-s.absorb*.5,tau=TAUS[pen.wet||pen.ink]*(s.wet?2.5:1)*1.3,r=R()*1.05+2,ti=Object.keys(INK).indexOf(pen.ink)+1,col=curCol();const P=stroke.pts||[];for(let i=0;i<P.length;i+=2){markWet(P[i],P[i+1],r,amt,tau);markInk(P[i],P[i+1],r*.8,ti,col,1)}}
- {const mt0=ink.chrome||ink.future||METAL[color];if(mt0)need(metal);const mx=metal.x;mx.save();mx.setTransform(1,0,0,1,0,0);const mt=ink.chrome||ink.future||METAL[color];mx.globalCompositeOperation=mt?'source-over':'destination-out';if(mt)mx.globalAlpha=ink.chrome?1:ink.future?.2:.85;mx.drawImage(stk.c,0,0);mx.restore();if(mt)metalOn=true}
+ {const mt0=ink.chrome||ink.future||METAL[color];if(mt0)need(metal);const mx=metal.x;mx.save();mx.setTransform(1,0,0,1,0,0);const mt=ink.chrome||ink.future||METAL[color];mx.globalCompositeOperation=mt?'source-over':'destination-out';if(mt)mx.globalAlpha=ink.chrome?1:ink.future?.2:.85;mx.drawImage(stk.c,0,0);mx.restore();if(mt)metalOn=true;shineDirty=true}
  if(DYEINK[pen.ink]&&ink.comp!=='multiply'){const o=ovl.x;o.save();o.setTransform(1,0,0,1,0,0);o.clearRect(0,0,ovl.c.width,ovl.c.height);o.drawImage(stk.c,0,0);o.globalCompositeOperation='destination-in';o.drawImage(idm.c,0,0);o.restore();bx.save();bx.setTransform(1,0,0,1,0,0);bx.globalCompositeOperation='multiply';bx.globalAlpha=.3;bx.drawImage(ovl.c,0,0);bx.restore();o.save();o.setTransform(1,0,0,1,0,0);o.clearRect(0,0,ovl.c.width,ovl.c.height);o.restore()}
  const id=Object.keys(INK).indexOf(pen.ink)+1,sx=stk.x;sx.save();sx.setTransform(1,0,0,1,0,0);sx.globalCompositeOperation='source-in';sx.fillStyle=`rgb(${id*20},0,0)`;sx.fillRect(0,0,stk.c.width,stk.c.height);sx.restore();
  idm.x.save();idm.x.setTransform(1,0,0,1,0,0);idm.x.drawImage(stk.c,0,0);idm.x.restore();
@@ -941,7 +951,7 @@ const mv=e=>{if(e.type==='pointermove'&&RAW&&down&&e.pointerId===downId&&tool===
 cv.addEventListener('pointermove',mv);if(RAW)cv.addEventListener('pointerrawupdate',mv);
 const up=e=>{livePt=predPt=null;ptrs.delete(e.pointerId);if(twist&&ptrs.size<2){twist=null;dirty=true;return}
  if(!down||e.pointerId!==downId)return;down=false;friction(false,0,cur);if(tool==='draw'){if(stroke&&!demo)feedEnd();if(stroke&&last&&!demo&&INK[pen.ink].fluid){const tap=stroke.x1-stroke.x0<4&&stroke.y1-stroke.y0<4;tipScale=tap?1.45:1.15;stamp(last.x,last.y,0,null);tipScale=1}
- else if(stroke&&last&&!demo){if(performance.now()-lastMove>450&&!pen.metal&&!INK[pen.ink].solid&&flowNow(null)>.45){tipScale=1.05;stamp(last.x,last.y,0,null);tipScale=1}flick()}end();save()}prepSnap()};
+ else if(stroke&&last&&!demo){tapPrime();if(performance.now()-lastMove>450&&!pen.metal&&!INK[pen.ink].solid&&flowNow(null)>.45){tipScale=1.05;stamp(last.x,last.y,0,null);tipScale=1}flick()}end();save()}prepSnap()};
 function flick(){const v=stroke.v;if(v<.45||performance.now()-lastMove>70)return;
  /* lifting off while moving: a short, blunt, dry tail — the nib leaves the wall fast, it doesn't draw a needle */
  const len=Math.min(R()*1.6+6,v*9),ux=stroke.vx/v,uy=stroke.vy/v,n=Math.ceil(len/1.2);
@@ -1033,7 +1043,7 @@ function tideLine(p){const sc=p.sc||1,r=Math.sqrt(4*p.D*p.T),x=p.c.getContext('2
 const METAL={'#b9bdc2':'silver','#c4c8cc':'silver','#c9a24a':'gold','#a3a8ad':'silver'};
 let metalOn=false;const tilt={x:0,y:0,tx:0,ty:0};let gyro=false,gyroAsked=false,flakeC=null;
 function cloneC(c){const k=document.createElement('canvas');k.width=c.width;k.height=c.height;k.getContext('2d').drawImage(c,0,0);return k}
-function putMetal(c){if(!c&&!metal.c.width)return;if(c)need(metal);const x=metal.x;x.save();x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,metal.c.width,metal.c.height);if(c)x.drawImage(c,0,0);x.restore();metalOn=!!c;dirty=true}
+function putMetal(c){shineDirty=true;if(!c&&!metal.c.width)return;if(c)need(metal);const x=metal.x;x.save();x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,metal.c.width,metal.c.height);if(c)x.drawImage(c,0,0);x.restore();metalOn=!!c;dirty=true}
 const oriB={g:null,b:null};addEventListener('orientationchange',()=>{oriB.g=null;motB.x=null;grav.live=false;gCal.k=-1});try{screen.orientation&&screen.orientation.addEventListener('change',()=>{oriB.g=null;motB.x=null;grav.live=false;gCal.k=-1})}catch(e){}addEventListener('deviceorientation',e=>{if(e.gamma==null&&e.beta==null)return;gyro=true;sensorAt=performance.now();const g=e.gamma||0,b=e.beta||0;if(oriB.g===null){oriB.g=g;oriB.b=b}oriB.g+=(g-oriB.g)*.008;oriB.b+=(b-oriB.b)*.008;{const r=scrRot((g-oriB.g)/18,(b-oriB.b)/18);tilt.tx=Math.max(-1.5,Math.min(1.5,r.x));tilt.ty=Math.max(-1.5,Math.min(1.5,r.y))}});
 let motionOK=false,sensorAt=0,toldNoSensor=0;
 function askGyro(){if(motionOK)return;try{const D=window.DeviceOrientationEvent,M=window.DeviceMotionEvent;
@@ -1053,19 +1063,28 @@ let fjCol='#a9b03c';
 /* Future Juice is dichroic: face-on it reads violet-blue; change the viewing angle and the whole tag flips to yellow-green */
 function drawFJ(x){if(!fjOn)return;need(shine);need(fjL);const t=Math.hypot(tilt.x,tilt.y),k=sm(clamp((t-.12)/.45));if(k<.02)return;const w=shine.c.width,h=shine.c.height,sx=shine.x;sx.save();sx.setTransform(1,0,0,1,0,0);sx.globalCompositeOperation='source-over';sx.globalAlpha=1;sx.clearRect(0,0,w,h);sx.drawImage(fjL.c,0,0);sx.globalCompositeOperation='source-in';
  const g=sx.createLinearGradient(0,0,w*(.5+tilt.x*.5),h*(.5+tilt.y*.5));g.addColorStop(0,mixHex(fjCol,'#c9d43a',.35));g.addColorStop(1,mixHex(fjCol,'#6fa83a',.35));sx.fillStyle=g;sx.fillRect(0,0,w,h);sx.restore();x.save();x.globalAlpha=k;x.drawImage(shine.c,0,0);x.restore()}
-function drawShine(x){if(!metalOn)return;need(shine);need(metal);const w=shine.c.width,h=shine.c.height,sx=shine.x,a=.62,ux=Math.cos(a),uy=Math.sin(a),L=w*ux+h*uy,c=L*(.5+tilt.x*.55+tilt.y*.3);
+/* METAL SHINE: built at half resolution into one cached glint image, rebuilt only when the metal or the tilt
+   changes (max ~15/s); every other frame is a single cheap composite. Keeps the GPU from choking (black screen). */
+const shC=document.createElement('canvas'),shX=shC.getContext('2d'),gC=document.createElement('canvas'),gX=gC.getContext('2d');shC.width=shC.height=gC.width=gC.height=0;
+let shineDirty=true,shT={x:9,y:9,t:0};
+function buildShine(){const w=shC.width,h=shC.height,sx=shX,a=.62,ux=Math.cos(a),uy=Math.sin(a),L=w*ux+h*uy,c=L*(.5+tilt.x*.55+tilt.y*.3);
  const band=(half)=>{const g=sx.createLinearGradient(0,0,ux*L,uy*L),per=L*.42,sd=half*.55;for(let i=0;i<=60;i++){const pos=i/60*L;let a=0;for(let k=-3;k<=3;k++){const d=pos-(c+k*per);a=Math.max(a,Math.exp(-d*d/(2*sd*sd))*(k?.75:1))}g.addColorStop(i/60,`rgba(0,0,0,${Math.min(1,a+.08).toFixed(3)})`)}return g};
- sx.save();sx.setTransform(1,0,0,1,0,0);
+ sx.save();sx.setTransform(1,0,0,1,0,0);gX.setTransform(1,0,0,1,0,0);gX.globalCompositeOperation='source-over';gX.globalAlpha=1;gX.clearRect(0,0,w,h);
  /* broad sheen in the metal's own hue */
- sx.globalCompositeOperation='source-over';sx.globalAlpha=1;sx.clearRect(0,0,w,h);sx.drawImage(metal.c,0,0);sx.globalCompositeOperation='destination-in';sx.fillStyle=band(L*.14);sx.fillRect(0,0,w,h);
- x.save();x.globalCompositeOperation='lighter';x.globalAlpha=.3;x.drawImage(shine.c,0,0);x.restore();
+ sx.globalCompositeOperation='source-over';sx.globalAlpha=1;sx.clearRect(0,0,w,h);sx.drawImage(metal.c,0,0,w,h);sx.globalCompositeOperation='destination-in';sx.fillStyle=band(L*.14);sx.fillRect(0,0,w,h);
+ gX.globalCompositeOperation='lighter';gX.globalAlpha=.3;gX.drawImage(shC,0,0);
  /* tight specular streak */
- sx.globalCompositeOperation='source-over';sx.clearRect(0,0,w,h);sx.drawImage(metal.c,0,0);sx.globalCompositeOperation='source-in';sx.fillStyle='#fff';sx.fillRect(0,0,w,h);sx.globalCompositeOperation='destination-in';sx.fillStyle=band(L*.035);sx.fillRect(0,0,w,h);
- x.save();x.globalCompositeOperation='screen';x.globalAlpha=.5;x.drawImage(shine.c,0,0);x.restore();
+ sx.globalCompositeOperation='source-over';sx.clearRect(0,0,w,h);sx.drawImage(metal.c,0,0,w,h);sx.globalCompositeOperation='source-in';sx.fillStyle='#fff';sx.fillRect(0,0,w,h);sx.globalCompositeOperation='destination-in';sx.fillStyle=band(L*.035);sx.fillRect(0,0,w,h);
+ gX.globalAlpha=.42;gX.drawImage(shC,0,0);
  /* metal flakes glint as the angle changes */
- sx.globalCompositeOperation='source-over';sx.clearRect(0,0,w,h);sx.drawImage(metal.c,0,0);sx.globalCompositeOperation='destination-in';const p=sx.createPattern(flakes(),'repeat');sx.translate(tilt.x*60*dpr,tilt.y*60*dpr);sx.fillStyle=p;sx.fillRect(-200*dpr,-200*dpr,w+400*dpr,h+400*dpr);sx.setTransform(1,0,0,1,0,0);sx.fillStyle=band(L*.1);sx.fillRect(0,0,w,h);
- x.save();x.globalCompositeOperation='lighter';x.globalAlpha=.55;x.drawImage(shine.c,0,0);x.restore();
+ sx.globalCompositeOperation='source-over';sx.clearRect(0,0,w,h);sx.drawImage(metal.c,0,0,w,h);sx.globalCompositeOperation='destination-in';const p=sx.createPattern(flakes(),'repeat');sx.translate(tilt.x*30*dpr,tilt.y*30*dpr);sx.fillStyle=p;sx.fillRect(-100*dpr,-100*dpr,w+200*dpr,h+200*dpr);sx.setTransform(1,0,0,1,0,0);sx.fillStyle=band(L*.1);sx.fillRect(0,0,w,h);
+ gX.globalAlpha=.55;gX.drawImage(shC,0,0);gX.globalAlpha=1;
  sx.restore()}
+function drawShine(x){if(!metalOn||!metal.c.width)return;const w=Math.ceil(metal.c.width/2),h=Math.ceil(metal.c.height/2);
+ if(gC.width!==w||gC.height!==h){shC.width=gC.width=w;shC.height=gC.height=h;shineDirty=true}
+ const now=performance.now(),moved=Math.abs(tilt.x-shT.x)+Math.abs(tilt.y-shT.y)>.012;
+ if((shineDirty||moved)&&now-shT.t>66){buildShine();shineDirty=false;shT={x:tilt.x,y:tilt.y,t:now}}
+ x.save();x.globalCompositeOperation='lighter';x.drawImage(gC,0,0,metal.c.width,metal.c.height);x.restore()}
 
 
 /* Glass etch: eats into glass/glaze and frosts it — lives on its own layer that buffing can't touch */
