@@ -163,6 +163,21 @@ td.num{text-align:right;white-space:nowrap}
  <noscript><div style="position:fixed;inset:0;z-index:99;display:flex;align-items:center;justify-content:center;padding:24px;background:#0b0b0b;color:#eee;font:16px/1.5 -apple-system,Helvetica,Arial,sans-serif;text-align:center"><div style="max-width:440px"><h1 style="font:700 30px/1.1 -apple-system,Helvetica,Arial,sans-serif;margin:0 0 12px;letter-spacing:.02em">REACH LAB <span style="opacity:.6">by RSM</span></h1><p>This preview can’t run apps — it has JavaScript switched off.</p><p><b>On a Mac:</b> double-click the file, or right-click → Open With → Safari or Chrome.</p><p><b>On iPhone / iPad:</b> the Files preview can’t run it. Open the Reach Lab link in Claude, or open this file from a browser.</p></div></div></noscript>
 <div id="scrim"></div>
 
+ <section class="sheet" id="mixSheet" aria-label="Ink bench"><div class="grab"></div>
+  <h2>Ink bench</h2>
+  <p class="small" style="margin:0 0 10px">Mix a bottle from the ingredient types writers use, see how it'll behave, then fill an empty with it. A simulation — not a recipe.</p>
+  <span class="lbl">Base</span><div class="row" id="mxBase"><button class="btn" data-v="alcohol">Alcohol</button><button class="btn" data-v="water">Water</button><button class="btn" data-v="oil">Oil</button></div>
+  <span class="lbl">Colour from</span><div class="row" id="mxCol"><button class="btn" data-v="leather">Leather dye</button><button class="btn" data-v="marker">Marker ink</button><button class="btn" data-v="paint">Paint pigment</button><button class="btn" data-v="metal">Metal flake</button></div>
+  <div class="row" style="flex-direction:column;align-items:stretch;gap:10px">
+   <label class="small">Dye / pigment load <b id="mxPotV"></b><input type="range" id="mxPot" min="0" max="100" value="60" style="width:100%"></label>
+   <label class="small">Binder (shellac / resin) <b id="mxBindV"></b><input type="range" id="mxBind" min="0" max="100" value="25" style="width:100%"></label>
+   <label class="small">Thinner <b id="mxThinV"></b><input type="range" id="mxThin" min="0" max="100" value="35" style="width:100%"></label>
+  </div>
+  <span class="lbl">Colour</span><div class="row" id="mxSw" style="align-items:center"></div>
+  <div class="row"><label class="small" style="flex:1">Name<input id="mxName" maxlength="24" placeholder="My mix" style="width:100%;margin-top:4px;padding:10px;border-radius:10px;border:1px solid #333;background:#111;color:#eee"></label></div>
+  <div id="mxOut" class="small" style="background:#151517;border-radius:12px;padding:12px 14px;margin:6px 0 12px;line-height:1.55"></div>
+  <div class="row" style="justify-content:flex-end"><button class="btn" id="mxCancel">Cancel</button><button class="btn pri" id="mxBottle">Bottle it</button></div>
+ </section>
  <section class="sheet" id="penSheet" aria-label="Pens"><div class="grab"></div>
   <h2>Pens</h2>
   <div class="chips" id="brands" role="group" aria-label="Brand" style="margin:0 -4px 10px;padding:2px 4px"></div>
@@ -171,7 +186,7 @@ td.num{text-align:right;white-space:nowrap}
   <div class="row"><div style="width:100%"><span class="lbl">Colour</span><div class="cgrid sm" id="cgrid2"></div></div></div>
   <div class="row"><div id="angleBox"><label class="lbl" for="angle">Chisel angle <span id="angleV"></span> — or twist two fingers on the wall</label><br><input id="angle" type="range" min="0" max="180" value="40"></div></div>
   <div class="row" id="leanBox"><div><label class="lbl" for="lean">Lean <span id="leanV"></span> — a tilting stylus adds to this</label><br><input id="lean" type="range" min="0" max="60" step="5" value="0"></div></div>
-  <div class="row" id="fillBox" hidden><div style="width:100%"><span class="lbl">Fill with ink</span><div class="bottles" id="bottles"></div></div></div>
+  <div class="row" id="fillBox" hidden><div style="width:100%"><div class="row" style="justify-content:space-between;align-items:center;margin:0 0 6px"><span class="lbl">Fill with ink</span><button class="btn pri" id="mixOpen">Mix your own ink</button></div><div class="bottles" id="bottles"></div></div></div>
   <div class="row" id="vsBox" hidden><div><label class="lbl" for="vs">Flow valve: <span id="vsV"></span></label><br><input id="vs" type="range" min="1" max="5" step="1" value="3"></div></div>
   <div class="row"><button class="btn" id="flip" hidden>Flip end</button><button class="btn" id="newpen">New pen</button></div>
  </section>
@@ -196,7 +211,7 @@ td.num{text-align:right;white-space:nowrap}
   <h2>Settings</h2>
   <div class="row"><button class="btn pri" id="bookSave">Save to blackbook</button><button class="btn" id="bookOpen">Open blackbook</button><button class="btn" id="wallShare">Share wall</button></div>
   <div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button></div>
-  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (20) · new marker logo</div></div>
+  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (21) · ink bench</div></div>
   <div id="tipsBox"><div class="row" style="justify-content:space-between;align-items:center"><span class="lbl">Tips</span><button class="btn" id="tipsClear">Clear</button></div><ol id="tipsList" class="small" style="margin:0 0 12px;padding-left:20px;max-height:180px;overflow:auto;line-height:1.45"><li style="opacity:.6">Tips from your drawing show up here.</li></ol></div>
   <div class="row"><span class="lbl">Weather the wall</span><button class="btn" id="age1">+1 month</button><button class="btn" id="age12">+1 year</button></div>
   <p class="small">A simulation: widths from maker and retailer specs where marked, dry times sped up, surface physics modelled rather than measured.</p>
@@ -1183,8 +1198,35 @@ const BOTTLES=[
  {id:'garvey',brand:'Garvey',name:'XT-70 Violet',ink:'stain',colors:['#5b1fb0'],label:'Garvey Violet Price Marking Ink (XT-70) — 8 oz staining dye',note:'Price-gun marking ink. Deep violet that stains hard, runs, and ghosts violet when buffed.'},
  {id:'garveyap',brand:'Art Primo',name:'Steve Garvey Ink 2.0',ink:'stain',colors:['#4a2fd8'],label:'Steve Garvey Ink 2.0 — blue-violet stainer dye + flow enhancer, sticky resin',note:'Alcohol-based. Drippy in a mop or marker; also mixed into other inks to boost staining. Shake well.'},
  {id:'ndi',brand:'Nero d’Inferno',name:'Nuovo Nero d’Inferno',ink:'stain',colors:['#070707'],label:'Nuovo Nero d’Inferno — glossy black leather dye',note:'Glossy black, very permanent.'}];
-function fillPen(p,b,quiet){p.fill=b.id;p.ink=b.ink;p.colors=b.colors.slice();p.inkLabel=b.label;p.shake=b.shake?1:0;p.mix=b.shake?.25:1;if(!quiet){p.life=1;p.flow=.35}if(p===pen&&!quiet){color=p.colors[0];renderRack();renderColors();renderReact();renderTop();save()}}
+try{const mx=JSON.parse(localStorage.getItem('rlMixes')||'[]');for(const m of mx)if(m&&m.id&&!BOTTLES.find(b=>b.id===m.id))BOTTLES.unshift(m)}catch(_){}
+function fillPen(p,b,quiet){if(b.juice){p.sat=1+b.juice*.6;if(p.valve)p.flow=Math.min(1.5,.9+b.juice*.6)}p.fill=b.id;p.ink=b.ink;p.colors=b.colors.slice();p.inkLabel=b.label;p.shake=b.shake?1:0;p.mix=b.shake?.25:1;if(!quiet){p.life=1;p.flow=.35}if(p===pen&&!quiet){color=p.colors[0];renderRack();renderColors();renderReact();renderTop();save()}}
 function showRefills(msg){renderFill();openSheet('penSheet');const fb=$('#fillBox');if(!fb||fb.hidden)return;requestAnimationFrame(()=>{fb.scrollIntoView({block:'start',behavior:'smooth'});fb.classList.remove('pulse');void fb.offsetWidth;fb.classList.add('pulse')});if(msg)toast(msg)}
+/* ---------- INK BENCH: build a custom ink from ingredient types, mapped onto the app's ink physics ---------- */
+const MX={base:'alcohol',col:'leather',pot:60,bind:25,thin:35,c:'#5b3fb0'};const MXSW=['#111111','#5b3fb0','#c0157a','#d41f1f','#1f3fbf','#2a8a3a','#f2efe6','#a3a8ad'];
+function mixType(m){if(m.col==='metal')return 'chrome';
+ if(m.col==='paint')return m.base==='oil'?'oil':m.base==='water'?'water':'alcpaint';
+ if(m.base==='water')return 'water';
+ if(m.col==='leather'){if(m.pot>=55)return m.bind>=45?'stain':'bleed';return m.bind>=60?'flow':'alcohol'}
+ /* marker ink */ if(m.pot>=75&&m.base==='alcohol')return 'stain';return m.bind>=60?'flow':'alcohol'}
+function mixRead(m){const t=mixType(m),I=INK[t],juice=Math.max(0,(m.thin-m.bind*.5)/100),stainHue=/^#(5b3fb0|c0157a|d41f1f)$/.test(m.c);
+ const stain=t==='stain'||t==='bleed'?(m.pot/100)*(stainHue?1:.8):DYEINK[t]?.3:0;
+ const bar=v=>'▮'.repeat(Math.round(clamp(v)*5))+'▯'.repeat(5-Math.round(clamp(v)*5));
+ return {t,juice,html:`<b style="font-size:15px">${I.label}</b><br>
+ Stain&nbsp;&nbsp; ${bar(stain)} &nbsp;${stain>.7?'hard — '+(stainHue?'purple/red dyes bite deepest':'sinks right in'):stain>.3?'medium':'light'}<br>
+ Cover&nbsp;&nbsp; ${bar(m.col==='paint'||m.col==='metal'?.6+m.pot/250:I.opacity*.7)}<br>
+ Runny&nbsp; ${bar(.25+juice*.9+(I.drip||0)*.2)} &nbsp;${juice>.4?'very drippy':juice>.15?'juicy':'holds its line'}<br>
+ Dry&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${m.base==='oil'?'slow (oil)':m.base==='water'?'medium, re-wets in water':'fast (alcohol)'}${m.bind>50?' · glossy finish':''}<br>
+ Buff&nbsp;&nbsp;&nbsp;&nbsp; ${GHOST_TXT(t)}`}}
+function renderMix(){for(const [id,k] of [['#mxBase','base'],['#mxCol','col']])for(const b of document.querySelectorAll(id+' .btn'))b.setAttribute('aria-pressed',b.dataset.v===MX[k]);
+ $('#mxPotV').textContent=MX.pot+'%';$('#mxBindV').textContent=MX.bind+'%';$('#mxThinV').textContent=MX.thin+'%';
+ $('#mxSw').innerHTML=MXSW.map(c=>`<button class="sw" data-c="${c}" aria-label="${c}" aria-pressed="${c===MX.c}" style="width:40px;height:40px;border-radius:50%;border:${c===MX.c?'3px solid #ff3d1f':'2px solid #333'};background:${c}"></button>`).join('')+`<input type="color" id="mxPick" value="${MX.c}" aria-label="Any colour" style="width:44px;height:40px;border:none;background:none">`;
+ $('#mxOut').innerHTML=mixRead(MX).html}
+function openMix(){renderMix();openSheet('mixSheet')}
+function bottleMix(){const r=mixRead(MX),n=($('#mxName').value||'').trim()||'My mix '+(BOTTLES.filter(b=>b.brand==='Ink bench').length+1);
+ const B={id:'mix'+Date.now().toString(36),brand:'Ink bench',name:n,ink:r.t,colors:[MX.c],shake:MX.col==='paint'||MX.col==='metal'?1:0,juice:+r.juice.toFixed(2),label:`${n} — homemade: ${MX.base} base, ${({leather:'leather dye',marker:'marker ink',paint:'paint pigment',metal:'metal flake'})[MX.col]}, ${MX.pot}% load, ${MX.bind}% binder, ${MX.thin}% thinner`,note:`${INK[r.t].label}${r.juice>.15?' · juicy':''}`};
+ BOTTLES.unshift(B);try{const mx=JSON.parse(localStorage.getItem('rlMixes')||'[]');mx.unshift(B);localStorage.setItem('rlMixes',JSON.stringify(mx.slice(0,20)))}catch(_){}
+ if(pen.empty){fillPen(pen,B);toast(`${n} bottled and loaded into the ${pen.name}`)}else toast(`${n} bottled — pick an empty marker to fill it`);
+ closeSheets();if(pen.empty)setTimeout(()=>{renderFill()},0)}
 function renderFill(){const box=$('#fillBox');if(!box)return;box.hidden=!pen.empty;if(!pen.empty)return;
  $('#bottles').innerHTML=BOTTLES.map(b=>`<button class="bt" data-bt="${b.id}" aria-pressed="${pen.fill===b.id}"><i style="background:${b.colors[0]}"></i><b>${b.brand} ${b.name}</b><span>${b.note}</span></button>`).join('')}
 /* Future Juice: thin, fast ink dries to a surface-dependent colour; pooled ink stays violet-blue */
@@ -1233,7 +1275,7 @@ function goSurface(a,b,c){const r=goSurfaceInner(a,b,c);prepSnap();return r}
 function goSurfaceInner(s){if(s===cur)return;for(const L of bleedL){const g=baked.x;g.save();g.setTransform(1,0,0,1,0,0);g.globalAlpha=L.a;g.drawImage(L.c,L.x,L.y);g.restore();freeC(L.c)}bleedL.length=0;wetQ.length=0;chromes.forEach(finChrome);chromes.length=0;const k0=bkey();freeBoard(boards[k0]);boards[k0]=snap();recent.unshift(k0);for(const id of recent.splice(6))if(!recent.includes(id))delete boards[id];
 cur=s;resetBoard();const b=boards[bkey()];if(b){for(const [o,c] of [[baked,b[0]],[idm,b[1]]]){o.x.save();o.x.setTransform(1,0,0,1,0,0);o.x.drawImage(c,0,0);o.x.restore()}if(b[2]&&b[2].length===inkG.length){inkG.set(b[2]);colG=b[3]}putMetal(b[4]);putFJ(b[6]);putEtch(b[5])}
  renderSurfs();renderReact();save();dirty=true}
-const sheets=['penSheet','surfSheet','moreSheet','infoSheet','bookSheet','colorSheet'];
+const sheets=['penSheet','surfSheet','moreSheet','infoSheet','bookSheet','colorSheet','mixSheet'];
 function openSheet(id){$('#'+id).scrollTop=0;for(const x of sheets)$('#'+x).classList.toggle('open',x===id);$('#scrim').classList.add('on')}
 (()=>{let y0=null,el=null;document.addEventListener('touchstart',e=>{const sh=e.target.closest&&e.target.closest('.sheet.open');if(!sh||sh.scrollTop>0){y0=null;return}el=sh;y0=e.touches[0].clientY},{passive:true});document.addEventListener('touchmove',e=>{if(y0===null||!el)return;const d=e.touches[0].clientY-y0;if(d>0&&el.scrollTop<=0){el.style.transition='none';el.style.transform=`translateY(${d}px)`}},{passive:true});document.addEventListener('touchend',e=>{if(y0===null||!el)return;const d=(e.changedTouches[0]||{}).clientY-y0;el.style.transition='';el.style.transform='';if(d>90)closeSheets();y0=null;el=null})})();
 function closeSheets(){for(const x of sheets)$('#'+x).classList.remove('open');$('#scrim').classList.remove('on')}
@@ -1311,6 +1353,11 @@ $('#prevS').addEventListener('click',()=>step(-1));$('#nextS').addEventListener(
 $('#sName').addEventListener('click',()=>openSheet('surfSheet'));
 $('#penBtn').addEventListener('click',()=>openSheet('penSheet'));
 $('#infoBtn').addEventListener('click',()=>{renderReact();openSheet('infoSheet')});
+$('#mixOpen').addEventListener('click',e=>{e.stopPropagation();openMix()});
+$('#mxCancel').addEventListener('click',()=>{closeSheets();openSheet('penSheet')});$('#mxBottle').addEventListener('click',bottleMix);
+for(const [id,k] of [['#mxBase','base'],['#mxCol','col']])$(id).addEventListener('click',e=>{const b=e.target.closest('.btn');if(!b)return;MX[k]=b.dataset.v;renderMix()});
+for(const [id,k] of [['#mxPot','pot'],['#mxBind','bind'],['#mxThin','thin']])$(id).addEventListener('input',e=>{MX[k]=+e.target.value;renderMix()});
+$('#mxSw').addEventListener('click',e=>{const b=e.target.closest('.sw');if(!b)return;MX.c=b.dataset.c;renderMix()});$('#mxSw').addEventListener('input',e=>{if(e.target.id==='mxPick'){MX.c=e.target.value;$('#mxOut').innerHTML=mixRead(MX).html}});
 $('#moreBtn').addEventListener('click',()=>{$('#moreBtn').classList.remove('newtip');openSheet('moreSheet')});
 $('#tipsClear').addEventListener('click',()=>{tips.length=0;$('#tipsList').innerHTML='<li style="opacity:.6">Tips from your drawing show up here.</li>'});
 for(const ev of ['pointerdown','pointerup'])cv.addEventListener(ev,()=>{canvasT=performance.now()},true);
