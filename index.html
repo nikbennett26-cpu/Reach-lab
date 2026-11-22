@@ -195,7 +195,7 @@ td.num{text-align:right;white-space:nowrap}
   <h2>Settings</h2>
   <div class="row"><button class="btn pri" id="bookSave">Save to blackbook</button><button class="btn" id="bookOpen">Open blackbook</button><button class="btn" id="wallShare">Share wall</button></div>
   <div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button></div>
-  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (10) · longer wet bleed</div></div>
+  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (11) · blunt stroke ends</div></div>
   <div class="row"><span class="lbl">Weather the wall</span><button class="btn" id="age1">+1 month</button><button class="btn" id="age12">+1 year</button></div>
   <p class="small">A simulation: widths from maker and retailer specs where marked, dry times sped up, surface physics modelled rather than measured.</p>
  </section>
@@ -941,8 +941,9 @@ const up=e=>{livePt=predPt=null;ptrs.delete(e.pointerId);if(twist&&ptrs.size<2){
  if(!down||e.pointerId!==downId)return;down=false;friction(false,0,cur);if(tool==='draw'){if(stroke&&!demo)feedEnd();if(stroke&&last&&!demo&&INK[pen.ink].fluid){const tap=stroke.x1-stroke.x0<4&&stroke.y1-stroke.y0<4;tipScale=tap?1.45:1.15;stamp(last.x,last.y,0,null);tipScale=1}
  else if(stroke&&last&&!demo){if(performance.now()-lastMove>450&&!pen.metal&&!INK[pen.ink].solid&&flowNow(null)>.45){tipScale=1.05;stamp(last.x,last.y,0,null);tipScale=1}flick()}end();save()}prepSnap()};
 function flick(){const v=stroke.v;if(v<.45||performance.now()-lastMove>70)return;
- const len=Math.min(110,v*48),ux=stroke.vx/v,uy=stroke.vy/v,n=Math.ceil(len/1.2);
- for(let i=1;i<=n;i++){const k=i/n,k0=(i-1)/n;tipScale=Math.max(.08,1-k*.92);stamp(last.x+ux*len*k,last.y+uy*len*k,v,null);streaks({x:last.x+ux*len*k0,y:last.y+uy*len*k0},{x:last.x+ux*len*k,y:last.y+uy*len*k},k*k*1.1)}
+ /* lifting off while moving: a short, blunt, dry tail — the nib leaves the wall fast, it doesn't draw a needle */
+ const len=Math.min(R()*1.6+6,v*9),ux=stroke.vx/v,uy=stroke.vy/v,n=Math.ceil(len/1.2);
+ for(let i=1;i<=n;i++){const k=i/n,k0=(i-1)/n;tipScale=Math.max(.55,1-k*.45);stamp(last.x+ux*len*k,last.y+uy*len*k,v,null);streaks({x:last.x+ux*len*k0,y:last.y+uy*len*k0},{x:last.x+ux*len*k,y:last.y+uy*len*k},.15+k*.9)}
  tipScale=1;flickStarve=0;
  if(v>.9&&!pen.metal&&!INK[pen.ink].solid){const sp=Math.min(9,Math.round((v-.75)*7)),px2=-uy,py2=ux;stk.x.fillStyle=inkPat(stroke.s,curCol(),0);stk.x.beginPath();for(let i=0;i<sp;i++){const dd=len*(1.02+Math.random()*.55),j=(Math.random()-.5)*R()*1.6,r=.5+Math.random()*Math.max(.6,R()*.16),cx=last.x+ux*dd+px2*j,cy=last.y+uy*dd+py2*j;stk.x.moveTo(cx+r,cy);stk.x.arc(cx,cy,r,0,TAU);const r2=r*.5;stk.x.moveTo(cx+ux*r*2.2+r2,cy+uy*r*2.2);stk.x.arc(cx+ux*r*2.2,cy+uy*r*2.2,r2,0,TAU)}stk.x.fill();stroke.x1=Math.max(stroke.x1,last.x+ux*len*1.6+20);stroke.x0=Math.min(stroke.x0,last.x+ux*len*1.6-20);stroke.y1=Math.max(stroke.y1,last.y+uy*len*1.6+20);stroke.y0=Math.min(stroke.y0,last.y+uy*len*1.6-20)}
  dirty=true}
