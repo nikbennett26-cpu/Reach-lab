@@ -195,7 +195,7 @@ td.num{text-align:right;white-space:nowrap}
   <h2>Settings</h2>
   <div class="row"><button class="btn pri" id="bookSave">Save to blackbook</button><button class="btn" id="bookOpen">Open blackbook</button><button class="btn" id="wallShare">Share wall</button></div>
   <div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button></div>
-  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (2) · thin drips, small beads</div></div>
+  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (3) · natural streaks</div></div>
   <div class="row"><span class="lbl">Weather the wall</span><button class="btn" id="age1">+1 month</button><button class="btn" id="age12">+1 year</button></div>
   <p class="small">A simulation: widths from maker and retailer specs where marked, dry times sped up, surface physics modelled rather than measured.</p>
  </section>
@@ -588,7 +588,7 @@ addEventListener('devicemotion',e=>{const a=e.accelerationIncludingGravity;if(!a
  for(let k=0;k<4;k++)gCal.ey[k]+=(rotK(vx,vy,k).y-gCal.ey[k])*.03;
  let top=gCal.k;for(let k=0;k<4;k++)if(gCal.ey[k]>gCal.ey[top]+.3)top=k;gCal.k=top;
  const r0=rotK(vx,vy,gCal.k),gx=r0.x,gy=r0.y;if(!grav.live){grav.live=true;grav.x=gx;grav.y=gy}grav.x+=(gx-grav.x)*.08;grav.y+=(gy-grav.y)*.08;grav.m=Math.min(1,Math.hypot(grav.x,grav.y))});
-window.__rlG=()=>[gDir(),gCal.k];window.__rlD=()=>({drips:drips.length,spreads:spreads.length,cells:rainCells.length});window.__rlP=()=>({PENS,pen,openSheet});const gDir=()=>{if(!grav.live)return{x:0,y:1,m:1};const k=Math.max(0,.35-grav.m)*3,x=grav.x,y=grav.y+k,m=Math.hypot(x,y)||1e-6;return{x:x/m,y:y/m,m:Math.max(grav.m,.35)}};
+window.__rlG=()=>[gDir(),gCal.k];window.__rlD=()=>({drips:drips.length,spreads:spreads.length,cells:rainCells.length});window.__rlP=()=>({PENS,pen,openSheet,fillPen,BOTTLES});const gDir=()=>{if(!grav.live)return{x:0,y:1,m:1};const k=Math.max(0,.35-grav.m)*3,x=grav.x,y=grav.y+k,m=Math.hypot(x,y)||1e-6;return{x:x/m,y:y/m,m:Math.max(grav.m,.35)}};
 function drip(x,y,vol,o){if(!upright||drips.length>(rainSet.has(cur.id)?160:60)||vol<.1)return;const s=surfAt(x,y);if(s.absorb>.8)return;const ty=o?o.ty:pen.ink;
  if(o&&o.et)etchOn=true;drips.push({et:o&&o.et,x,y,vol,v0:vol,wet:s.wet,t0:o&&o.delay?performance.now()+o.delay:0,al:o&&o.al,r:Math.min(1.9,o&&o.r?o.r:DYEINK[ty]?Math.max(.5,Math.min(1.3,R()*(.025+Math.random()*.05))):Math.max(.7,Math.min(1.9,R()*(.04+Math.random()*.09)))),col:o?o.col:INK[ty]&&INK[ty].etch&&ETCHABLE[s.id]?'#e4ded0':(INK[ty]&&INK[ty].future&&Math.random()<.65?color:color),ink:INK[ty],comp:o?'source-over':null,wk:o?(ty==='fluid'?'fluid':ty):pen.wet||pen.ink,id:Object.keys(INK).indexOf(ty)+1,ph:Math.random()*9})}
 const wetQ=[];
@@ -735,9 +735,14 @@ function streaks(a,b,sv){if(!stroke||!stroke.gaps)return;const dx=b.x-a.x,dy=b.y
 function flushStreaks(cur,all){if(!stroke||!stroke.sq)return;const depth=(pen.tip==='chisel'?Math.max(pen.w,pen.th):pen.w)*MM*.6+2,x=stk.x;
  while(stroke.sq.length&&(all||Math.hypot(stroke.sq[0].b.x-cur.x,stroke.sq[0].b.y-cur.y)>depth)){const q=stroke.sq.shift();
   if(q.sv<.1){for(const g of stroke.gaps)g.lx=undefined;continue}
-  x.save();x.globalCompositeOperation='destination-out';x.lineCap='butt';x.lineJoin='round';
-  for(const g of stroke.gaps){const o=g.o*q.hw*.94,ex=q.b.x+q.nx*o,ey=q.b.y+q.ny*o,sx=g.lx===undefined?q.a.x+q.nx*o:g.lx,sy=g.lx===undefined?q.a.y+q.ny*o:g.ly;g.lx=ex;g.ly=ey;
-   x.globalAlpha=clamp(q.sv*1.5*g.s);x.lineWidth=Math.max(.5,g.w*(.5+q.sv*2));x.beginPath();x.moveTo(sx,sy);x.lineTo(ex,ey);x.stroke()}
+  /* streaks wander, swell and fade along the stroke like real starved/unshaken ink; erased at full strength
+     with round caps so overlapping pieces never double up into a hatch pattern */
+  x.save();x.globalCompositeOperation='destination-out';x.lineCap='round';x.lineJoin='round';x.globalAlpha=1;
+  const sl=Math.hypot(q.b.x-q.a.x,q.b.y-q.a.y);
+  for(const g of stroke.gaps){if(g.ph===undefined){g.ph=Math.random()*6.283;g.f1=1/(18+Math.random()*30);g.f2=1/(30+Math.random()*50);g.dist=0}g.dist+=sl;
+   const o=clamp(g.o+.22*Math.sin(g.dist*g.f1+g.ph),-1,1)*q.hw*.92,ex=q.b.x+q.nx*o,ey=q.b.y+q.ny*o,sx=g.lx===undefined?q.a.x+q.nx*o:g.lx,sy=g.lx===undefined?q.a.y+q.ny*o:g.ly;g.lx=ex;g.ly=ey;
+   const fade=Math.max(0,Math.sin(g.dist*g.f2+g.ph*1.7)*.6+.4),w=g.w*(.25+q.sv*1.3)*g.s*fade;if(w<.35)continue;
+   x.lineWidth=Math.min(q.hw*.5,w);x.beginPath();x.moveTo(sx,sy);x.lineTo(ex,ey);x.stroke()}
   if(q.rail>.04){const S=stroke;x.globalAlpha=clamp(q.rail*1.1);x.lineWidth=q.hw*2*(.35+.45*q.rail);x.lineCap='round';x.beginPath();x.moveTo(S.rlx===undefined?q.a.x:S.rlx,S.rlx===undefined?q.a.y:S.rly);x.lineTo(q.b.x,q.b.y);x.stroke();S.rlx=q.b.x;S.rly=q.b.y}else stroke.rlx=undefined;
   x.restore()}}
 function seg(a,b,e,dt){const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d<.01)return;
