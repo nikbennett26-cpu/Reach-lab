@@ -195,7 +195,7 @@ td.num{text-align:right;white-space:nowrap}
   <h2>Settings</h2>
   <div class="row"><button class="btn pri" id="bookSave">Save to blackbook</button><button class="btn" id="bookOpen">Open blackbook</button><button class="btn" id="wallShare">Share wall</button></div>
   <div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button></div>
-  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (6) · wet wash, stain dries violet, clean buff</div></div>
+  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (7) · wet runs + cells, ghost returns after buff</div></div>
   <div class="row"><span class="lbl">Weather the wall</span><button class="btn" id="age1">+1 month</button><button class="btn" id="age12">+1 year</button></div>
   <p class="small">A simulation: widths from maker and retailer specs where marked, dry times sped up, surface physics modelled rather than measured.</p>
  </section>
@@ -592,7 +592,7 @@ addEventListener('devicemotion',e=>{const a=e.accelerationIncludingGravity;if(!a
  let top=gCal.k;for(let k=0;k<4;k++)if(gCal.ey[k]>gCal.ey[top]+.3)top=k;gCal.k=top;
  const r0=rotK(vx,vy,gCal.k),gx=r0.x,gy=r0.y;if(!grav.live){grav.live=true;grav.x=gx;grav.y=gy}grav.x+=(gx-grav.x)*.08;grav.y+=(gy-grav.y)*.08;grav.m=Math.min(1,Math.hypot(grav.x,grav.y))});
 window.__rlG=()=>[gDir(),gCal.k];window.__rlD=()=>({drips:drips.length,spreads:spreads.length,cells:rainCells.length});window.__rlP=()=>({PENS,pen,openSheet,fillPen,BOTTLES});const gDir=()=>{if(!grav.live)return{x:0,y:1,m:1};const k=Math.max(0,.35-grav.m)*3,x=grav.x,y=grav.y+k,m=Math.hypot(x,y)||1e-6;return{x:x/m,y:y/m,m:Math.max(grav.m,.35)}};
-function drip(x,y,vol,o){if(!upright||drips.length>(rainSet.has(cur.id)?160:60)||vol<.1)return;const s=surfAt(x,y);if(s.absorb>.8)return;const ty=o?o.ty:pen.ink;
+function drip(x,y,vol,o){if(!upright||drips.length>(o&&o.wash?260:60)||vol<.1)return;const s=surfAt(x,y);if(s.absorb>.8)return;const ty=o?o.ty:pen.ink;
  if(o&&o.et)etchOn=true;drips.push({et:o&&o.et,x,y,vol,v0:vol,wet:s.wet,t0:o&&o.delay?performance.now()+o.delay:0,al:o&&o.al,r:Math.min(1.9,o&&o.r?o.r:DYEINK[ty]?Math.max(.5,Math.min(1.3,R()*(.025+Math.random()*.05))):Math.max(.7,Math.min(1.9,R()*(.04+Math.random()*.09)))),col:o?o.col:INK[ty]&&INK[ty].etch&&ETCHABLE[s.id]?'#e4ded0':(INK[ty]&&INK[ty].future&&Math.random()<.65?color:color),ink:INK[ty],comp:o?'source-over':null,wk:o?(ty==='fluid'?'fluid':ty):pen.wet||pen.ink,id:Object.keys(INK).indexOf(ty)+1,ph:Math.random()*9})}
 const wetQ=[];
 function wetReact(rc,gain=1){const FW=baked.c.width,FH=baked.c.height,keys=Object.keys(INK);let id,bk;
@@ -657,7 +657,19 @@ function wetWash(s,ink,col){if(ink.solid||ink.fluid||ink.etch)return;
  mx.globalAlpha=1;mx.globalCompositeOperation='destination-in';mx.drawImage(cm,0,0);freeC(cm);
  mx.globalCompositeOperation='source-in';mx.fillStyle=DYEINK[pen.ink]?col:mixHex(col,'#ffffff',lum(hex(col))<.3?.08:.15);mx.fillRect(0,0,w,h);mx.globalCompositeOperation='source-over';
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${1.2*P}px)`;x.drawImage(m,0,0);x.filter='none'}catch(_){x.drawImage(m,0,0)}freeC(m);
- const now=performance.now();bleedL.push({c,x:x0,y:y0,t0:now+250,dur:2800,a:DYEINK[pen.ink]?.75:.6});
+ const now=performance.now();bleedL.push({c,x:x0,y:y0,t0:now+250,dur:2800,a:DYEINK[pen.ink]?.6:.45});
+ const stainy=(pen.ink==='stain'||pen.ink==='bleed')&&lum(hex(col))<.3,dcol=stainy?(pen.ink==='bleed'?'#6a46c4':'#5b3fb0'):col,Pt=stroke.pts||[],rr=R();
+ /* dense curtain of short runs hanging off the strokes, plus fewer long thin runs that reach far down (photo 1 & 2) */
+ for(let i=0;i<Pt.length;i+=2){const px=Pt[i],py=Pt[i+1];
+  if(Math.random()<.24)drip(px+(Math.random()-.5)*rr*1.6,py+rr*(.2+Math.random()*.35),.15+Math.random()*.4,{ty:pen.ink,col:dcol,r:.4+Math.random()*.6,al:.7+Math.random()*.25,delay:150+Math.random()*1400,wash:1});
+  if(Math.random()<.065)drip(px+(Math.random()-.5)*rr*1.4,py+rr*(.25+Math.random()*.3),.8+Math.pow(Math.random(),1.6)*3*(ink.run||.8),{ty:pen.ink,col:dcol,r:.45+Math.random()*.55,al:.85,delay:300+Math.random()*2600,wash:1})}
+ /* the wet film pulls the ink into rounded cells: lighter pools inside with darker rims (photo 2) */
+ if(!ink.chrome&&!ink.future){const rim=document.createElement('canvas');rim.width=w;rim.height=h0;const rq=rim.getContext('2d');rq.strokeStyle=col;
+  for(let i=0;i<Pt.length;i+=2){if(Math.random()>.7)continue;const n=1+Math.round(Math.random()*2);for(let j=0;j<n;j++){const a=Math.random()*TAU,d=Math.random()*rr*.55,cr=(rr*(.18+Math.random()*.3))*P,cx=(Pt[i]+Math.cos(a)*d)*P-x0,cy=(Pt[i+1]+Math.sin(a)*d)*P-y0;
+   rq.globalAlpha=.55;rq.lineWidth=Math.max(1,cr*.22);rq.beginPath();rq.arc(cx,cy,cr,0,TAU);rq.stroke();rq.globalAlpha=.32;rq.fillStyle=mixHex(col,'#ffffff',.35);rq.beginPath();rq.arc(cx,cy,cr*.82,0,TAU);rq.fill()}}
+  /* light pools: wall showing through the thinned ink, only inside the mark */
+  const pools=document.createElement('canvas');pools.width=w;pools.height=h0;const pq=pools.getContext('2d');pq.drawImage(rim,0,0);pq.globalCompositeOperation='destination-in';pq.drawImage(stk.c,x0,y0,w,h0,0,0,w,h0);
+  freeC(rim);bleedL.push({c:pools,x:x0,y:y0,t0:now+600,dur:2200,a:DYEINK[pen.ink]?.9:.6})}
  /* the mark loses a little ink to the water: the wall shows back through slightly */
  const f2=document.createElement('canvas');f2.width=w;f2.height=h0;const fx=f2.getContext('2d');fx.drawImage(bg.c,x0,y0,w,h0,0,0,w,h0);fx.globalCompositeOperation='destination-in';fx.drawImage(stk.c,x0,y0,w,h0,0,0,w,h0);
  bleedL.push({c:f2,x:x0,y:y0,t0:now+250,dur:2400,a:DYEINK[pen.ink]?.3:.2});
@@ -668,6 +680,13 @@ function stainDry(){if(!(pen.ink==='stain'||pen.ink==='bleed')||lum(hex(color))>
  const P=dpr,x0=Math.max(0,Math.floor(stroke.x0*P)),y0=Math.max(0,Math.floor(stroke.y0*P)),w=Math.min(stk.c.width-x0,Math.ceil((stroke.x1-stroke.x0)*P)),h=Math.min(stk.c.height-y0,Math.ceil((stroke.y1-stroke.y0)*P));if(w<2||h<2)return;
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${.8*P}px)`}catch(_){}x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.filter='none';x.globalCompositeOperation='source-in';x.fillStyle=pen.ink==='bleed'?'#4a2f90':'#3b2a7c';x.fillRect(0,0,w,h);
  bleedL.push({c,x:x0,y:y0,t0:performance.now()+TAUS[pen.ink]*1400,dur:5000,a:.4})}
+/* after you stop buffing, the dye works back up through the wipe: a fainter ghost of the tag returns */
+const ghostRet={t:0,x0:1e9,y0:1e9,x1:-1,y1:-1,k:0,cap:0,vio:0};
+setInterval(()=>{if(!ghostRet.t||performance.now()-ghostRet.t<1400||down)return;const x0=Math.max(0,Math.floor(ghostRet.x0)),y0=Math.max(0,Math.floor(ghostRet.y0)),w=Math.min(ghost.c.width,Math.ceil(ghostRet.x1))-x0,h=Math.min(ghost.c.height,Math.ceil(ghostRet.y1))-y0,k=ghostRet.k;
+ const vio=ghostRet.vio;ghostRet.t=0;ghostRet.x0=ghostRet.y0=1e9;ghostRet.x1=ghostRet.y1=-1;ghostRet.k=0;ghostRet.cap=0;ghostRet.vio=0;if(w<4||h<4||k<.02)return;
+ const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${1.4*dpr}px)`}catch(_){}x.drawImage(ghost.c,x0,y0,w,h,0,0,w,h);x.filter='none';if(vio){try{const im=x.getImageData(0,0,w,h),d=im.data;for(let i=0;i<d.length;i+=4){if(!d[i+3])continue;const l=(d[i]+d[i+1]+d[i+2])/765;if(l<.22){const t=.8;d[i]=d[i]*(1-t)+91*t;d[i+1]=d[i+1]*(1-t)+63*t;d[i+2]=d[i+2]*(1-t)+176*t}}x.putImageData(im,0,0)}catch(_){}}
+ const g=ghost.x;g.save();g.setTransform(1,0,0,1,0,0);g.clearRect(x0,y0,w,h);g.restore();
+ bleedL.push({c,x:x0,y:y0,t0:performance.now()+300,dur:4500,a:k});if(!saidGhost++)toast('The tag is ghosting back through the buff')},500);
 let saidGhost=0;const buffC={};
 function runBleed(now){if(!bleedQ.length)return;const bx=baked.x;
  for(let i=bleedQ.length-1;i>=0;i--){const q=bleedQ[i];if(now<q.t)continue;q.t=now+220+Math.random()*120;q.k++;if(q.ghost&&q.k===1&&!saidGhost++)toast('The dye ink is ghosting back through the buff');
@@ -680,7 +699,8 @@ function addWater(p,r,amt){for(let gy=Math.max(0,Math.floor((p.y-r)/C));gy<=Math
 function buffAt(a,b){const R2=44,D=Math.round(2*R2*dpr),t=tcan(D,'bt'),ty=inkAt(b.x,b.y),cc=colG[inkCell(b.x,b.y)],vio=(ty==='stain'||ty==='bleed')&&cc&&cc[0]==='#'&&lum(hex(cc))<.18,g=ty?GH[ty]:.1,L=Math.hypot(b.x-a.x,b.y-a.y);
  {const u=tcan(D,'bu'),X=(b.x-R2)*dpr,Y=(b.y-R2)*dpr;u.x.drawImage(baked.c,X,Y,D,D,0,0,D,D);u.x.globalCompositeOperation='destination-in';u.x.drawImage(idm.c,X,Y,D,D,0,0,D,D);
   if(vio){u.x.globalCompositeOperation='source-atop';u.x.globalAlpha=.78;u.x.fillStyle='#6b58c9';u.x.fillRect(0,0,D,D);u.x.globalAlpha=1}
-  u.x.globalCompositeOperation='source-over';const gx=ghost.x;gx.save();gx.setTransform(1,0,0,1,0,0);gx.globalCompositeOperation='destination-over';gx.drawImage(u.c,X,Y);gx.restore()}
+  u.x.globalCompositeOperation='source-over';if(!ghostRet.cap){ghostRet.cap=1;const gx=ghost.x;gx.save();gx.setTransform(1,0,0,1,0,0);gx.clearRect(0,0,ghost.c.width,ghost.c.height);gx.drawImage(baked.c,0,0);gx.globalCompositeOperation='destination-in';gx.drawImage(idm.c,0,0);gx.restore()}
+  if(vio)ghostRet.vio=1;ghostRet.t=performance.now();ghostRet.x0=Math.min(ghostRet.x0,X);ghostRet.y0=Math.min(ghostRet.y0,Y);ghostRet.x1=Math.max(ghostRet.x1,X+D);ghostRet.y1=Math.max(ghostRet.y1,Y+D);ghostRet.k=Math.max(ghostRet.k,(ty==='stain'||ty==='bleed')?.3:ty==='chrome'||ty==='future'?.1:ty?Math.min(.2,GH[ty]*1.2+.06):0)}
  if(metal.c.width){erase(metal,b,.45,R2*1.05);if(metalOn&&++buffN%40===0)dirty=true}if(fjL.c.width)erase(fjL,b,.45,R2*1.05);
  if(L>.5){smearDir(baked,a,b,.7,R2*1.05,false);smearDir(baked,a,b,.45,R2*.6,false);smearDir(idm,a,b,.5,R2*.9,false)}
  t.x.drawImage(bg.c,(b.x-R2)*dpr,(b.y-R2)*dpr,D,D,0,0,D,D);t.x.globalAlpha=g;t.x.drawImage(ghost.c,(b.x-R2)*dpr,(b.y-R2)*dpr,D,D,0,0,D,D);t.x.globalAlpha=1;soft(t.c,D/2);
