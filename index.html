@@ -195,7 +195,7 @@ td.num{text-align:right;white-space:nowrap}
   <h2>Settings</h2>
   <div class="row"><button class="btn pri" id="bookSave">Save to blackbook</button><button class="btn" id="bookOpen">Open blackbook</button><button class="btn" id="wallShare">Share wall</button></div>
   <div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button></div>
-  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (17) · juiced pens drip more</div></div>
+  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (18) · dab-prime squeeze pens</div></div>
   <div class="row"><span class="lbl">Weather the wall</span><button class="btn" id="age1">+1 month</button><button class="btn" id="age12">+1 year</button></div>
   <p class="small">A simulation: widths from maker and retailer specs where marked, dry times sped up, surface physics modelled rather than measured.</p>
  </section>
@@ -525,7 +525,7 @@ const R=()=>pen.tip==='chisel'?pen.w*MM/2:pen.w*MM/2;
 const lifeF=()=>Math.min(1,pen.life/.15);
 function flowNow(e){
  if(pen.valve)return pen.flow;
- if(pen.squeeze){const sk=stroke&&stroke.sunk&&performance.now()-stroke.sunk<750?.28:1;if(e&&e.pointerType==='pen'&&e.pressure>0)return clamp(.3+e.pressure)*lifeF()*sk;return Math.min(1,.85+(performance.now()-downT)/120)*lifeF()*sk}
+ if(pen.squeeze){const sk=stroke&&stroke.sunk&&performance.now()-stroke.sunk<750?.28:1,sat=pen.sat||1,extra=Math.max(0,sat-1)*.9;if(e&&e.pointerType==='pen'&&e.pressure>0)return (clamp(.3+e.pressure)+extra)*lifeF()*sk;return (Math.min(1,.85+(performance.now()-downT)/120)+extra)*lifeF()*sk}
  return lifeF()}
 const DYEINK={alcohol:1,stain:1,bleed:1,flow:1,future:1};let tipCtx=null,saidMush=0,saidSunk=0,saidRev=0;
 let leanSet=0,leanSen=0,leanNow=0;
@@ -572,6 +572,7 @@ function tapPrime(){if(tool!=='draw'||!stroke||!stroke.p0||!last)return;const no
  if(pen.empty&&!pen.fill)return;if(pen.life<=0){toast('Empty — tapping can’t prime it. Refill it or grab a new pen');return}
  pen.drain=Math.max(0,(pen.drain||0)-2200*tapS.n);pen.tipDry=Math.max(0,pen.tipDry-.35);if(pen.flow!==undefined&&!pen.valve)pen.flow=Math.min(1,(pen.flow||.8)+.25);
  if(pen.valve)pump(p);
+ if(pen.squeeze){const s0=pen.sat||1;pen.sat=Math.min(1.6,s0+.16);if(s0<1.2&&pen.sat>=1.2)toast('Felt soaked — super juicy, it’ll drip');if(pen.sat>1.45&&upright)drip(p.x,p.y+R()*.5,.8+pen.sat)}
  if(!pen.metal&&!INK[pen.ink].solid&&tapS.n>=2){const s=surfAt(p.x,p.y);blob(p.x,p.y,R()*Math.min(1.6,.55+.16*tapS.n),s);if(tapS.n>=4&&upright)drip(p.x,p.y+R()*.5,.5+.25*tapS.n*(INK[pen.ink].drip||.6))}
  if(!saidTap++)toast('Priming — dab the tip to push ink in. The line runs solid again');uiDirty=true}
 function pump(p){if(!pen.valve)return;const lf=lifeF();if(lf<=0){toast('Empty — nothing left to prime. Grab a new pen');return}
@@ -832,7 +833,7 @@ function seg(a,b,e,dt){const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d<.01)
  stroke.acc=(stroke.acc||0)+d;let k=0;
  while(stroke.acc>=step){stroke.acc-=step;k+=step;const t=Math.min(1,k/d);stamp(a.x+dx*t,a.y+dy*t,spd,e)}
  {const f=flowNow(e),s2=surfAt(b.x,b.y),ik=INK[pen.ink],fs=clamp(spd/3);/* streaks only when the pen genuinely needs it: under-shaken (<65% mixed), starved of ink, running dry or a dried tip — never from speed */
- pen.drain=(pen.drain||0)+d;
+ pen.drain=(pen.drain||0)+d;if(pen.squeeze&&(pen.sat||1)>1)pen.sat=Math.max(1,pen.sat-d*.00035);
  /* the nib drains as you draw and refills while it's off the wall: about one and a half tags of non-stop
     drawing before it starts to starve. Felt starves a little sooner; low ink starves much sooner */
  const L0=(DYEINK[pen.ink]?4200:pen.dauber?5000:pen.valve?5600:pen.squeeze?6000:4800)*(.3+Math.min(1,pen.life)*.7),runS=clamp((pen.drain-L0)/(L0*.6))*.55,
@@ -1207,7 +1208,7 @@ function meter(id,lbl,txt,w,cls){$(id).style.width=clamp(w)*100+'%';$(id).classN
 function showMix(){if(pen.shake)meter('#mixI','#mixLbl',`Mixed ${Math.round(pen.mix*100)}%`,pen.mix,pen.mix<.5?'low':'');else meter('#mixI','#mixLbl','No mixing ball',0)}
 function showFlow(){
  if(pen.valve)meter('#flowI','#flowLbl',`Ink flow ${Math.round(pen.flow*100)}%`,pen.flow/1.5,pen.flow>1.1?'hot':pen.flow<.4?'low':'');
- else meter('#flowI','#flowLbl',pen.squeeze?'Squeeze: hold':'Felt: steady flow',.66*lifeF());
+ else if(pen.squeeze){const sat=pen.sat||1;meter('#flowI','#flowLbl',`Squeeze ${Math.round(sat*100)}%`,sat/1.6,sat>1.15?'hot':'')}else meter('#flowI','#flowLbl','Felt: steady flow',.66*lifeF());
  meter('#lifeI','#lifeLbl',`Ink left ${Math.round(pen.life*100)}%`,pen.life,pen.life<.15?'low':'');
  if(pen.tipDry>.2)meter('#frayI','#frayLbl',pen.tipDry>.7?'Tip: dried out':'Tip: drying',1-pen.tipDry,'low');else if(pen.metal)meter('#frayI','#frayLbl','Tip: metal, no wear',1);else if((pen.mush||0)>.3)meter('#frayI','#frayLbl','Tip: mushed down',1-pen.mush*.7,pen.mush>.6?'low':'');else if((pen.round||0)>.3&&pen.fray<.3)meter('#frayI','#frayLbl','Tip: corners rounded',1-pen.round*.6,pen.round>.7?'low':'');else meter('#frayI','#frayLbl',pen.fray<.05?'Tip: fresh':pen.fray<.3?'Tip: bedded in':pen.fray<.7?'Tip: fraying':'Tip: wrecked',1-pen.fray,pen.fray>.3?'low':'')}
 function showHint(){const h=[];if(pen.shake)h.push('<b>Tap the pen card</b> to shake');if(pen.valve)h.push('<b>hold the tip still</b> on the board to prime');if(pen.squeeze)h.push('<b>hold still</b> to squeeze out more'+(upright&&INK[pen.ink].drip>.5?' (it drips)':''));if(pen.ends)h.push('<b>Flip</b> switches ends');if(pen.adjust)h.push('<b>Flow valve</b> below: high flow and slow strokes drip, quick strokes stay clean');if(pen.tip==='chisel')h.push('<b>twist two fingers</b> to turn the chisel');$('#hint').innerHTML=h.join(' · ')}
