@@ -195,7 +195,7 @@ td.num{text-align:right;white-space:nowrap}
   <h2>Settings</h2>
   <div class="row"><button class="btn pri" id="bookSave">Save to blackbook</button><button class="btn" id="bookOpen">Open blackbook</button><button class="btn" id="wallShare">Share wall</button></div>
   <div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button></div>
-  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (11) · blunt stroke ends</div></div>
+  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (12) · overlaps go darker, not bright</div></div>
   <div class="row"><span class="lbl">Weather the wall</span><button class="btn" id="age1">+1 month</button><button class="btn" id="age12">+1 year</button></div>
   <p class="small">A simulation: widths from maker and retailer specs where marked, dry times sped up, surface physics modelled rather than measured.</p>
  </section>
@@ -632,7 +632,7 @@ const bleedL=[];
 function queueBleed(){if(INK[pen.ink].comp==='multiply')return;const light=lum(hex(color))>=.68,x0=Math.max(0,Math.floor(stroke.x0*dpr)),y0=Math.max(0,Math.floor(stroke.y0*dpr)),w=Math.min(stk.c.width-x0,Math.ceil((stroke.x1-stroke.x0)*dpr)),h=Math.min(stk.c.height-y0,Math.ceil((stroke.y1-stroke.y0)*dpr));if(w<2||h<2)return;
  let a,id,bk;try{a=stk.x.getImageData(x0,y0,w,h).data;id=idm.x.getImageData(x0,y0,w,h).data;bk=baked.x.getImageData(x0,y0,w,h).data}catch(_){return}
  const keys=Object.keys(INK),out=new ImageData(w,h),o=out.data;let nh=0,nd=0,nb=0;
- for(let y=0;y<h;y++)for(let x=0;x<w;x++){const j=(y*w+x)*4;if(a[j+3]<40||id[j+3]<60)continue;const ty=keys[Math.round(id[j]/20)-1],hard=ty==='stain'||ty==='bleed';
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){const j=(y*w+x)*4;if(a[j+3]<40||id[j+3]<60)continue;const ty=keys[Math.round(id[j]/20)-1],hard=(ty==='stain'||ty==='bleed')&&lum(hex(color))>=.4;/* stain only shows through a LIGHT cover; same-colour ink on ink just builds up darker */
   if(!hard&&!((ty==='alcohol'||ty==='flow')&&light))continue;const r=bk[j],g=bk[j+1],bb=bk[j+2];
   if(!hard&&!((r>g+50&&r>=bb-20)||(bb>g+30&&r>g+25)))continue;
   const gr=.5+.32*n(48,48,(x0+x)/TS,(y0+y)/TS)+.18*Math.random();
@@ -676,10 +676,11 @@ function wetWash(s,ink,col){if(ink.solid||ink.fluid||ink.etch)return;
  /* mark the run as wet ink so it dries and can be buffed like the rest */
  const r=R()*.8+2;for(let yy=stroke.y1;yy<Math.min(H,stroke.y1+L/P*.6);yy+=6)for(let xx=stroke.x0;xx<stroke.x1;xx+=8)markWet(xx,yy,r,.5,TAUS[pen.wet||pen.ink]*2)}
 /* STAIN inks (OTR 070 etc.): the dark dye dries to a violet cast over the whole mark */
-function stainDry(){if(!(pen.ink==='stain'||pen.ink==='bleed')||lum(hex(color))>.3)return;
+function stainDry(){/* new ink covers the violet cast still forming underneath, so overlaps don't double up */for(const L of bleedL)if(L.stain){const x=L.c.getContext('2d');x.save();x.globalCompositeOperation='destination-out';x.drawImage(stk.c,-L.x,-L.y);x.restore()}
+ if(!(pen.ink==='stain'||pen.ink==='bleed')||lum(hex(color))>.3)return;
  const P=dpr,x0=Math.max(0,Math.floor(stroke.x0*P)),y0=Math.max(0,Math.floor(stroke.y0*P)),w=Math.min(stk.c.width-x0,Math.ceil((stroke.x1-stroke.x0)*P)),h=Math.min(stk.c.height-y0,Math.ceil((stroke.y1-stroke.y0)*P));if(w<2||h<2)return;
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${.8*P}px)`}catch(_){}x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.filter='none';x.globalCompositeOperation='source-in';x.fillStyle=pen.ink==='bleed'?'#4a2f90':'#3b2a7c';x.fillRect(0,0,w,h);
- bleedL.push({c,x:x0,y:y0,t0:performance.now()+TAUS[pen.ink]*1400,dur:5000,a:.4})}
+ bleedL.push({c,x:x0,y:y0,t0:performance.now()+TAUS[pen.ink]*1400,dur:5000,a:.4,stain:1})}
 /* after you stop buffing, the dye works back up through the wipe: a fainter ghost of the tag returns */
 const ghostRet={t:0,x0:1e9,y0:1e9,x1:-1,y1:-1,k:0,cap:0,vio:0};
 setInterval(()=>{if(!ghostRet.t||performance.now()-ghostRet.t<1400||down)return;const x0=Math.max(0,Math.floor(ghostRet.x0)),y0=Math.max(0,Math.floor(ghostRet.y0)),w=Math.min(ghost.c.width,Math.ceil(ghostRet.x1))-x0,h=Math.min(ghost.c.height,Math.ceil(ghostRet.y1))-y0,k=ghostRet.k;
