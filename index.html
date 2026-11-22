@@ -195,7 +195,7 @@ td.num{text-align:right;white-space:nowrap}
   <h2>Settings</h2>
   <div class="row"><button class="btn pri" id="bookSave">Save to blackbook</button><button class="btn" id="bookOpen">Open blackbook</button><button class="btn" id="wallShare">Share wall</button></div>
   <div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button></div>
-  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (12) · overlaps go darker, not bright</div></div>
+  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (13) · starve after ~1.5 tags</div></div>
   <div class="row"><span class="lbl">Weather the wall</span><button class="btn" id="age1">+1 month</button><button class="btn" id="age12">+1 year</button></div>
   <p class="small">A simulation: widths from maker and retailer specs where marked, dry times sped up, surface physics modelled rather than measured.</p>
  </section>
@@ -813,9 +813,10 @@ function seg(a,b,e,dt){const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d<.01)
  stroke.acc=(stroke.acc||0)+d;let k=0;
  while(stroke.acc>=step){stroke.acc-=step;k+=step;const t=Math.min(1,k/d);stamp(a.x+dx*t,a.y+dy*t,spd,e)}
  {const f=flowNow(e),s2=surfAt(b.x,b.y),ik=INK[pen.ink],fs=clamp(spd/3);/* streaks only when the pen genuinely needs it: under-shaken (<65% mixed), starved of ink, running dry or a dried tip — never from speed */
- stroke.run=(stroke.run||0)+d;
- /* a long unbroken stroke drains the nib faster than it refills: streaky tail, recovers when you lift. Felt starves first; low ink starves sooner */
- const L0=(DYEINK[pen.ink]?260:pen.dauber?420:pen.valve?520:pen.squeeze?600:380)*Math.sqrt(Math.max(.4,R()/4))*(.35+Math.min(1,pen.life)*.65),runS=clamp((stroke.run-L0)/(L0*1.4))*.55,
+ pen.drain=(pen.drain||0)+d;
+ /* the nib drains as you draw and refills while it's off the wall: about one and a half tags of non-stop
+    drawing before it starts to starve. Felt starves a little sooner; low ink starves much sooner */
+ const L0=(DYEINK[pen.ink]?4200:pen.dauber?5000:pen.valve?5600:pen.squeeze?6000:4800)*(.3+Math.min(1,pen.life)*.7),runS=clamp((pen.drain-L0)/(L0*.6))*.55,
   wornS=pen.metal?0:clamp(pen.fray-.3)*.75;
  const unmix=(pen.shake?clamp(.65-pen.mix)*1.6:0)+runS+wornS,dryT=clamp(pen.tipDry-.3)*1.1,low=pen.life<.35?(.35-pen.life)*1.6:0;
  streaks(a,b,pen.dauber?clamp(.45-pen.life)*1.4+clamp(.4-f)*1.4+dryT+unmix:ik.fluid?dryT+unmix+low:clamp((.32-f)*2.4)+(pen.metal?0:clamp(leanNow-.25)*.6)+(ik.solid?s2.rough*1.5:0)+dryT+unmix+low)}
@@ -970,7 +971,7 @@ function frame(now){const dt=(now-prev)/1000;prev=now;if(!down&&now-lastSnapAt>9
  if(uiDirty&&now-uiT>140){uiDirty=false;uiT=now;showFlow()}if(down&&stroke&&fricS)friction(true,fricV,fricS);
  for(let i=bleedL.length-1;i>=0;i--){const L=bleedL[i];if(now-L.t0>=L.dur){const g=baked.x;g.save();g.setTransform(1,0,0,1,0,0);g.globalAlpha=L.a;g.drawImage(L.c,L.x,L.y);g.restore();bleedL.splice(i,1);freeC(L.c)}dirty=true}
  runDrips(Math.min(dt,.05));wetStep();runBlooms(now);runBleed(now);
- for(const p of PENS)if(!p.capped&&!(down&&p===pen)){p.idle=(p.idle||0)+dt;if(p.idle>15)p.tipDry=Math.min(1,p.tipDry+dt/(p.metal?400:p.squeeze?240:120))}for(let i=chromes.length-1;i>=0;i--){if(now-chromes[i].t0>=chromes[i].dur){finChrome(chromes[i]);chromes.splice(i,1)}dirty=true}if(dirty){compose();dirty=false}requestAnimationFrame(frame)}
+ for(const p of PENS){if(p.drain&&!(down&&p===pen))p.drain=Math.max(0,p.drain-dt*900)}for(const p of PENS)if(!p.capped&&!(down&&p===pen)){p.idle=(p.idle||0)+dt;if(p.idle>15)p.tipDry=Math.min(1,p.tipDry+dt/(p.metal?400:p.squeeze?240:120))}for(let i=chromes.length-1;i>=0;i--){if(now-chromes[i].t0>=chromes[i].dur){finChrome(chromes[i]);chromes.splice(i,1)}dirty=true}if(dirty){compose();dirty=false}requestAnimationFrame(frame)}
 function compose(){const x=dctx;x.save();x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='source-over';x.globalAlpha=1;x.drawImage(baked.c,0,0);if(waterOn){x.imageSmoothingEnabled=true;x.drawImage(waterCv,0,0,GW*C*dpr,GH_*C*dpr)}for(const m of mist){x.globalAlpha=.7*(1-(performance.now()-m.t0)/420);x.fillStyle='#e6f2ff';x.beginPath();x.arc(m.x*dpr,m.y*dpr,m.s*dpr,0,TAU);x.fill()}x.globalAlpha=1;for(const L of bleedL){x.globalAlpha=L.a*sm(clamp((performance.now()-L.t0)/L.dur));x.drawImage(L.c,L.x,L.y)}x.globalAlpha=1;for(const p of chromes){x.globalAlpha=sm(clamp((performance.now()-p.t0)/p.dur));x.drawImage(p.c,p.x,p.y)}x.globalAlpha=1;if(etchOn&&etchL.c.width)x.drawImage(etchL.c,0,0);drawFJ(x);drawShine(x);
  if(stroke){x.save();applyInk(x,stroke.ink,stroke.s);x.drawImage(stk.c,0,0);
   if(down&&stroke.cp&&livePt){const a=stroke.cp,b=predPt||livePt,d=Math.hypot(b.x-a.x,b.y-a.y);if(d>.5&&d<120){x.setTransform(dpr,0,0,dpr,0,0);x.fillStyle=inkPat(stroke.s,curCol(),0);tipCtx=x;const n=Math.ceil(d/Math.max(.8,R()*.5));for(let i=1;i<=n;i++){const t=i/n;tipPath(0,a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t);x.fill()}tipCtx=null;x.setTransform(1,0,0,1,0,0)}}
