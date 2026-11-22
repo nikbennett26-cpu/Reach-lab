@@ -468,6 +468,8 @@ function ensure(s){if(s.tile)return s;const c=document.createElement('canvas');c
 
 /* ---------- canvases ---------- */
 const cv=$('#cv');let dctx=null;try{dctx=cv.getContext('2d',{desynchronized:true})}catch(_){}if(!dctx)dctx=cv.getContext('2d');
+/* iPad Safari keeps a dropped canvas's memory until it is resized to zero — free them explicitly */
+const freeC=c=>{if(c&&c.width){c.width=0;c.height=0}};
 const mk=(rf)=>{const c=document.createElement('canvas');return{c,x:c.getContext('2d',rf?{willReadFrequently:true}:undefined)}};
 const bg=mk(),baked=mk(),stk=mk(),idm=mk(),tmp=mk(),rimA=mk(),rimB=mk(),ghost=mk(),tmp2=mk(),metal=mk(),shine=mk(),pool=mk(),etchL=mk(),ovl=mk(),fjL=mk();let fjOn=false;
 INK.future=Object.assign({},INK.alcohol,{label:'Colour-shifting alcohol ink',opacity:.93,bead:.15,bleed:.5,tau:.9,comp:'source-over',rem:[.04,0],drip:1.3,future:1});TAUS.future=.9;INK.solid=Object.assign({},INK.oil,{label:'Solidified paint stick',opacity:.9,bead:.05,bleed:0,tau:3,raise:.3,comp:'source-over',rem:[.05,0],drip:0,solid:1});TAUS.solid=3;INK.etch=Object.assign({},INK.alcohol,{label:'Glass etching fluid',opacity:.22,bead:.35,bleed:.05,tau:1.5,comp:'source-over',rem:[.3,.05],drip:.9,etch:1});TAUS.etch=1.5;
@@ -487,7 +489,7 @@ function layout(){
  W=w;H=h;
  for(const w of Object.values(WET)){w.c.width=w.c.height=1;w.active=false}
  for(const o of [{c:cv,x:dctx},bg,baked,stk,idm,rimA,rimB,ghost,metal,shine,pool,etchL,ovl,fjL]){o.c.width=Math.round(W*dpr);o.c.height=Math.round(H*dpr);o.x.setTransform(dpr,0,0,dpr,0,0)}
- buildBands();renderBg();initWater();baked.x.drawImage(bg.c,0,0,W,H);if(old)baked.x.drawImage(old,0,0,old.width/dpr,old.height/dpr);if(olds)for(const [o,c] of olds)o.x.drawImage(c,0,0,c.width/dpr,c.height/dpr);dirty=true}
+ buildBands();renderBg();initWater();baked.x.drawImage(bg.c,0,0,W,H);if(old)baked.x.drawImage(old,0,0,old.width/dpr,old.height/dpr);if(olds)for(const [o,c] of olds){o.x.drawImage(c,0,0,c.width/dpr,c.height/dpr);freeC(c)}freeC(old);dirty=true}
 function buildBands(){
  const list=[V(cur)];
  const rows=H>=W*.8,k=list.length;bands=list.map((s,i)=>rows?{s,x:0,y:Math.round(i*H/k),w:W,h:Math.round((i+1)*H/k)-Math.round(i*H/k)}:{s,x:Math.round(i*W/k),y:0,w:Math.round((i+1)*W/k)-Math.round(i*W/k),h:H});
@@ -509,7 +511,7 @@ const surfAt=(x,y)=>{let s=bands[bands.length-1].s;for(const b of bands)if(x>=b.
 
 /* ---------- ink patterns: ink colour with surface-height holes ---------- */
 function inkPat(s,col,q){const key=col+q;if(s.pats[key])return s.pats[key];{const ks=Object.keys(s.pats);if(ks.length>48)for(const k of ks.slice(0,24))delete s.pats[k]}
- const c=document.createElement('canvas');c.width=c.height=TS;const x=c.getContext('2d'),im=x.createImageData(TS,TS),rgb=hex(col),lo=q-.07;
+ const c=document.createElement('canvas');c.width=c.height=TS;const x=c.getContext('2d'),im=x.createImageData(TS,TS),rgb=hex(col),lo=q*1.15-.16;
  for(let k=0;k<s.h.length;k++){const a=clamp((s.h[k]-lo)/.14);im.data[k*4]=rgb[0];im.data[k*4+1]=rgb[1];im.data[k*4+2]=rgb[2];im.data[k*4+3]=255*a*a*(3-2*a)}
  x.putImageData(im,0,0);const p=stk.x.createPattern(c,'repeat');p.setTransform(new DOMMatrix([1/dpr,0,0,1/dpr,0,0]));return s.pats[key]=p}
 function inkAlpha(ink,s){if(ink.gloss)return (s.absorb>.3||lum(s.mean)>.6?.97:.8)*(s.wet?ink.wthin:1);return ink.opacity*(s.wet?ink.wthin:1)*(ink.comp!=='multiply'&&ink!==INK.oil&&ink!==INK.fluid&&ink!==INK.alcpaint&&!ink.chrome&&lum(s.mean)<.3?.88:1)}
@@ -525,7 +527,8 @@ function flowNow(e){
 const DYEINK={alcohol:1,stain:1,bleed:1,flow:1,future:1};let tipCtx=null,saidMush=0,saidSunk=0,saidRev=0;
 let leanSet=0,leanSen=0,leanNow=0;
 let curScale=1,tipScale=1,flickStarve=0,pressNow=.35,pBase=0,saidPress=0,saidSolv=0;
-function readLean(e){let l=-1;if(e.pointerType==='pen'&&(e.tiltX||e.tiltY))l=clamp(Math.hypot(e.tiltX||0,e.tiltY||0)/60);if(l>=0)leanSen=leanSen*.7+l*.3;leanNow=Math.max(leanSet,leanSen)}
+/* Apple Pencil: a normal grip already sits 30-55 deg off upright. Only a deliberate extra lean past that counts as leaning the nib. */
+function readLean(e){let l=-1;if(e.pointerType==='pen'){let tl=-1;if(typeof e.altitudeAngle==='number'&&e.altitudeAngle>0&&e.altitudeAngle<Math.PI/2+.01)tl=90-e.altitudeAngle*180/Math.PI;else if(e.tiltX||e.tiltY){const tx=Math.tan((e.tiltX||0)*Math.PI/180),ty=Math.tan((e.tiltY||0)*Math.PI/180);tl=Math.atan(Math.hypot(tx,ty))*180/Math.PI}if(tl>=0)l=clamp((tl-55)/25)}if(l>=0)leanSen=leanSen*.7+l*.3;leanNow=Math.max(leanSet,leanSen)}
 function readPress(e){if(!e)return;readLean(e);let p=-1;if(e.pointerType==='pen'&&e.pressure>0)p=e.pressure;else if(e.pointerType==='touch'){const sz=((e.width||0)+(e.height||0))/2;
  if(sz>2){if(!pBase||sz<pBase)pBase=sz;else pBase+=(sz-pBase)*.0005;p=clamp((sz/pBase-1)/.7)*.8+.2}if(e.pressure>0&&e.pressure!==.5&&e.pressure!==1)p=Math.max(p,e.pressure)}
  if(p>=0){pressNow=pressNow*.6+p*.4;if(!saidPress&&p>.65){saidPress=1;toast('Pressure picked up — press harder for fatter, wetter lines')}}}
@@ -634,7 +637,7 @@ function queueBleed(){if(INK[pen.ink].comp==='multiply')return;const light=lum(h
   o[j+3]=Math.min(255,(a[j+3]/255)*(id[j+3]/255)*255*gr)}
  if(nh+nd<30)return;const c0=document.createElement('canvas');c0.width=w;c0.height=h;c0.getContext('2d').putImageData(out,0,0);
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');
- try{x.filter=`blur(${7*dpr}px)`;x.globalAlpha=.5;x.drawImage(c0,0,0);x.filter=`blur(${1.1*dpr}px)`;x.globalAlpha=1;x.drawImage(c0,0,0);x.filter='none'}catch(_){x.drawImage(c0,0,0)}
+ try{x.filter=`blur(${7*dpr}px)`;x.globalAlpha=.5;x.drawImage(c0,0,0);x.filter=`blur(${1.1*dpr}px)`;x.globalAlpha=1;x.drawImage(c0,0,0);x.filter='none'}catch(_){x.drawImage(c0,0,0)}freeC(c0);
  const st=nh>nd?(nb>nh/2?(pen.ink==='oil'?.85:.7):.68):.38;bleedL.push({c,x:x0,y:y0,t0:performance.now()+900,dur:5500,a:st});
  setTimeout(()=>toast(nh>nd?'The stain is bleeding back up through the paint — violet, and it won’t stay hidden':'The dye underneath is bleeding up through the white'),2200)}
 let saidGhost=0;const buffC={};
@@ -704,7 +707,7 @@ function stamp(x,y,spd,e){const s=surfAt(x,y),ink=INK[pen.ink],f=flowNow(e),star
  curScale=tipScale*(pen.adjust?.9+clamp(f-.5,0,.8)*.22:1)*(pen.ink==='alcohol'&&!pen.squeeze?1-fast*.12:1)*(pen.dauber?.38+pressNow*.55:!pen.metal?.85+pressNow*.43:1)*(spd<.12&&f>.7&&s.absorb<.3&&!pen.metal?1.05:1)*(1+(pen.mush||0)*.35)*(pen.ink==='fluid'||(pen.metal&&pen.squeeze)?(stroke?(stroke.fw=(stroke.fw||1.15)*.94+(1.32-.72*clamp(((stroke.v||0)*.7+Math.min(spd,3)*.3-.06)/.9))*.06):1.15):1);
  if(!demo&&!pen.metal&&!ink.solid&&pressNow>.72){const m0=pen.mush||0;pen.mush=Math.min(1,m0+(pressNow-.72)*.0011*(1+s.rough));if(m0<.3&&pen.mush>=.3&&!saidMush++)toast('Pressing hard has mushed the nib down — lines stay fatter now')}
  if(!demo&&pen.squeeze&&!pen.dauber&&pressNow>.9&&!stroke.sunk&&performance.now()-downT>250){stroke.sunk=performance.now();blob(x,y,R()*1.7,s);if(!saidSunk++)toast('Pressed too hard — the nib sank into the body: a blot, then it starves')}
- let t=pen.ink==='fluid'?Math.round(clamp((spd-1.8)*.15)*4)/4:leanNow*(pen.metal?.05:.2)+s.rough*(.1+starve*.42+leanNow*.3)+(pen.ink==='alcohol'?s.rough*Math.min(spd/2,1)*.2:0);
+ let t=pen.ink==='fluid'?Math.round(clamp((spd-1.8)*.15)*4)/4:leanNow*(pen.metal?.05:.2)+s.rough*(starve*.42+leanNow*.3)+(pen.ink==='alcohol'?s.rough*Math.min(spd/2,1)*.08:0);
  const q=Math.min(.95,Math.round(t*12)/12);
  if(starve>.35)stroke.low=1;
  const b=ink.bleed*s.absorb+(pen.ink==='alcohol'?s.wick||0:0)+(s.wet?(1-ink.wrep)*.5:0);if(b>.03&&(stroke.n++%2===0))s.wet?bleedAt(x,y+R()*.45,R()*(1+b*1.3),b*.045,1,1.7):bleedAt(x,y,R()*(1+b*1.1),b*.05,s.gx);
@@ -750,7 +753,7 @@ function seg(a,b,e,dt){const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d<.01)
   if(pen.dirtAmt>0)pen.dirtAmt=Math.max(0,pen.dirtAmt-d*.0012);pen.idle=0;if(pen.tipDry>0)pen.tipDry=Math.max(0,pen.tipDry-d*.0035);
   if(pen.tip==='chisel'&&!pen.metal){const r0=pen.round||0;pen.round=Math.min(1,r0+d*(1+surfAt(b.x,b.y).rough*2)/(pen.ink==='oil'&&pen.valve?7000:40000));if(r0<.4&&pen.round>=.4)toast((pen.ink==='oil'&&pen.valve?'The nib is wearing — rounder and fatter now. ':'')+'The chisel corners are rounding off — thick-to-thin is fading')}}
  if(!demo){const ux=dx/d,uy=dy/d;if(stroke.pdx!==undefined&&ux*stroke.pdx+uy*stroke.pdy<-.25&&stroke.n>4)stroke.rev=30;stroke.pdx=stroke.pdx===undefined?ux:stroke.pdx*.7+ux*.3;stroke.pdy=stroke.pdy===undefined?uy:stroke.pdy*.7+uy*.3;
-  if(stroke.rev>0&&!stroke.ink.solid){stroke.rev-=d;const w=wetAt(b.x,b.y);smear(stk,a,b,.38,R()*1.05);if(w>.15)smear(baked,a,b,.55*w,R()*1.2);if(!saidRev++)toast('Going back over wet ink drags it along')}}
+  if(stroke.rev>0&&!stroke.ink.solid){stroke.rev-=d;const w=wetAt(b.x,b.y);if(w>.15){smear(baked,a,b,.55*w,R()*1.2);if(!saidRev++)toast('Going back over wet ink drags it along')}}}
  stroke.acc=(stroke.acc||0)+d;let k=0;
  while(stroke.acc>=step){stroke.acc-=step;k+=step;const t=Math.min(1,k/d);stamp(a.x+dx*t,a.y+dy*t,spd,e)}
  {const f=flowNow(e),s2=surfAt(b.x,b.y),ik=INK[pen.ink],fs=clamp(spd/3);/* streaks only when the pen genuinely needs it: under-shaken (<65% mixed), starved of ink, running dry or a dried tip — never from speed */
@@ -775,7 +778,7 @@ function makeChrome(s){const pad=4,x0=Math.max(0,Math.floor((stroke.x0-pad)*dpr)
  x.globalCompositeOperation='source-atop';x.globalAlpha=.85;x.drawImage(t,0,0);
  chromes.push({c,x:x0,y:y0,w,h,t0:performance.now(),dur:TAUS.chrome*3000,q});if(chromes.length>8)finChrome(chromes.shift());
  if(q<.5)toast(s.wet?'Water on the surface breaks the chrome — it stays dull':s.absorb>.3||s.rough>.3?'Texture is breaking the pigment alignment — dull silver':'Not enough shaking — the chrome will stay dull')}
-function finChrome(p){const b=baked.x;b.save();b.setTransform(1,0,0,1,0,0);b.drawImage(p.c,p.x,p.y);b.restore()}
+function finChrome(p){const b=baked.x;b.save();b.setTransform(1,0,0,1,0,0);b.drawImage(p.c,p.x,p.y);b.restore();freeC(p.c)}
 function ruinChrome(pt){const X=pt.x*dpr,Y=pt.y*dpr;for(let i=chromes.length-1;i>=0;i--){const p=chromes[i];if(X>=p.x&&X<p.x+p.w&&Y>=p.y&&Y<p.y+p.h){chromes.splice(i,1);toast('Touched before it dried — the mirror is ruined')}}}
 function rimEdge(ink,s){if(ink.chrome)return;if(s.absorb>.3)return;const d=Math.max(1,Math.round(1.4*dpr));
  for(const o of [rimA,rimB]){o.x.save();o.x.setTransform(1,0,0,1,0,0);o.x.globalCompositeOperation='copy';o.x.drawImage(stk.c,0,0);o.x.restore()}
@@ -904,7 +907,7 @@ function frame(now){const dt=(now-prev)/1000;prev=now;if(!down&&now-lastSnapAt>9
   if(now>w.until){w.c.width=w.c.height=1;w.active=false}dirty=true}
  if(wgOn){let any=false;for(let i=0;i<wg.length;i++){if(wg[i]>0){wg[i]*=Math.exp(-dt/wt[i]);if(wg[i]<.02)wg[i]=0;else any=true}}wgOn=any}
  if(uiDirty&&now-uiT>140){uiDirty=false;uiT=now;showFlow()}if(down&&stroke&&fricS)friction(true,fricV,fricS);
- for(let i=bleedL.length-1;i>=0;i--){const L=bleedL[i];if(now-L.t0>=L.dur){const g=baked.x;g.save();g.setTransform(1,0,0,1,0,0);g.globalAlpha=L.a;g.drawImage(L.c,L.x,L.y);g.restore();bleedL.splice(i,1)}dirty=true}
+ for(let i=bleedL.length-1;i>=0;i--){const L=bleedL[i];if(now-L.t0>=L.dur){const g=baked.x;g.save();g.setTransform(1,0,0,1,0,0);g.globalAlpha=L.a;g.drawImage(L.c,L.x,L.y);g.restore();bleedL.splice(i,1);freeC(L.c)}dirty=true}
  runDrips(Math.min(dt,.05));wetStep();runBlooms(now);runBleed(now);
  for(const p of PENS)if(!p.capped&&!(down&&p===pen)){p.idle=(p.idle||0)+dt;if(p.idle>15)p.tipDry=Math.min(1,p.tipDry+dt/(p.metal?400:p.squeeze?240:120))}for(let i=chromes.length-1;i>=0;i--){if(now-chromes[i].t0>=chromes[i].dur){finChrome(chromes[i]);chromes.splice(i,1)}dirty=true}if(dirty){compose();dirty=false}requestAnimationFrame(frame)}
 function compose(){const x=dctx;x.save();x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='source-over';x.globalAlpha=1;x.drawImage(baked.c,0,0);if(waterOn){x.imageSmoothingEnabled=true;x.drawImage(waterCv,0,0,GW*C*dpr,GH_*C*dpr)}for(const m of mist){x.globalAlpha=.7*(1-(performance.now()-m.t0)/420);x.fillStyle='#e6f2ff';x.beginPath();x.arc(m.x*dpr,m.y*dpr,m.s*dpr,0,TAU);x.fill()}x.globalAlpha=1;for(const L of bleedL){x.globalAlpha=L.a*sm(clamp((performance.now()-L.t0)/L.dur));x.drawImage(L.c,L.x,L.y)}x.globalAlpha=1;for(const p of chromes){x.globalAlpha=sm(clamp((performance.now()-p.t0)/p.dur));x.drawImage(p.c,p.x,p.y)}x.globalAlpha=1;if(etchOn)x.drawImage(etchL.c,0,0);drawFJ(x);drawShine(x);
@@ -948,7 +951,7 @@ function spreadFromWall(){const s=bands[0].s;for(const k in WET){if(!WET[k].acti
   const sp=(addSpread(c,0,0,w,h,k,s,.28),spreads[spreads.length-1]);if(sp){sp.sc=sc;sp.D*=.6}}}
 function runSpreads(now){if(!spreads.length)return;const bx=baked.x;
  for(let i=spreads.length-1;i>=0;i--){const p=spreads[i],t=(now-p.t0)/1000,sc=p.sc||1;
-  if(t>p.T){tideLine(p);spreads.splice(i,1);continue}
+  if(t>p.T){tideLine(p);spreads.splice(i,1);freeC(p.c);freeC(p.o);if(p.src!==p.c)freeC(p.src);continue}
   const r=Math.sqrt(4*p.D*t),dr=r-p.lr;if(dr<.45)continue;p.ox=Math.random()*128;p.oy=Math.random()*128;const rMax=Math.sqrt(4*p.D*p.T),drop=Math.min(.5*p.g*t*t,p.g*2.2);
   const x=p.c.getContext('2d');x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='source-over';x.globalAlpha=1;x.clearRect(0,0,p.w,p.h);
   blurDraw(x,p.src,r*sc,p.w,p.h);
@@ -1017,7 +1020,7 @@ function makeEtch(s){const pad=4,x=Math.max(0,Math.floor(stroke.x0-pad)),y=Math.
  etches.push({c,x,y,w,h,k,t0:performance.now()+300,T:(k?5200:2600)*(s.wet?1.8:1),done:0,amt:(k?.95*k:.14)*(s.wet?.6:1)});
  if(k&&upright){const P=stroke.pts||[],r=R();for(let i=0;i<P.length;i+=2){const n=Math.random()<.55?1:0;for(let j=0;j<n;j++){const long=Math.random()<.16;drip(P[i]+(Math.random()-.5)*r*1.4,P[i+1]+r*(.35+Math.random()*.35),long?1.4+Math.random()*2.4:.15+Math.random()*.55,{ty:'etch',col:'#f4f1e8',r:Math.max(.8,Math.min(3,r*(.12+Math.random()*.2))),et:1,delay:250+Math.random()*2200})}}}}
 function runEtches(now){for(let i=etches.length-1;i>=0;i--){const p=etches[i],pr=sm(clamp((now-p.t0)/p.T)),d=pr-p.done;if(d<.01&&pr<1)continue;
- const L=p.k?etchL.x:baked.x;L.save();L.setTransform(1,0,0,1,0,0);L.globalAlpha=inc(p.amt,p.done,pr);L.drawImage(p.c,p.x*dpr,p.y*dpr);L.restore();if(p.k)etchOn=true;p.done=pr;dirty=true;if(pr>=1)etches.splice(i,1)}}
+ const L=p.k?etchL.x:baked.x;L.save();L.setTransform(1,0,0,1,0,0);L.globalAlpha=inc(p.amt,p.done,pr);L.drawImage(p.c,p.x*dpr,p.y*dpr);L.restore();if(p.k)etchOn=true;p.done=pr;dirty=true;if(pr>=1){etches.splice(i,1);freeC(p.c)}}}
 function putFJ(c){const x=fjL.x;x.save();x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,fjL.c.width,fjL.c.height);if(c)x.drawImage(c,0,0);x.restore();fjOn=!!c;dirty=true}
 function putEtch(c){const x=etchL.x;x.save();x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,etchL.c.width,etchL.c.height);if(c)x.drawImage(c,0,0);x.restore();etchOn=!!c;dirty=true}
 
@@ -1126,11 +1129,12 @@ function renderSurfs(){const box=$('#surfs');box.innerHTML='';for(const s of SUR
 function renderCap(){const b=$('#capBtn');if(!b)return;b.setAttribute('aria-pressed',pen.capped);b.title=pen.capped?'Capped':'Cap off — the tip dries if left'}
 function renderTop(){renderCap();$('#penMini').innerHTML=penSVG(pen);$('#penName').textContent=`${pen.brand} ${pen.name}`;$('#penTip').textContent=`${pen.w} mm ${pen.tip==='chisel'?'chisel':pen.tip==='needle'?'needle':pen.tip==='roller'?'rollerball':'round'} · ${(pen.inkLabel||INK[pen.ink].label).replace(/ \(.*\)/,'')}`;$('#shakeBtn').style.display=pen.shake?'':'none'}
 const boards={},recent=[];
-function snap(){const c=document.createElement('canvas'),i=document.createElement('canvas');c.width=i.width=baked.c.width;c.height=i.height=baked.c.height;c.getContext('2d').drawImage(baked.c,0,0);i.getContext('2d').drawImage(idm.c,0,0);return[c,i,inkG.slice(),colG.slice(),cloneC(metal.c),cloneC(etchL.c),fjOn?cloneC(fjL.c):null]}
+function freeBoard(b){if(b)for(const k of [0,1,4,5,6])if(b[k]&&b[k].getContext)freeC(b[k])}
+function snap(){const c=document.createElement('canvas'),i=document.createElement('canvas');c.width=i.width=baked.c.width;c.height=i.height=baked.c.height;c.getContext('2d').drawImage(baked.c,0,0);i.getContext('2d').drawImage(idm.c,0,0);return[c,i,inkG.slice(),colG.slice(),metalOn?cloneC(metal.c):null,etchOn?cloneC(etchL.c):null,fjOn?cloneC(fjL.c):null]}
 const bkey=()=>cur.id;
 window.__rlSel=(id,sid)=>{if(id){pen=PENS.find(p=>p.id===id);color=pen.colors[0];pen.life=1;pen.mix=1;pen.flow=1;pen.capped=false;pen.tipDry=0;renderTop()}if(sid)goSurface(SURF.find(q=>q.id===sid))};
 function goSurface(a,b,c){const r=goSurfaceInner(a,b,c);prepSnap();return r}
-function goSurfaceInner(s){if(s===cur)return;for(const L of bleedL){const g=baked.x;g.save();g.setTransform(1,0,0,1,0,0);g.globalAlpha=L.a;g.drawImage(L.c,L.x,L.y);g.restore()}bleedL.length=0;wetQ.length=0;chromes.forEach(finChrome);chromes.length=0;const k0=bkey();boards[k0]=snap();recent.unshift(k0);for(const id of recent.splice(6))if(!recent.includes(id))delete boards[id];
+function goSurfaceInner(s){if(s===cur)return;for(const L of bleedL){const g=baked.x;g.save();g.setTransform(1,0,0,1,0,0);g.globalAlpha=L.a;g.drawImage(L.c,L.x,L.y);g.restore();freeC(L.c)}bleedL.length=0;wetQ.length=0;chromes.forEach(finChrome);chromes.length=0;const k0=bkey();freeBoard(boards[k0]);boards[k0]=snap();recent.unshift(k0);for(const id of recent.splice(6))if(!recent.includes(id))delete boards[id];
 cur=s;resetBoard();const b=boards[bkey()];if(b){for(const [o,c] of [[baked,b[0]],[idm,b[1]]]){o.x.save();o.x.setTransform(1,0,0,1,0,0);o.x.drawImage(c,0,0);o.x.restore()}if(b[2]&&b[2].length===inkG.length){inkG.set(b[2]);colG=b[3]}putMetal(b[4]);putFJ(b[6]);putEtch(b[5])}
  renderSurfs();renderReact();save();dirty=true}
 const sheets=['penSheet','surfSheet','moreSheet','infoSheet','bookSheet','colorSheet'];
@@ -1214,6 +1218,13 @@ $('#infoBtn').addEventListener('click',()=>{renderReact();openSheet('infoSheet')
 $('#moreBtn').addEventListener('click',()=>openSheet('moreSheet'));
 $('#status').addEventListener('click',e=>{e.currentTarget.classList.toggle('min')});
 const coach=$('#coach'),seen=(()=>{try{return localStorage.getItem('mtbCoach')}catch(_){return 1}})();if(!seen)coach.hidden=false;
+/* safety net: if Safari drops a layer (memory pressure / back from background), repaint the wall under whatever ink survived */
+function healWall(){try{if(!W||!baked.c.width)return;const x=baked.x,w=baked.c.width,h=baked.c.height;let blank=0;
+ for(const [u,v] of [[.1,.1],[.5,.5],[.9,.9],[.2,.8],[.8,.2]]){const d=x.getImageData(Math.floor(w*u),Math.floor(h*v),1,1).data;if(d[3]===0)blank++}
+ if(blank>=3){renderBg();x.save();x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='destination-over';x.drawImage(bg.c,0,0,w,h);x.restore();dirty=true}}catch(_){}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(healWall,60)});addEventListener('pageshow',()=>setTimeout(healWall,60));
+setInterval(()=>{if(!down)healWall()},2500);
+for(const c of document.querySelectorAll('canvas'))c.addEventListener('contextrestored',()=>{healWall();dirty=true});
 $('#coachOk').addEventListener('click',()=>{coach.hidden=true;try{localStorage.setItem('mtbCoach','1')}catch(_){}setTimeout(()=>maybeGetApp(),900)});
 /* ---------- "Get the app" pop-up: install / Add to Home Screen / download ---------- */
 const PUBLIC_URL='https://raw.githack.com/nikbennett26-cpu/reach-lab/main/index.html';
