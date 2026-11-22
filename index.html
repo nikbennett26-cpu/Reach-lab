@@ -195,7 +195,7 @@ td.num{text-align:right;white-space:nowrap}
   <h2>Settings</h2>
   <div class="row"><button class="btn pri" id="bookSave">Save to blackbook</button><button class="btn" id="bookOpen">Open blackbook</button><button class="btn" id="wallShare">Share wall</button></div>
   <div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button></div>
-  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (5) · starve, nib wear, lighter on iPad</div></div>
+  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Build 22 Nov (6) · wet wash, stain dries violet, clean buff</div></div>
   <div class="row"><span class="lbl">Weather the wall</span><button class="btn" id="age1">+1 month</button><button class="btn" id="age12">+1 year</button></div>
   <p class="small">A simulation: widths from maker and retailer specs where marked, dry times sped up, surface physics modelled rather than measured.</p>
  </section>
@@ -643,6 +643,31 @@ function queueBleed(){if(INK[pen.ink].comp==='multiply')return;const light=lum(h
  try{x.filter=`blur(${7*dpr}px)`;x.globalAlpha=.5;x.drawImage(c0,0,0);x.filter=`blur(${1.1*dpr}px)`;x.globalAlpha=1;x.drawImage(c0,0,0);x.filter='none'}catch(_){x.drawImage(c0,0,0)}freeC(c0);
  const st=nh>nd?(nb>nh/2?(pen.ink==='oil'?.85:.7):.68):.38;bleedL.push({c,x:x0,y:y0,t0:performance.now()+900,dur:5500,a:st});
  setTimeout(()=>toast(nh>nd?'The stain is bleeding back up through the paint — violet, and it won’t stay hidden':'The dye underneath is bleeding up through the white'),2200)}
+/* WET WALL: the fresh mark's ink slides down with the water film as a soft curtain — densest at the mark,
+   fading into uneven vertical fringes (like ink on wet canvas). A little of the mark itself goes with it. */
+function wetWash(s,ink,col){if(ink.solid||ink.fluid||ink.etch)return;
+ const P=dpr,x0=Math.max(0,Math.floor(stroke.x0*P)),y0=Math.max(0,Math.floor(stroke.y0*P)),x1=Math.min(stk.c.width,Math.ceil(stroke.x1*P)),y1=Math.min(stk.c.height,Math.ceil(stroke.y1*P)),w=x1-x0,h0=y1-y0;if(w<4||h0<4)return;
+ const run=(DYEINK[pen.ink]?1.25:ink.opacity>.9?.8:1)*(.7+(ink.run||.8)*.4),L=Math.round(Math.min(220,(55+R()*6)*run)*P),h=Math.min(stk.c.height-y0,h0+L);if(h<4)return;
+ const m=document.createElement('canvas');m.width=w;m.height=h;const mx=m.getContext('2d');
+ /* gravity smear: stack the mark's shape down the wall with falling strength */
+ const N=22;for(let k=N;k>=1;k--){mx.globalAlpha=.11*Math.pow(1-k/(N+1),1.15);mx.drawImage(stk.c,x0,y0,w,h0,0,(k/N)*L,w,h0)}mx.globalAlpha=.32;mx.drawImage(stk.c,x0,y0,w,h0,0,0,w,h0);
+ /* ragged fringe: every column runs its own distance */
+ const cm=document.createElement('canvas');cm.width=w;cm.height=h;const cx=cm.getContext('2d');let ph=Math.random()*99;
+ for(let x=0;x<w;x+=Math.max(1,Math.round(P))){const f=.25+.75*Math.pow(.5+.5*Math.sin(x/(7*P)+ph)*Math.sin(x/(17*P)+ph*1.7)+.5*Math.random()*.6,1.3),len=h0+L*f,g=cx.createLinearGradient(0,0,0,len);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(Math.min(.99,h0/len),'rgba(0,0,0,.9)');g.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g;cx.fillRect(x,0,Math.max(1,Math.round(P)),len)}
+ mx.globalAlpha=1;mx.globalCompositeOperation='destination-in';mx.drawImage(cm,0,0);freeC(cm);
+ mx.globalCompositeOperation='source-in';mx.fillStyle=DYEINK[pen.ink]?col:mixHex(col,'#ffffff',lum(hex(col))<.3?.08:.15);mx.fillRect(0,0,w,h);mx.globalCompositeOperation='source-over';
+ const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${1.2*P}px)`;x.drawImage(m,0,0);x.filter='none'}catch(_){x.drawImage(m,0,0)}freeC(m);
+ const now=performance.now();bleedL.push({c,x:x0,y:y0,t0:now+250,dur:2800,a:DYEINK[pen.ink]?.75:.6});
+ /* the mark loses a little ink to the water: the wall shows back through slightly */
+ const f2=document.createElement('canvas');f2.width=w;f2.height=h0;const fx=f2.getContext('2d');fx.drawImage(bg.c,x0,y0,w,h0,0,0,w,h0);fx.globalCompositeOperation='destination-in';fx.drawImage(stk.c,x0,y0,w,h0,0,0,w,h0);
+ bleedL.push({c:f2,x:x0,y:y0,t0:now+250,dur:2400,a:DYEINK[pen.ink]?.3:.2});
+ /* mark the run as wet ink so it dries and can be buffed like the rest */
+ const r=R()*.8+2;for(let yy=stroke.y1;yy<Math.min(H,stroke.y1+L/P*.6);yy+=6)for(let xx=stroke.x0;xx<stroke.x1;xx+=8)markWet(xx,yy,r,.5,TAUS[pen.wet||pen.ink]*2)}
+/* STAIN inks (OTR 070 etc.): the dark dye dries to a violet cast over the whole mark */
+function stainDry(){if(!(pen.ink==='stain'||pen.ink==='bleed')||lum(hex(color))>.3)return;
+ const P=dpr,x0=Math.max(0,Math.floor(stroke.x0*P)),y0=Math.max(0,Math.floor(stroke.y0*P)),w=Math.min(stk.c.width-x0,Math.ceil((stroke.x1-stroke.x0)*P)),h=Math.min(stk.c.height-y0,Math.ceil((stroke.y1-stroke.y0)*P));if(w<2||h<2)return;
+ const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${.8*P}px)`}catch(_){}x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.filter='none';x.globalCompositeOperation='source-in';x.fillStyle=pen.ink==='bleed'?'#4a2f90':'#3b2a7c';x.fillRect(0,0,w,h);
+ bleedL.push({c,x:x0,y:y0,t0:performance.now()+TAUS[pen.ink]*1400,dur:5000,a:.4})}
 let saidGhost=0;const buffC={};
 function runBleed(now){if(!bleedQ.length)return;const bx=baked.x;
  for(let i=bleedQ.length-1;i>=0;i--){const q=bleedQ[i];if(now<q.t)continue;q.t=now+220+Math.random()*120;q.k++;if(q.ghost&&q.k===1&&!saidGhost++)toast('The dye ink is ghosting back through the buff');
@@ -650,12 +675,13 @@ function runBleed(now){if(!bleedQ.length)return;const bx=baked.x;
  dirty=true}
 function buffCol(){const s=bands[0].s,k=s.id;if(!buffC[k]){const m=s.mean||[140,140,140];buffC[k]='#'+m.map((v,i)=>Math.round(v*.5+[122,119,110][i]*.5).toString(16).padStart(2,'0')).join('')}return buffC[k]}
 const DYEB={solid:.02,stain:1,bleed:.9,alcohol:.55,flow:.6,future:.7,water:.2,alcpaint:.12,oil:.05,fluid:.03,chrome:.05,etch:0},pad={load:0,col:null,th:0};
-const GH={solid:.08,etch:0,future:.3,stain:.62,bleed:.55,alcohol:.34,flow:.28,water:.14,oil:.1,alcpaint:.15,fluid:.12,chrome:.22};let buffN=0;
+const GH={solid:.08,etch:0,future:.2,stain:.04,bleed:.04,alcohol:.18,flow:.15,water:.1,oil:.08,alcpaint:.1,fluid:.1,chrome:.06};let buffN=0;
 function addWater(p,r,amt){for(let gy=Math.max(0,Math.floor((p.y-r)/C));gy<=Math.min(GH_-1,Math.floor((p.y+r)/C));gy++)for(let gx=Math.max(0,Math.floor((p.x-r)/C));gx<=Math.min(GW-1,Math.floor((p.x+r)/C));gx++){const d=Math.hypot(gx*C+C/2-p.x,gy*C+C/2-p.y)/r;if(d<1){const i=gy*GW+gx;water[i]=Math.min(1,water[i]+amt*(1-d))}}waterOn=true}
 function buffAt(a,b){const R2=44,D=Math.round(2*R2*dpr),t=tcan(D,'bt'),ty=inkAt(b.x,b.y),cc=colG[inkCell(b.x,b.y)],vio=(ty==='stain'||ty==='bleed')&&cc&&cc[0]==='#'&&lum(hex(cc))<.18,g=ty?GH[ty]:.1,L=Math.hypot(b.x-a.x,b.y-a.y);
  {const u=tcan(D,'bu'),X=(b.x-R2)*dpr,Y=(b.y-R2)*dpr;u.x.drawImage(baked.c,X,Y,D,D,0,0,D,D);u.x.globalCompositeOperation='destination-in';u.x.drawImage(idm.c,X,Y,D,D,0,0,D,D);
   if(vio){u.x.globalCompositeOperation='source-atop';u.x.globalAlpha=.78;u.x.fillStyle='#6b58c9';u.x.fillRect(0,0,D,D);u.x.globalAlpha=1}
   u.x.globalCompositeOperation='source-over';const gx=ghost.x;gx.save();gx.setTransform(1,0,0,1,0,0);gx.globalCompositeOperation='destination-over';gx.drawImage(u.c,X,Y);gx.restore()}
+ if(metal.c.width){erase(metal,b,.45,R2*1.05);if(metalOn&&++buffN%40===0)dirty=true}if(fjL.c.width)erase(fjL,b,.45,R2*1.05);
  if(L>.5){smearDir(baked,a,b,.7,R2*1.05,false);smearDir(baked,a,b,.45,R2*.6,false);smearDir(idm,a,b,.5,R2*.9,false)}
  t.x.drawImage(bg.c,(b.x-R2)*dpr,(b.y-R2)*dpr,D,D,0,0,D,D);t.x.globalAlpha=g;t.x.drawImage(ghost.c,(b.x-R2)*dpr,(b.y-R2)*dpr,D,D,0,0,D,D);t.x.globalAlpha=1;soft(t.c,D/2);
  baked.x.save();baked.x.setTransform(1,0,0,1,0,0);baked.x.globalAlpha=.24;baked.x.drawImage(t.c,(b.x-R2)*dpr,(b.y-R2)*dpr);baked.x.restore();
@@ -717,7 +743,7 @@ function stamp(x,y,spd,e){const s=surfAt(x,y),ink=INK[pen.ink],f=flowNow(e),star
  const b=ink.bleed*s.absorb+(pen.ink==='alcohol'?s.wick||0:0)+(s.wet?(1-ink.wrep)*.5:0);if(b>.03&&(stroke.n++%2===0))s.wet?bleedAt(x,y+R()*.45,R()*(1+b*1.3),b*.045,1,1.7):bleedAt(x,y,R()*(1+b*1.1),b*.05,s.gx);
  if(pen.adjust&&!demo&&f>.8&&Math.random()<.022*Math.pow(pen.vs/5,2)*(1.15-fast)*(1-s.absorb))drip(x+(Math.random()-.5)*R()*.9,y+R()*.3,.6+Math.random()*.9*(pen.vs/5));
  if(s.wet&&!demo){stroke.wp=stroke.wp||[];if(!stroke.lw||Math.hypot(x-stroke.lw.x,y-stroke.lw.y)>4){stroke.lw={x,y};if(stroke.wp.length<500)stroke.wp.push({x,y})}}
- if(s.wet&&!demo&&Math.random()<.018*ink.run)drip(x+(Math.random()-.5)*R()*1.4,y+R()*.42,.25+Math.random()*Math.random()*1.3);
+ if(false&&s.wet&&!demo&&Math.random()<.018*ink.run)drip(x+(Math.random()-.5)*R()*1.4,y+R()*.42,.25+Math.random()*Math.random()*1.3);
  stk.x.fillStyle=inkPat(s,curCol(),q);tipPath(0,x,y);stk.x.fill();
  if(!demo&&DYEINK[pen.ink]){const n=stroke.sn=(stroke.sn||0)+1,ck=((x/5)|0)*4099+((y/5)|0),cm=stroke.cm||(stroke.cm=new Map()),gap=R()*2.6/Math.max(.6,pen.w*MM*.28)+10,o=cm.get(ck);if(o===undefined)cm.set(ck,n);else if(n-o>gap){tipCtx=ovl.x;ovl.x.fillStyle=inkPat(s,curCol(),q);tipPath(0,x,y);ovl.x.fill();tipCtx=null;stroke.ov=1}}if(stroke.ink.future)poolAt(x,y,R(),stroke.v);
  if(!demo&&(pen.valve||pen.squeeze)&&pressNow>.62&&f>.75&&Math.random()<.03*(pressNow-.55)*ink.drip*(1-s.absorb))drip(x+(Math.random()-.5)*R()*.8,y+R()*.35,.5+pressNow*.7);if(!stroke.lp||Math.abs(x-stroke.lp.x)+Math.abs(y-stroke.lp.y)>3){stroke.lp={x,y};(stroke.pts=stroke.pts||[]).push(x,y)}{const r=R()*3+6;stroke.x0=Math.min(stroke.x0,x-r);stroke.y0=Math.min(stroke.y0,y-r);stroke.x1=Math.max(stroke.x1,x+r);stroke.y1=Math.max(stroke.y1,y+r)}
@@ -811,9 +837,9 @@ function wetBead(ink,s){if(SMOOTH(s)||!s.wet||s.absorb>.3||ink.fluid||ink.solid|
  for(let i=0;i<P.length;i+=2){if(Math.random()>.35*k)continue;const a=Math.random()*TAU,d=r*(1.05+Math.random()*.6),h=.4+Math.random()*Math.random()*(.5+r*.09);const cx=P[i]+Math.cos(a)*d,cy=P[i+1]+Math.sin(a)*d;x.moveTo(cx+h,cy);x.arc(cx,cy,h,0,TAU)}
  x.fill();x.restore()}
 function end(){if(!stroke)return;flushStreaks(null,true);const ink=stroke.ink,s=stroke.s,bx=baked.x;
- if(stroke.wp&&stroke.wp.length&&!['water','alcohol','flow'].includes(pen.ink)){for(const p of stroke.wp)if(Math.random()<.34*ink.run)drip(p.x+(Math.random()-.5)*R(),p.y+R()*.42,.25+Math.random()*Math.random()*1.4,{ty:pen.ink,col:curCol(),r:Math.max(.9,Math.min(3.6,R()*(.06+Math.random()*.16))),delay:Math.random()*900})}
+ if(s.wet&&!demo){}else if(stroke.wp&&stroke.wp.length&&!['water','alcohol','flow'].includes(pen.ink)){for(const p of stroke.wp)if(Math.random()<.34*ink.run)drip(p.x+(Math.random()-.5)*R(),p.y+R()*.42,.25+Math.random()*Math.random()*1.4,{ty:pen.ink,col:curCol(),r:Math.max(.9,Math.min(3.6,R()*(.06+Math.random()*.16))),delay:Math.random()*900})}
  else if(stroke.wp&&stroke.wp.length&&blooms.length<900){if(s.absorb<.4)for(const p of stroke.wp)for(let j=0;j<2;j++)if(Math.random()<.5*(ink.run||.8))drip(p.x+(Math.random()-.5)*R()*1.6,p.y+R()*(Math.random()*.5),.3+Math.random()*Math.random()*1.6,{ty:pen.ink,col:curCol(),r:Math.max(.5,Math.min(1.4,R()*(.025+Math.random()*.06))),al:.5+Math.random()*.3,delay:200+Math.random()*1500});const now=performance.now(),r=R();stroke.wp.forEach((p,i)=>blooms.push({x:p.x,y:p.y,r,t0:now+i*9,life:2400+Math.random()*1200,col:color,ty:pen.ink,next:0,dripped:0}))}
- if(!demo)wetBead(ink,s);if(!demo&&pen.dauber&&s.absorb<.4){const P=stroke.pts||[],L=clamp(pen.life*1.2);for(let i=0;i<P.length;i+=2)if(Math.random()<.18*L)drip(P[i]+(Math.random()-.5)*R()*1.7,P[i+1]+R()*(.25+Math.random()*.25),.35+Math.random()*Math.random()*1.5*L,{ty:pen.ink,col:curCol(),r:.7+Math.random()*1.3,delay:400+Math.random()*2600})}queueBleed();bx.save();bx.setTransform(1,0,0,1,0,0);applyInk(bx,ink,s);bx.drawImage(stk.c,0,0);bx.restore();if(s.wet&&!demo)spreadFromStroke(s,pen.ink);if(ink.future){const fx=need(fjL).x;fx.save();fx.setTransform(1,0,0,1,0,0);fx.drawImage(stk.c,0,0);fx.restore();fjOn=true;fjCol=futDry(s)[0];const pl=pool.x;pl.save();pl.setTransform(1,0,0,1,0,0);pl.clearRect(0,0,pool.c.width,pool.c.height);pl.restore()}usedPens.add(pen.brand+' '+pen.name);if(ink.etch)makeEtch(s);rimEdge(ink,s);if(ink.chrome)makeChrome(s);if(ink.gloss&&s.absorb<.3){bx.save();bx.setTransform(1,0,0,1,0,0);bx.globalCompositeOperation='screen';bx.globalAlpha=.22;bx.drawImage(stk.c,-dpr,-dpr);bx.restore()}
+ if(!demo)wetBead(ink,s);if(!demo&&s.wet)wetWash(s,ink,curCol());if(!demo)stainDry();if(!demo&&pen.dauber&&s.absorb<.4&&!s.wet){const P=stroke.pts||[],L=clamp(pen.life*1.2);for(let i=0;i<P.length;i+=2)if(Math.random()<.18*L)drip(P[i]+(Math.random()-.5)*R()*1.7,P[i+1]+R()*(.25+Math.random()*.25),.35+Math.random()*Math.random()*1.5*L,{ty:pen.ink,col:curCol(),r:.7+Math.random()*1.3,delay:400+Math.random()*2600})}queueBleed();bx.save();bx.setTransform(1,0,0,1,0,0);applyInk(bx,ink,s);bx.drawImage(stk.c,0,0);bx.restore();if(s.wet&&!demo)spreadFromStroke(s,pen.ink);if(ink.future){const fx=need(fjL).x;fx.save();fx.setTransform(1,0,0,1,0,0);fx.drawImage(stk.c,0,0);fx.restore();fjOn=true;fjCol=futDry(s)[0];const pl=pool.x;pl.save();pl.setTransform(1,0,0,1,0,0);pl.clearRect(0,0,pool.c.width,pool.c.height);pl.restore()}usedPens.add(pen.brand+' '+pen.name);if(ink.etch)makeEtch(s);rimEdge(ink,s);if(ink.chrome)makeChrome(s);if(ink.gloss&&s.absorb<.3){bx.save();bx.setTransform(1,0,0,1,0,0);bx.globalCompositeOperation='screen';bx.globalAlpha=.22;bx.drawImage(stk.c,-dpr,-dpr);bx.restore()}
  for(const k in WET){const o=WET[k];if(!o.active||k===(pen.wet||pen.ink)||ink.opacity<.9)continue;o.x.save();o.x.setTransform(1,0,0,1,0,0);o.x.globalCompositeOperation='destination-out';o.x.drawImage(stk.c,0,0);o.x.restore()}
  const w=wetC(pen.wet||pen.ink);w.x.save();w.x.setTransform(1,0,0,1,0,0);w.x.globalAlpha=1-s.absorb*.5;w.x.drawImage(stk.c,0,0);w.x.globalAlpha=1;w.x.globalCompositeOperation='source-in';w.x.fillStyle='#fff';w.x.fillRect(0,0,w.c.width,w.c.height);w.x.restore();
  w.active=true;w.until=performance.now()+TAUS[pen.wet||pen.ink]*4500*(s.wet?2.5:1);
@@ -958,7 +984,7 @@ function addSpread(src,x,y,w,h,ty,s,mass){const D=(SPD[ty]||10)*(.45+s.absorb*1.
  if(D<1.5)return;const c=document.createElement('canvas');c.width=w;c.height=h;const o=document.createElement('canvas');o.width=w;o.height=h;
  spreads.push({src,c,x,y,w,h,ty,s,D,T,g:(1-s.absorb)*(1-vis)*22,mass:mass*(1-vis*.6),t0:performance.now(),lr:0,ld:0,ox:Math.random()*128,oy:Math.random()*128,o})}
 function spreadFromStroke(s,ty){const pad=Math.ceil(Math.sqrt(4*(SPD[ty]||10)*1.6*5)+30),x=Math.max(0,Math.floor(stroke.x0-pad)),y=Math.max(0,Math.floor(stroke.y0-pad)),x1=Math.min(W,Math.ceil(stroke.x1+pad)),y1=Math.min(H,Math.ceil(stroke.y1+pad*1.6)),w=x1-x,h=y1-y;if(w<4||h<4)return;
- const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(stk.c,x*dpr,y*dpr,w*dpr,h*dpr,0,0,w,h);addSpread(c,x,y,w,h,ty,s,1)}
+ const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(stk.c,x*dpr,y*dpr,w*dpr,h*dpr,0,0,w,h);addSpread(c,x,y,w,h,ty,s,.45)}
 function spreadFromWall(){const s=bands[0].s;for(const k in WET){if(!WET[k].active||!SPD[k])continue;const sc=.5,w=Math.ceil(W*sc),h=Math.ceil(H*sc),c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');
   x.drawImage(baked.c,0,0,w,h);x.globalCompositeOperation='destination-in';x.drawImage(WET[k].c,0,0,w,h);x.drawImage(idm.c,0,0,w,h);
   const sp=(addSpread(c,0,0,w,h,k,s,.28),spreads[spreads.length-1]);if(sp){sp.sc=sc;sp.D*=.6}}}
@@ -1221,7 +1247,7 @@ $('#wipeT').addEventListener('click',()=>{push();resetBoard();toast('Wall wiped 
 $('#surfs').addEventListener('click',e=>{const b=e.target.closest('.sc');if(!b)return;goSurface(SURF.find(s=>s.id===b.dataset.id));closeSheets()});
 const step=d=>{goSurface(SURF[(SURF.indexOf(cur)+d+SURF.length)%SURF.length]);toast(cur.name)};
 $('#wetBtn').addEventListener('click',()=>{const was=wetSet.has(cur.id),rain=rainSet.has(cur.id);
- if(was&&!rain){rainSet.add(cur.id);rainScan=0;renderSurfs();spreadFromWall();toast('Rain — fresh ink washes down in runs');return}
+ rainSet.clear();
  const on=!was;on?wetSet.add(cur.id):(wetSet.delete(cur.id),rainSet.delete(cur.id));bands[0].s=V(cur);renderSurfs();renderReact();save();
  if(on){spreadFromWall();wetReact()}else{wetQ.length=0;toast('Dry — the water’s gone, runs stop')}});
 $('#prevS').addEventListener('click',()=>step(-1));$('#nextS').addEventListener('click',()=>step(1));
