@@ -781,11 +781,15 @@ function queueBleed(){if(INK[pen.ink].comp==='multiply')return;const light=lum(h
 /* WET WALL: the fresh mark's ink slides down with the water film as a soft curtain — densest at the mark,
    fading into uneven vertical fringes (like ink on wet canvas). A little of the mark itself goes with it. */
 /* ---------- PATCHY WETNESS: a wet wall is never evenly wet — damp and soaked zones plus old water tracks ---------- */
-let WF=null,WFk='';
-let FGW=1,FGH=1;function buildWetField(){FGW=Math.ceil(W/C)+1;FGH=Math.ceil(H/C)+1;const k=(bands[0]?bands[0].s.id:'')+FGW+'x'+FGH;if(WFk===k&&WF)return;WFk=k;WF=new Float32Array(FGW*FGH);let sd=0;for(const ch of k)sd=(sd*31+ch.charCodeAt(0))>>>0;const r=()=>{sd=(sd*1664525+1013904223)>>>0;return sd/4294967296};
- const S=14,gw=Math.ceil(FGW/S)+2,gh=Math.ceil(FGH/S)+2,N=Array.from({length:gw*gh},r),vn=(x,y)=>{const fx=x/S,fy=y/S,ix=fx|0,iy=fy|0,tx=fx-ix,ty=fy-iy,sx=tx*tx*(3-2*tx),sy=ty*ty*(3-2*ty),a=N[iy*gw+ix],b=N[iy*gw+ix+1],c=N[(iy+1)*gw+ix],d=N[(iy+1)*gw+ix+1];return a+(b-a)*sx+(c-a)*sy+(a-b-c+d)*sx*sy};
- const trk=new Float32Array(FGW),tst=new Float32Array(FGW);for(let x=0;x<FGW;x++){trk[x]=r()<.22?.35+r()*.4:0;tst[x]=r()*FGH*.7}for(let x=1;x<FGW-1;x++)trk[x]=Math.max(trk[x],(trk[x-1]+trk[x+1])*.3);
- for(let y=0;y<FGH;y++)for(let x=0;x<FGW;x++){const v=vn(x,y),t=y>tst[x]?trk[x]*(.6+.4*vn(x*3.1,y*.2)):0;WF[y*FGW+x]=Math.max(.12,Math.min(1,.22+v*.85+t))}}
+let WF=null,WFk='',wetSeed=(Math.random()*1e9)>>>0;
+let FGW=1,FGH=1;/* WET WALL: water never sits evenly — big soaked patches, near-dry islands, smaller puddles inside those, and trickle
+   tracks where water has run down. A fresh pattern every time the wall gets wet. */
+function buildWetField(){FGW=Math.ceil(W/C)+1;FGH=Math.ceil(H/C)+1;const k=(bands[0]?bands[0].s.id:'')+FGW+'x'+FGH+':'+wetSeed;if(WFk===k&&WF)return;WFk=k;WF=new Float32Array(FGW*FGH);let sd=wetSeed;for(const ch of k)sd=(sd*31+ch.charCodeAt(0))>>>0;const r=()=>{sd=(sd*1664525+1013904223)>>>0;return sd/4294967296};
+ const mkN=S=>{const gw=Math.ceil(FGW/S)+2,gh=Math.ceil(FGH/S)+2,N=Array.from({length:gw*gh},r);return(x,y)=>{const fx=x/S,fy=y/S,ix=fx|0,iy=fy|0,tx=fx-ix,ty=fy-iy,sx=tx*tx*(3-2*tx),sy=ty*ty*(3-2*ty),a=N[iy*gw+ix],b=N[iy*gw+ix+1],c=N[(iy+1)*gw+ix],d=N[(iy+1)*gw+ix+1];return a+(b-a)*sx+(c-a)*sy+(a-b-c+d)*sx*sy}};
+ const big=mkN(22),mid=mkN(8),fine=mkN(2.6),sm=(a,b,v)=>{const t=Math.max(0,Math.min(1,(v-a)/(b-a)));return t*t*(3-2*t)};
+ const trk=new Float32Array(FGW),tst=new Float32Array(FGW);for(let x=0;x<FGW;x++){trk[x]=r()<.2?.35+r()*.5:0;tst[x]=r()*FGH*.7}for(let x=1;x<FGW-1;x++)trk[x]=Math.max(trk[x],(trk[x-1]+trk[x+1])*.3);
+ for(let y=0;y<FGH;y++)for(let x=0;x<FGW;x++){const v=big(x,y)*.58+mid(x,y)*.3+fine(x,y)*.12,base=sm(.28,.78,v),t=y>tst[x]?trk[x]*(.55+.45*fine(x*2.1,y*.25)):0;
+  /* water gathers lower down a wall */WF[y*FGW+x]=Math.max(.04,Math.min(1,base*(.75+.35*y/FGH)+t))}}
 const wetF=(x,y)=>WF?WF[Math.max(0,Math.min(FGH-1,Math.floor(y/C)))*FGW+Math.max(0,Math.min(FGW-1,Math.floor(x/C)))]:1;
 function drawWetField(x){buildWetField();const c=document.createElement('canvas');c.width=FGW;c.height=FGH;const g=c.getContext('2d'),im=g.createImageData(FGW,FGH);for(let i=0;i<WF.length;i++){im.data[i*4+3]=Math.round(255*Math.max(0,WF[i]-.2)*.13)}g.putImageData(im,0,0);x.save();x.imageSmoothingEnabled=true;x.drawImage(c,0,0,FGW*C,FGH*C);x.restore()}
 /* ---------- DYE SEPARATION: a staining dark ink on a wet wall splits — the black body sets crisp where it was drawn,
@@ -795,7 +799,7 @@ function drawWetField(x){buildWetField();const c=document.createElement('canvas'
 let bleedFlushAt=0;function flushBleed(all){if(!bleedL.length)return;const now=performance.now(),keep=[];for(const L of bleedL){const done=all||(L.top?now>L.t0+9000:now>L.t0+L.dur+300);if(done&&!keep.length){baked.x.save();baked.x.setTransform(1,0,0,1,0,0);baked.x.globalAlpha=L.a;baked.x.drawImage(L.c,L.x,L.y);baked.x.restore();freeC(L.c);dirty=true}else keep.push(L)}bleedL.length=0;bleedL.push(...keep)}
 function dyeSplit(s,col){const cast=CAST(pen.ink,col);if(!cast||demo||!upright)return false;buildWetField();
  /* see-through dye: duller than a paint violet, and darker on dark walls (it tints the wall rather than covering it) */
- const wm=s.mean||[140,140,140],wl=(wm[0]*.3+wm[1]*.59+wm[2]*.11)/255,dye0=pen.ink==='stain'||pen.ink==='bleed'?'#4c2f88':'#32428a',dye=mixHex(dye0,'#000000',Math.max(0,.22-wl*.3)),P=dpr,pad=26,x0=Math.max(0,Math.floor((stroke.x0-pad)*P)),y0=Math.max(0,Math.floor((stroke.y0-pad)*P)),w=Math.min(stk.c.width-x0,Math.ceil((stroke.x1-stroke.x0+pad*2)*P)),h=Math.min(stk.c.height-y0,Math.ceil((stroke.y1-stroke.y0+pad*2)*P));if(w<4||h<4)return false;
+ const wm=s.mean||[140,140,140],wl=(wm[0]*.3+wm[1]*.59+wm[2]*.11)/255,dye0=pen.ink==='stain'||pen.ink==='bleed'?'#5a3aa8':'#3a4c9c',dye=mixHex(dye0,'#000000',Math.max(0,.22-wl*.3)),P=dpr,pad=26,x0=Math.max(0,Math.floor((stroke.x0-pad)*P)),y0=Math.max(0,Math.floor((stroke.y0-pad)*P)),w=Math.min(stk.c.width-x0,Math.ceil((stroke.x1-stroke.x0+pad*2)*P)),h=Math.min(stk.c.height-y0,Math.ceil((stroke.y1-stroke.y0+pad*2)*P));if(w<4||h<4)return false;
  const now=performance.now(),pts=stroke.pts||[];let wsum=0;for(let i=0;i<pts.length;i+=2)wsum+=wetF(pts[i],pts[i+1]);const wav=pts.length?wsum/(pts.length/2):.5;
  /* halo: the dye seeps a little way out of the line into the film */
  {const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${(2.5+wav*5)*P}px)`}catch(_){}x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.filter='none';x.globalCompositeOperation='source-in';x.fillStyle=dye;x.fillRect(0,0,w,h);bleedL.push({c,x:x0,y:y0,t0:now+150,dur:2600,a:.22+wav*.25})}
@@ -804,6 +808,11 @@ function dyeSplit(s,col){const cast=CAST(pen.ink,col);if(!cast||demo||!upright)r
   for(let j=0;j<bh;j++)for(let i=0;i<bw;i++){const v=wetF((x0/P)+(i+.5)*C,(y0/P)+(j+.5)*C),k=Math.max(0,(v-.38)/.62);im.data[(j*bw+i)*4+3]=Math.round(255*Math.min(1,k*1.25))}mx.putImageData(im,0,0);
   const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${(7+wav*8)*P}px)`}catch(_){}x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.filter='none';x.globalCompositeOperation='source-in';x.fillStyle=mixHex(dye,'#000000',.15);x.fillRect(0,0,w,h);
   x.globalCompositeOperation='destination-in';x.imageSmoothingEnabled=true;x.drawImage(mc,0,0,w,h);bleedL.push({c,x:x0,y:y0,t0:now+250,dur:3400,a:.85})}
+ /* pooling: the dye gathers in the wet film inside loops and between close strokes (photo: counters filled violet) —
+    found where the stroke surrounds a spot (a wide blur of the line is dense there), stronger where the wall is wetter */
+ {const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${20*P}px)`}catch(_){}for(let k=0;k<3;k++)x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.filter='none';
+  try{const im=x.getImageData(0,0,w,h),dd=im.data,rgb=hex(mixHex(dye,'#000000',.05));for(let j=0;j<h;j++)for(let i=0;i<w;i++){const q=(j*w+i)*4,a=dd[q+3]/255,t=Math.max(0,Math.min(1,(a-.5)/.35)),wv=wetF((x0/P)+i/P,(y0/P)+j/P),v=t*t*(3-2*t)*Math.max(0,(wv-.25)/.75);dd[q]=rgb[0];dd[q+1]=rgb[1];dd[q+2]=rgb[2];dd[q+3]=Math.round(255*v)}x.putImageData(im,0,0)
+   ;x.globalCompositeOperation='destination-out';x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);bleedL.push({c,x:x0,y:y0,t0:now+400,dur:3800,a:.55})}catch(_){}}
  /* the dye sheet and its curtain of runs, reaching as far as the wall is wet */
  wetWash(s,INK[pen.ink],col,{dye});
  /* the black body sets crisp and opaque on top of its own dye */
@@ -818,16 +827,16 @@ function wetWash(s,ink,col,o){if(ink.solid||ink.fluid||ink.etch)return;const sp=
  const N=44;for(let k=N;k>=1;k--){mx.globalAlpha=.075*Math.pow(1-k/(N+1),.85);mx.drawImage(stk.c,x0,y0,w,h0,0,(k/N)*L,w,h0)}mx.globalAlpha=.3;mx.drawImage(stk.c,x0,y0,w,h0,0,0,w,h0);
  /* ragged fringe: every column runs its own distance */
  const cm=document.createElement('canvas');cm.width=w;cm.height=h;const cx=cm.getContext('2d');let ph=Math.random()*99;
- for(let x=0;x<w;x+=Math.max(1,Math.round(P))){const f0=.25+.75*Math.pow(.5+.5*Math.sin(x/(7*P)+ph)*Math.sin(x/(17*P)+ph*1.7)+.5*Math.random()*.6,1.3),f=sp?f0*(.3+1.05*wetF((x0+x)/P,stroke.y1)+Math.max(0,wetF((x0+x)/P,stroke.y1)-.55)*2.2):f0,len=h0+L*f,g=cx.createLinearGradient(0,0,0,len);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(Math.min(.99,h0/len),'rgba(0,0,0,.9)');g.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g;cx.fillRect(x,0,Math.max(1,Math.round(P)),len)}
+ for(let x=0;x<w;x+=Math.max(1,Math.round(P))){const f0=.25+.75*Math.pow(.5+.5*Math.sin(x/(7*P)+ph)*Math.sin(x/(17*P)+ph*1.7)+.5*Math.random()*.6,1.3),wf0=wetF((x0+x)/P,stroke.y1),f=f0*(sp?.3+1.05*wf0+Math.max(0,wf0-.55)*2.2:.2+1.1*wf0+Math.max(0,wf0-.6)*1.2),len=h0+L*f,g=cx.createLinearGradient(0,0,0,len);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(Math.min(.99,h0/len),'rgba(0,0,0,.9)');g.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g;cx.fillRect(x,0,Math.max(1,Math.round(P)),len)}
  mx.globalAlpha=1;mx.globalCompositeOperation='destination-in';mx.drawImage(cm,0,0);freeC(cm);
- mx.globalCompositeOperation='source-in';{const st0=(pen.ink==='stain'||pen.ink==='bleed')&&lum(hex(col))<.3;mx.fillStyle=sp?mixHex(o.dye,col,.45):st0?mixHex('#6a4fc0',col,.45):DYEINK[pen.ink]?col:mixHex(col,'#ffffff',lum(hex(col))<.3?.08:.15)}mx.fillRect(0,0,w,h);mx.globalCompositeOperation='source-over';
+ mx.globalCompositeOperation='source-in';{const st0=(pen.ink==='stain'||pen.ink==='bleed')&&lum(hex(col))<.3;mx.fillStyle=sp?mixHex(o.dye,col,.25):st0?mixHex('#6a4fc0',col,.45):DYEINK[pen.ink]?col:mixHex(col,'#ffffff',lum(hex(col))<.3?.08:.15)}mx.fillRect(0,0,w,h);mx.globalCompositeOperation='source-over';
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${1.2*P}px)`;x.drawImage(m,0,0);x.filter='none'}catch(_){x.drawImage(m,0,0)}freeC(m);
  const now=performance.now();bleedL.push({c,x:x0,y:y0,t0:now+250,dur:3600,a:sp?.5+(1-(s.mean?(s.mean[0]*.3+s.mean[1]*.59+s.mean[2]*.11)/255:.5))*.22:DYEINK[pen.ink]?.8:.65});
- const stainy=(pen.ink==='stain'||pen.ink==='bleed')&&lum(hex(col))<.3,dcol=sp?mixHex(o.dye,col,.55):stainy?mixHex(pen.ink==='bleed'?'#6a46c4':'#5b3fb0',col,.55):col,Pt=stroke.pts||[],rr=R();
+ const stainy=(pen.ink==='stain'||pen.ink==='bleed')&&lum(hex(col))<.3,dcol=sp?mixHex(o.dye,col,.18):stainy?mixHex(pen.ink==='bleed'?'#6a46c4':'#5b3fb0',col,.55):col,Pt=stroke.pts||[],rr=R();
  /* dense curtain of short runs hanging off the strokes, plus fewer long thin runs that reach far down (photo 1 & 2) */
- for(let i=0;i<Pt.length;i+=2){const px=Pt[i],py=Pt[i+1],wk=sp?wetF(px,py):1;
+ buildWetField();for(let i=0;i<Pt.length;i+=2){const px=Pt[i],py=Pt[i+1],wk0=wetF(px,py),wk=sp?wk0:.25+wk0*1.1;
   if(Math.random()<.24*(sp?.45+wk*1.2+Math.max(0,wk-.55)*3:1))drip(px+(Math.random()-.5)*rr*1.6,py+rr*(.2+Math.random()*.35),.15+Math.random()*.4,{ty:pen.ink,col:dcol,r:sp?.7+Math.random()*.9*(.5+wk):.4+Math.random()*.6,al:sp?.6+Math.random()*.2:.7+Math.random()*.25,delay:150+Math.random()*1400,wash:1});
-  if(Math.random()<.065*(sp?.35+wk*wk*2+Math.max(0,wk-.55)*4:1))drip(px+(Math.random()-.5)*rr*1.4,py+rr*(.25+Math.random()*.3),(.8+Math.pow(Math.random(),1.6)*3*(ink.run||.8))*(sp?.5+wk:1),{ty:pen.ink,col:dcol,r:sp?.8+Math.random()*1.1*(.5+wk):.45+Math.random()*.55,al:sp?.75:.85,delay:300+Math.random()*2600,wash:1})}
+  if(Math.random()<.065*(sp?.45+wk*wk*2.4+Math.max(0,wk-.55)*4.5:wk))drip(px+(Math.random()-.5)*rr*1.4,py+rr*(.25+Math.random()*.3),(.8+Math.pow(Math.random(),1.4)*3.4*(ink.run||.8))*(sp?.6+wk*1.2:.6+wk*.5),{ty:pen.ink,col:dcol,r:sp?.8+Math.random()*1.1*(.5+wk):.45+Math.random()*.55,al:sp?.85:.85,delay:300+Math.random()*2600,wash:1})}
  /* gravity: only a hairline of bleed creeps up/sideways from the letters */
  if(!sp){const e=document.createElement('canvas');e.width=w;e.height=h0;const ex=e.getContext('2d');try{ex.filter=`blur(${1.6*P}px)`}catch(_){}ex.drawImage(stk.c,x0,y0,w,h0,0,0,w,h0);ex.filter='none';ex.globalCompositeOperation='source-in';ex.fillStyle=col;ex.fillRect(0,0,w,h0);bleedL.push({c:e,x:x0,y:y0,t0:now+200,dur:1600,a:.35})}
  /* pigment slides down inside the wet film and settles along the lower edge of each stroke: a darker band there */
@@ -1734,7 +1743,7 @@ $('#surfs').addEventListener('click',e=>{const b=e.target.closest('.sc');if(!b)r
 const step=d=>{goSurface(SURF[(SURF.indexOf(cur)+d+SURF.length)%SURF.length]);toast(cur.name)};
 $('#wetBtn').addEventListener('click',()=>{const was=wetSet.has(cur.id),rain=rainSet.has(cur.id);
  rainSet.clear();
- const on=!was;on?wetSet.add(cur.id):(wetSet.delete(cur.id),rainSet.delete(cur.id));bands[0].s=V(cur);renderSurfs();renderReact();save();
+ const on=!was;if(on)wetSeed=(Math.random()*1e9)>>>0;on?wetSet.add(cur.id):(wetSet.delete(cur.id),rainSet.delete(cur.id));bands[0].s=V(cur);renderSurfs();renderReact();save();
  if(on){spreadFromWall();wetReact()}else{wetQ.length=0;toast('Dry — the water’s gone, runs stop')}});
 $('#prevS').addEventListener('click',()=>step(-1));$('#nextS').addEventListener('click',()=>step(1));
 $('#sName').addEventListener('click',()=>openSheet('surfSheet'));
