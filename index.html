@@ -558,17 +558,24 @@ function markInk(x,y,r,ti,col,fresh){for(let gy=Math.max(0,Math.floor((y-r)/C));
    held the pen still. When a cell's surplus reaches bare wall below, it leaves as a drip — so drips start where the ink
    actually piled up. Pen speed throws some ink forward. Every cell dries on its own clock: as it dries the ink thickens
    (mobility falls with wetness²) until it freezes in place. */
-let fh,fw,ft,fid,fcol,fRad,fk,fcd,flowOn=false;const FPIN=.32;
-function flowAlloc(){const n=GW*GH_;fh=new Float32Array(n);fw=new Float32Array(n);ft=new Float32Array(n).fill(3);fid=new Uint8Array(n);fcol=new Array(n);fRad=new Float32Array(n);fk=new Uint8Array(n);fcd=new Float32Array(n);flowOn=false}
+let fh,fw,ft,fid,fcol,fRad,fk,fcd,fax,fay,frt,flowOn=false;const FPIN=.32;
+function flowAlloc(){const n=GW*GH_;fh=new Float32Array(n);fw=new Float32Array(n);ft=new Float32Array(n).fill(3);fid=new Uint8Array(n);fcol=new Array(n);fRad=new Float32Array(n);fk=new Uint8Array(n);fcd=new Float32Array(n);fax=new Float32Array(n);fay=new Float32Array(n);frt=new Float32Array(n);flowOn=false}
 let LD=null;function ldCtx(){const w=Math.max(1,Math.ceil(baked.c.width/2)),h=Math.max(1,Math.ceil(baked.c.height/2));if(!LD||LD.width!==w||LD.height!==h){LD=document.createElement('canvas');LD.width=w;LD.height=h;const x=LD.getContext('2d');x.setTransform(dpr/2,0,0,dpr/2,0,0)}return LD.getContext('2d')}
 function loadDeposit(x,y,spd,f){if(demo)return;const c=ldCtx(),r=pen.w*MM/2*curScale;const pe=lastPT==='pen'?pressNow:.62+.3*pressNow;c.globalAlpha=Math.min(.6,(.004+.42*Math.pow(pe,3))*Math.min(1.4,f)/(1+Math.min(3,spd)*.9));c.fillStyle='#fff';c.beginPath();c.arc(x,y,r,0,TAU);c.fill();c.globalAlpha=1}
 function flowable(){const k=INK[pen.ink];return !!k&&!k.solid&&!k.chrome&&!k.etch&&!pen.metal&&!pen.dauber}
+/* where the painted edge of the current nib is, below a point: walks across the tip at the given offset and returns the
+   lowest point that is still ink (just inside it), using the real tip shape — a rotated chisel or a round nib */
+function tipEdge(cx,cy,ox,oy,jit){const G=gDir(),vt=Math.abs(G.y)>=Math.abs(G.x),ux=vt?0:Math.sign(G.x)||1,uy=vt?Math.sign(G.y)||1:0,nx=-uy,ny=ux,sc=curScale;let dx=(ox-cx)*nx+(oy-cy)*ny+(jit||0),lo,hi;
+ if(pen.tip==='chisel'){const a=angle*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a),hw=pen.w*MM*sc*(1-leanNow*.28)/2,ht=Math.max(.5,pen.th*MM*Math.max(.35,sc)*(1-leanNow*.6)/2),K=[[nx*ca+ny*sa,ux*ca+uy*sa,hw],[-nx*sa+ny*ca,-ux*sa+uy*ca,ht]],ext=hw*Math.abs(K[0][0])+ht*Math.abs(K[1][0]);
+  dx=clamp(dx,-ext*.8,ext*.8);lo=-1e9;hi=1e9;for(const [na,ga,h] of K){if(Math.abs(ga)<1e-4)continue;const u=(h-dx*na)/ga,v=(-h-dx*na)/ga;lo=Math.max(lo,Math.min(u,v));hi=Math.min(hi,Math.max(u,v))}if(hi<lo||hi>1e8){lo=hi=0}}
+ else{const r=pen.w*MM/2*sc*(pen.metal?1:1-leanNow*.32);dx=clamp(dx,-r*.8,r*.8);hi=Math.sqrt(r*r-dx*dx);lo=-hi}
+ const sAl=hi-Math.min(1.5,(hi-lo)*.25);return [cx+dx*nx+sAl*ux,cy+dx*ny+sAl*uy]}
 function flowDeposit(x,y,spd,f,s){if(!fh||demo||!upright||!flowable()||s.wet)return;const ink=INK[pen.ink],r=R()*curScale*.9,slow=1/(1+Math.min(3,spd)*1.1),
   juice=(pen.valve?.7+Math.max(0,pen.flow-.6)*1.6:1)*(pen.squeeze?.55+(pen.sat||1)*.6+pressNow*.5:1)*(pen.adjust?Math.pow((pen.vs||3)/5,1.5)*1.6:1),
   amt=.075*Math.pow(clamp(f,0,1.6),2)*(.55+pressNow*.8)*juice*(ink.drip??.6)*(1-s.absorb*.85)*slow*(R()/7+.4),tau=2.2+(TAUS[pen.ink]||1.5)*2.6,id=Object.keys(INK).indexOf(pen.ink)+1,col=curCol(),thick=THICK()?1:0;
  /* momentum: part of the ink is thrown ahead along the stroke */const S=stroke,v=S&&S.v?Math.min(2.5,S.v):0,ax=v>.05?S.vx/v:0,ay=v>.05?S.vy/v:0,ahead=Math.min(r*1.1,v*r*.7);
- const put=(px,py,a,rr)=>{for(let gy=Math.max(0,Math.floor((py-rr)/C));gy<=Math.min(GH_-1,Math.floor((py+rr)/C));gy++)for(let gx=Math.max(0,Math.floor((px-rr)/C));gx<=Math.min(GW-1,Math.floor((px+rr)/C));gx++){const d=Math.hypot(gx*C+C/2-px,gy*C+C/2-py);if(d>rr+C*.5)continue;const i=gy*GW+gx;fh[i]+=a*(1-d/(rr+C));fw[i]=1;ft[i]=tau;fid[i]=id;fcol[i]=thinCol(pen.ink,col,.3);fRad[i]=R();fk[i]=thick}};
- put(x,y,amt*.7,r);if(ahead>1)put(x+ax*ahead,y+ay*ahead,amt*.3,r*.7);flowOn=true}
+ const put=(px,py,a,rr,own)=>{for(let gy=Math.max(0,Math.floor((py-rr)/C));gy<=Math.min(GH_-1,Math.floor((py+rr)/C));gy++)for(let gx=Math.max(0,Math.floor((px-rr)/C));gx<=Math.min(GW-1,Math.floor((px+rr)/C));gx++){const d=Math.hypot(gx*C+C/2-px,gy*C+C/2-py);if(d>rr+C*.5)continue;const i=gy*GW+gx;fh[i]+=a*(1-d/(rr+C));fw[i]=1;ft[i]=tau;fid[i]=id;fcol[i]=thinCol(pen.ink,col,.3);fRad[i]=R();fk[i]=thick;if(own||!frt[i]||fh[i]<=a){const e=tipEdge(x,y,gx*C+C/2,gy*C+C/2,(Math.random()-.5)*C*.6);fax[i]=e[0];fay[i]=e[1];frt[i]=1}}};
+ put(x,y,amt*.7,r,1);if(ahead>1)put(x+ax*ahead,y+ay*ahead,amt*.3,r*.7,0);flowOn=true}
 function flowStep(dt){if(!flowOn||!fh)return;dt=Math.min(dt,.05);const G=gDir(),vert=Math.abs(G.y)>=Math.abs(G.x),ddx=vert?0:Math.sign(G.x),ddy=vert?Math.sign(G.y):0,keys=Object.keys(INK),now=performance.now();let any=false;
  /* sweep against gravity so surplus moves one cell per pass without skipping */
  const ys=ddy>0?[GH_-1,-1,-1]:[0,GH_,1],xs=ddx>0?[GW-1,-1,-1]:[0,GW,1];
@@ -576,9 +583,10 @@ function flowStep(dt){if(!flowOn||!fh)return;dt=Math.min(dt,.05);const G=gDir(),
   fw[i]*=Math.exp(-dt/ft[i]);if(fw[i]<.04){fh[i]=0;continue}
   const ex=fh[i]-FPIN;if(ex<=0)continue;const s=surfAt(gx*C+C/2,gy*C+C/2),mob=fw[i]*fw[i]*(1-s.absorb*.8)*(1-s.rough*.5);if(mob<.01)continue;
   const nx=gx+ddx,ny=gy+ddy;if(nx<0||ny<0||nx>=GW||ny>=GH_){fh[i]=FPIN;continue}const j=ny*GW+nx,q=ex*Math.min(1,mob*4.5*dt);
-  if(inkG[j]||fh[j]>0){/* still inside the letter: the surplus sags down through the wet film */fh[i]-=q;fh[j]+=q;fw[j]=Math.max(fw[j],fw[i]*.98);ft[j]=ft[i];fid[j]=fid[j]||fid[i];fcol[j]=fcol[j]||fcol[i];fRad[j]=fRad[j]||fRad[i];fk[j]=fk[j]||fk[i]}
+  if(inkG[j]||fh[j]>0){/* still inside the letter: the surplus sags down through the wet film */if(fh[j]<=0)frt[j]=0;fh[i]-=q;fh[j]+=q;fw[j]=Math.max(fw[j],fw[i]*.98);ft[j]=ft[i];fid[j]=fid[j]||fid[i];fcol[j]=fcol[j]||fcol[i];fRad[j]=fRad[j]||fRad[i];fk[j]=fk[j]||fk[i]}
   else if(ex>(fk[i]?.95:.5)&&now>fcd[i]){/* bare wall below the edge: the bulge breaks away as a drip */const vol=(fk[i]?Math.min(3.8,.7+ex*1.5):Math.min(3.2,.35+ex*1.15))*(.45+.55*fw[i]),ty=keys[fid[i]-1]||pen.ink,rr=fk[i]?Math.max(1.5,Math.min(2.8,fRad[i]*(.09+Math.random()*.08))):DYEINK[ty]?Math.max(.5,Math.min(1.3,fRad[i]*(.025+Math.random()*.05))):Math.max(.7,Math.min(1.9,fRad[i]*(.04+Math.random()*.09)));
-   drip(gx*C+C/2+(Math.random()-.5)*C*.55-ddx*C*.45,gy*C+C/2-ddy*C*.45,vol,{ty,col:fcol[i]||curCol(),r:rr,thick:!!fk[i],visc:.35+.65*fw[i]});fh[i]-=Math.min(ex,vol*(fk[i]?.8:.55));fcd[i]=now+(fk[i]?700:260)+Math.random()*500}}
+   let ox=gx*C+C/2+(Math.random()-.5)*C*.55-ddx*C*.45,oy=gy*C+C/2-ddy*C*.45;if(frt[i]>0){/* hang the drip off the painted edge of the ink this film came from, never out on bare wall */ox=fax[i];oy=fay[i]}
+   drip(ox,oy,vol,{ty,col:fcol[i]||curCol(),r:rr,thick:!!fk[i],visc:.35+.65*fw[i]});fh[i]-=Math.min(ex,vol*(fk[i]?.8:.55));fcd[i]=now+(fk[i]?700:260)+Math.random()*500}}
  flowOn=any}
 function initWater(){GW=Math.ceil(W/C)+1;GH_=Math.ceil(H/C)+1;water=new Float32Array(GW*GH_);inkG=new Uint8Array(GW*GH_);colG=new Array(GW*GH_);washG=new Float32Array(GW*GH_);rainLeft=new Float32Array(GW*GH_);wg=new Float32Array(GW*GH_);wt=new Float32Array(GW*GH_).fill(1);flowAlloc();waterCv.width=GW;waterCv.height=GH_;waterOn=false}
 const waterAt=(x,y)=>{const i=Math.floor(y/C)*GW+Math.floor(x/C);return water[i]||0};
@@ -1201,7 +1209,9 @@ cv.addEventListener('wheel',e=>{if(pen.tip!=='chisel')return;e.preventDefault();
 /* ---------- frame loop: dwell bleed, drying sheen ---------- */
 let prev=performance.now();
 let mixT=0,uiDirty=false,uiT=0,fricS=null,fricV=0;let lastSnapAt=0;
-function frame(now){const dt=(now-prev)/1000;prev=now;if(!down&&now-lastSnapAt>900&&(drips.length||etches.length||shifts.length||spreads.length||chromes.length||bleedL.length)){lastSnapAt=now;prepSnap()}runRain(dt);flowStep(dt);runSpreads(now);runShifts(now);runEtches(now);stepTilt(now);
+/* once the tag is finished (pen off the wall ~1 s), the wet look (sheen and wet patches) dries DRYK x faster — drips keep running in real time; touching the wall again puts it straight back to real time */
+const DRYK=3;let upT=0;
+function frame(now){const dt=(now-prev)/1000;prev=now;if(down||!upT)upT=now;const dk=1+(DRYK-1)*clamp((now-upT-900)/800),ddt=dt*dk;if(!down&&now-lastSnapAt>900&&(drips.length||etches.length||shifts.length||spreads.length||chromes.length||bleedL.length)){lastSnapAt=now;prepSnap()}runRain(dt);flowStep(dt);runSpreads(now);runShifts(now);runEtches(now);stepTilt(now);
  for(const p of PENS)if(p.shake&&p.mix>.2)p.mix=Math.max(.2,p.mix-(down&&p===pen?0:dt/900));mixT+=dt;if(mixT>.5){mixT=0;showMix()}
  if(down&&tool==='spray'&&last){sprayAcc+=dt;if(sprayAcc>.11){sprayAcc=0;sprayAt(last)}}
  if(waterOn){let any=false;const k=dt*(bands[0]&&bands[0].s.absorb>.3?.06:.04);for(let i=0;i<water.length;i++)if(water[i]>0){water[i]=Math.max(0,water[i]-k);if(water[i]>0)any=true}
@@ -1210,10 +1220,10 @@ function frame(now){const dt=(now-prev)/1000;prev=now;if(!down&&now-lastSnapAt>9
  if(down&&stroke&&now-lastMove>220&&last){stroke.dwell+=dt;if(tool==='draw'&&stroke.dwell<3){const f0=flowNow(null);if(f0>.3)flowDeposit(last.x,last.y,0,f0*1.15,surfAt(last.x,last.y))}if(tool==='draw'&&!pen.squeeze&&!pen.metal&&!stroke.ink.solid&&stroke.dwell>.45&&stroke.dwell<2){const f=flowNow(null);if(f>.4){tipScale=1+Math.min(stroke.ink.fluid?.08:.22,(stroke.dwell-.45)*(stroke.ink.fluid?.1:.2)*f);stamp(last.x,last.y,0,null);tipScale=1}}if(pen.valve){stroke.priming=1;stroke.primeAcc=(stroke.primeAcc||0)+dt;if(stroke.primeAcc>(stroke.pumped?.28:.3)){stroke.primeAcc=0;stroke.pumped=1;pump(last)}dirty=true}const s=surfAt(last.x,last.y),ink=stroke.ink,b=ink.bleed*s.absorb;
   if(b>.03&&stroke.dwell<4){bleedAt(last.x,last.y,R()*(1+b*(1.1+stroke.dwell*1.4)),b*.035,s.gx);dirty=true}
   if(ink.future)poolAt(last.x,last.y,R()*1.25,0);if(pen.squeeze&&stroke.dwell>.6&&stroke.dwell<2.5){blob(last.x,last.y,R()*(pen.dauber?Math.min(.45,.25+stroke.dwell*.1):ink.fluid?Math.min(.95,.6+stroke.dwell*.25):pen.w>8?.55+stroke.dwell*.35:1+stroke.dwell*1.6),s);if(!ink.fluid&&(!FLOWDRIPS||!flowable())&&Math.random()<dt*3*ink.drip)drip(last.x+(Math.random()-.5)*R(),last.y+R()*.5,.6+stroke.dwell*.5);dirty=true}}
- for(const k in WET){const w=WET[k];if(!w.active)continue;w.acc+=dt;const kk=1-Math.exp(-w.acc/(TAUS[k]*(bands[0]&&bands[0].s.wet?2.5:1)));
+ for(const k in WET){const w=WET[k];if(!w.active)continue;w.acc+=ddt;w.until-=(dk-1)*dt*1000;const kk=1-Math.exp(-w.acc/(TAUS[k]*(bands[0]&&bands[0].s.wet?2.5:1)));
   if(kk>.06){w.x.save();w.x.setTransform(1,0,0,1,0,0);w.x.globalCompositeOperation='destination-out';w.x.globalAlpha=kk;w.x.fillRect(0,0,w.c.width,w.c.height);w.x.restore();w.acc=0}
   if(now>w.until){w.c.width=w.c.height=1;w.active=false}dirty=true}
- if(wgOn){let any=false;for(let i=0;i<wg.length;i++){if(wg[i]>0){wg[i]*=Math.exp(-dt/wt[i]);if(wg[i]<.02)wg[i]=0;else any=true}}wgOn=any}
+ if(wgOn){let any=false;for(let i=0;i<wg.length;i++){if(wg[i]>0){wg[i]*=Math.exp(-ddt/wt[i]);if(wg[i]<.02)wg[i]=0;else any=true}}wgOn=any}
  if(uiDirty&&now-uiT>140){uiDirty=false;uiT=now;showFlow()}if(down&&stroke&&fricS)friction(true,fricV,fricS);
  for(let i=bleedL.length-1;i>=0;i--){const L=bleedL[i];if(now-L.t0>=L.dur&&!(L.top&&(now-L.t0<9000||bleedL.some(q=>!q.top)))){const g=baked.x;g.save();g.setTransform(1,0,0,1,0,0);g.globalAlpha=L.a;g.drawImage(L.c,L.x,L.y);g.restore();bleedL.splice(i,1);freeC(L.c)}dirty=true}
  runDrips(Math.min(dt,.05));wetStep();runBlooms(now);runBleed(now);
@@ -1401,7 +1411,9 @@ function makeEtch(s){const pad=4,x=Math.max(0,Math.floor(stroke.x0-pad)),y=Math.
   rx.clearRect(0,0,rc.width,rc.height);rx.globalCompositeOperation='source-over';rx.drawImage(tc,0,0);rx.globalCompositeOperation='destination-out';rx.globalAlpha=1;rx.drawImage(bl,0,0);rx.drawImage(bl,0,0);rx.globalAlpha=1;rx.globalCompositeOperation='source-in';rx.fillStyle='#fbf9f2';rx.fillRect(0,0,rc.width,rc.height);
   cx.globalCompositeOperation='source-over';cx.globalAlpha=.68;cx.globalCompositeOperation='destination-out';cx.fillStyle='#000';cx.fillRect(0,0,c.width,c.height);cx.globalAlpha=1;cx.globalCompositeOperation='source-over';cx.drawImage(rc,0,0);cx.drawImage(rc,0,0)}
  etches.push({c,x,y,w,h,k,t0:performance.now()+300,T:(k?5200:2600)*(s.wet?1.8:1),done:0,amt:(k?.95*k:.14)*(s.wet?.6:1)});
- if(k&&upright){const P=stroke.pts||[],r=R();for(let i=0;i<P.length;i+=2){const n=Math.random()<.55?1:0;for(let j=0;j<n;j++){const long=Math.random()<.16;drip(P[i]+(Math.random()-.5)*r*1.4,P[i+1]+r*(.35+Math.random()*.35),long?1.4+Math.random()*2.4:.15+Math.random()*.55,{ty:'etch',col:'#f4f1e8',r:Math.max(.8,Math.min(3,r*(.12+Math.random()*.2))),et:1,delay:250+Math.random()*2200})}}}}
+ if(k&&upright){/* etch runs: a handful spaced along the stroke, hanging off its edge (not one per point) */const P=stroke.pts||[],r=R(),gap=Math.max(22,r*3.5);let len=0;for(let i=2;i<P.length;i+=2)len+=Math.hypot(P[i]-P[i-2],P[i+1]-P[i-1]);const cap=Math.min(10,2+Math.round(len/140));let acc=gap*Math.random(),n=0;
+  for(let i=2;i<P.length&&n<cap;i+=2){acc+=Math.hypot(P[i]-P[i-2],P[i+1]-P[i-1]);if(acc<gap)continue;acc=0;if(Math.random()>.45)continue;n++;const long=Math.random()<.1,e=tipEdge(P[i],P[i+1],P[i],P[i+1],(Math.random()-.5)*r*2);
+   drip(e[0],e[1],long?1+Math.random()*1.6:.15+Math.random()*.45,{ty:'etch',col:'#f4f1e8',r:Math.max(.8,Math.min(2.4,r*(.1+Math.random()*.15))),et:1,delay:250+Math.random()*2200})}}}
 function runEtches(now){for(let i=etches.length-1;i>=0;i--){const p=etches[i],pr=sm(clamp((now-p.t0)/p.T)),d=pr-p.done;if(d<.01&&pr<1)continue;
  const L=p.k?need(etchL).x:baked.x;L.save();L.setTransform(1,0,0,1,0,0);L.globalAlpha=inc(p.amt,p.done,pr);L.drawImage(p.c,p.x*dpr,p.y*dpr);L.restore();if(p.k)etchOn=true;p.done=pr;dirty=true;if(pr>=1){etches.splice(i,1);freeC(p.c)}}}
 function putFJ(c){if(!c&&!fjL.c.width){fjOn=false;return}if(c)need(fjL);const x=fjL.x;x.save();x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,fjL.c.width,fjL.c.height);if(c)x.drawImage(c,0,0);x.restore();fjOn=!!c;dirty=true}
