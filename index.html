@@ -417,10 +417,10 @@ PENS.push({id:'otr084',brand:'OTR',name:'Flowpen 084',model:'OTR.084',tip:'chise
  PENS.push(...[['ept05','Squeezer 05 EPT',5,45],['ept10','Squeezer 10 EPT',10,70],['ept25','Squeezer 25 EPT',25,100],['eptm05','Squeezer Mini 05 EPT',5,35],['eptm20','Squeezer Mini 20 EPT',20,0],['mds10','Molotow Dripstick Empty 10',10,0],['mds25','Molotow Dripstick Empty 25',25,0],['mmp60','Molotow Masterpiece Empty 60',60,0]].map(([id,name,w,cap])=>({id,brand:'Empty',name,model:(name.startsWith('Squeezer')?'Grog ':'')+name,tip:'round',w,ink:'alcohol',empty:1,squeeze:1,inkLabel:'Empty — fill with an ink',colors:['#dfe2e6'],barrel:'#e4e7ea',band:'#111',...(cap?{cap}:{}),
   body:name.startsWith('Squeezer')?'Grog clear soft squeeze body, empty — fill it with any ink':'Empty marker — fill it with any ink',width:`${w} mm round Flowtex squeeze tip`,best:['paper','glass','bus','plastic','ebox','tiles','shutter'],bestTxt:'Depends on the ink you fill it with',
   facts:[`Empty ${name.replace(/ (EPT|Empty) ?\d*$/,'')}${cap?` — holds ${cap} ml`:''}. Fill it from the ink bottles below.`,'Refill any time; a new ink replaces the old one.'],src:'SPECTRUM / The Butcher Shop listings'})));
- PENS.push({id:'otr4001e',brand:'Empty',name:'OTR 4001 Bullet Empty',model:'OTR.4001 Bullet',tip:'bullet',w:8,ink:'alcohol',empty:1,valve:1,inkLabel:'Empty — fill with an ink',colors:['#dfe2e6'],barrel:'#111111',band:'#e9c21c',
+ PENS.push({id:'otr4001e',brand:'Empty',name:'OTR 4001 Bullet Empty',model:'OTR.4001 Bullet',tip:'bullet',w:8,ink:'alcohol',empty:1,valve:1,ball:1,inkLabel:'Empty — fill with an ink',colors:['#dfe2e6'],barrel:'#111111',band:'#e9c21c',
   body:'Pocket marker with flow-control valve, empty — fill it with any ink',width:'8 mm soft round felt',best:['paper','glass','bus','plastic','ebox','tiles','shutter'],bestTxt:'Depends on the ink you fill it with',
   facts:['Small, inconspicuous pocket marker with a soft 8 mm round felt and a flow-control valve.','Works with most inks and paints — fill it from the ink bottles below.'],src:'Graff City listing (OTR-MA-4001E)'},
- {id:'magicmk',brand:'Magic Ink',name:'Magic Ink Marker',model:'Teranishi Magic Ink',tip:'chisel',w:8,th:1.6,ink:'alcohol',bottle:1,colors:['#000000','#e52a44','#009fdf','#00c8f8','#fdfd38','#ff6a00','#ec6c9d','#774a9a','#6bbf6a','#5fa65a','#4f5e31','#f7ae67','#be8a3a','#9a3100','#4a2a1e'],barrel:'#c9cdd2',band:'#111',price:'£3.65',
+ {id:'magicmk',brand:'Magic Ink',name:'Magic Ink Marker',model:'Teranishi Magic Ink',tip:'chisel',w:8,th:1.6,ink:'alcohol',bottle:1,colors:['#000000','#e52a44','#009fdf','#00c8f8','#fdfd38','#ff6a00','#ec6c9d','#774a9a','#6bbf6a','#5fa65a','#4f5e31','#be8a3a','#9a3100','#4a2a1e'],barrel:'#c9cdd2',band:'#111',price:'£3.65',
   inkLabel:'Oil-based permanent dye ink — fast drying, water resistant',body:'Glass bottle body, felt chisel nib',width:'1 × 5 × 8 mm felt chisel',best:['glass','plastic','paper','painted','tiles'],bestTxt:'Glass, metal, plastic, paper, wood',
   facts:['Developed in Japan and first sold in 1953.','Oil-based ink: fast drying and water resistant.','Glass body with a 1 mm × 5 mm × 8 mm felt chisel nib.','Works on glass, paper, metal, plastic, leather, wood and ceramic.'],src:'Graff City listing'});
  PENS.push({id:'fbs07x',brand:'Fadebomb',name:'Bullet Marker S07X',model:'S07X',tip:'chisel',w:8.5,th:2,ink:'alcpaint',valve:1,fb2:1,colors:['#16130e','#a3121c','#1f3fb0','#1f7a3a','#121418','#b0141f','#2a48c0'],barrel:'#2c3a42',band:'#b9bec4',price:'£9.75',
@@ -434,7 +434,7 @@ PENS.push({id:'otr084',brand:'OTR',name:'Flowpen 084',model:'OTR.084',tip:'chise
  const ord=[...new Set(PENS.map(p=>p.brand))];PENS.sort((a,b)=>ord.indexOf(a.brand)-ord.indexOf(b.brand)||(a.ink==='fluid')-(b.ink==='fluid')||a.w-b.w)}
 const BEST={ld:['glass','steel','plastic'],d:['glass','steel','plastic'],md:['glass','steel','plastic'],px30:['paper','coated','steel','painted','glass','plastic','pine','sawn','canvas','concrete']};
 function applyEnd(p){if(!p.ends)return;const e=p.ends[p.end||0];p.tip=e.tip;p.w=e.w;p.th=e.th}
-PENS.forEach(p=>{if(p.best){const B=new Set(p.best);if(B.has('glass')){B.add('bus');B.add('mirror')}if(B.has('steel'))B.add('stainless');if(B.has('painted'))B.add('ebox');if(B.has('glass')&&B.has('plastic'))B.add('tiles');p.best=[...B]}p.flow=.9;p.mix=1;p.capped=true;p.tipDry=0;p.round=0;p.dirtAmt=0;p.life=1;p.fray=0;if(p.valve&&!['alcohol','stain','bleed'].includes(p.ink))p.shake=1;if(p.ink==='fluid')p.squeeze=1;if(p.tip==='needle')p.metal=1;if(BEST[p.id]){p.best=BEST[p.id];p.bestTxt=p.id==='px30'?'Paper, metal, glass, plastic, wood, fabric, stone (retailer listing)':'Non-absorbent: metal, glass, plastic, rubber'}applyEnd(p)});
+PENS.forEach(p=>{if(p.best){const B=new Set(p.best);if(B.has('glass')){B.add('bus');B.add('mirror')}if(B.has('steel'))B.add('stainless');if(B.has('painted'))B.add('ebox');if(B.has('glass')&&B.has('plastic'))B.add('tiles');p.best=[...B]}p.flow=.9;p.mix=1;p.capped=true;p.tipDry=0;p.round=0;p.dirtAmt=0;p.life=1;p.fray=0;if(p.valve&&!['alcohol','stain','bleed'].includes(p.ink))p.shake=1;if(p.ink==='fluid')p.squeeze=1;/* straight off the shelf, like a real one: the mixing ball has settled (shake it) and a valve nib is dry (prime it) */if(p.ball)p.shake=1;if(p.shake)p.mix=.08;if(p.valve)p.flow=.12;if(p.tip==='needle')p.metal=1;if(BEST[p.id]){p.best=BEST[p.id];p.bestTxt=p.id==='px30'?'Paper, metal, glass, plastic, wood, fabric, stone (retailer listing)':'Non-absorbent: metal, glass, plastic, rubber'}applyEnd(p)});
 Object.assign(INK.oil,{wthin:.88,wrep:.55,run:.35});Object.assign(INK.water,{wthin:.62,wrep:0,run:1});Object.assign(INK.alcohol,{wthin:.8,wrep:.1,run:1});
 Object.assign(INK.fluid,{wthin:.8,wrep:.5,run:.2});Object.assign(INK.alcpaint,{wthin:.96,wrep:.25,run:.8});Object.assign(INK.chrome,{wthin:.88,wrep:.35,run:.7});Object.assign(INK.stain,{wthin:.85,wrep:.08,run:1.25});Object.assign(INK.bleed,{wthin:.82,wrep:.1,run:1});Object.assign(INK.flow,{wthin:.8,wrep:.1,run:1.1});
 const TAUS={oil:5,water:3,alcohol:.8,fluid:4,fast:2.5,alcpaint:1.5,chrome:2,flow:1.2,stain:1,bleed:1.1};const mixF=()=>pen.shake?.35+.65*pen.mix:1;
@@ -531,16 +531,25 @@ let pen=PENS.find(p=>p.id==='k60'),color=pen.colors[0],tool='draw',angle=40;
 try{const st=JSON.parse(localStorage.getItem('mtb')||'{}');if(Array.isArray(st.wet))wetSet=new Set(st.wet);if(st.pen)pen=PENS.find(p=>p.id===st.pen)||pen;color=pen.colors.includes(st.color)?st.color:pen.colors[0];if(st.cmp)cmpSet=st.cmp;if(st.cur)cur=SURF.find(s=>s.id===st.cur)||cur;if(st.wear)for(const p of PENS){const w=st.wear[p.id];if(w){p.life=w[0];p.fray=w[1];p.round=w[2]||0;p.mush=w[3]||0}}}catch(e){}
 const save=()=>{try{localStorage.setItem('mtb',JSON.stringify({wet:[...wetSet],pen:pen.id,color,cmp:cmpSet,cur:cur.id,compare,fills:Object.fromEntries(PENS.filter(p=>p.fill).map(p=>[p.id,p.fill])),wear:Object.fromEntries(PENS.map(p=>[p.id,[+p.life.toFixed(3),+p.fray.toFixed(3),+(p.round||0).toFixed(3),+(p.mush||0).toFixed(3)]]))}))}catch(e){}};
 
-function layout(){
+/* RESIZE: switching apps, the app switcher, bars showing/hiding and rotation all resize the page. Nothing is touched
+   while the page is hidden or mid-transition; a real resize carries EVERYTHING on the wall across — the ink, buff
+   smudges and washes, the stored ghost, and the maps that say where ink is (so a later buff still finds the tag) */
+let layT=0,layPend=false;function layout(){if(!W)return doLayout();if(document.hidden){layPend=true;return}clearTimeout(layT);layT=setTimeout(doLayout,280)}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&layPend){layPend=false;layout()}});
+function doLayout(){
  cvR=null;const r=cv.getBoundingClientRect();const w=Math.round(r.width),h=Math.round(r.height);if(w<10||h<10)return;
- const keep=W&&(w===W&&h===H);if(keep)return;
- /* carry the ink (not the old wall photo) across a resize/rotation */
+ const keep=W&&(w===W&&h===H);if(keep)return;if(down)return void(layT=setTimeout(doLayout,400));
+ flushBleed(true);
  const cp=o=>{const c=document.createElement('canvas');c.width=o.c.width;c.height=o.c.height;c.getContext('2d').drawImage(o.c,0,0);return c};
- let old=null,olds=null;if(W){old=cp(baked);const m=old.getContext('2d');m.globalCompositeOperation='destination-in';m.drawImage(idm.c,0,0);olds=[[idm,cp(idm)],[metal,cp(metal)],[etchL,cp(etchL)],[fjL,cp(fjL)]]}
+ let old=null,olds=null,grids=null;if(W){
+  /* everything that differs from the bare wall is work: ink, smudges, washes, runs */
+  old=cp(baked);try{const ww=old.width,hh=old.height,ox=old.getContext('2d'),a=ox.getImageData(0,0,ww,hh),bgd=bg.x.getImageData(0,0,ww,hh).data,d=a.data;for(let i=0;i<d.length;i+=4){const df=Math.abs(d[i]-bgd[i])+Math.abs(d[i+1]-bgd[i+1])+Math.abs(d[i+2]-bgd[i+2]);if(df<5)d[i+3]=0;else if(df<20)d[i+3]=Math.round(d[i+3]*(df-5)/15)}ox.putImageData(a,0,0)}catch(_){const m=old.getContext('2d');m.globalCompositeOperation='destination-in';m.drawImage(idm.c,0,0)}
+  olds=[[idm,cp(idm)],[ghost,cp(ghost)],[metal,cp(metal)],[etchL,cp(etchL)],[fjL,cp(fjL)]];
+  grids={GW,GH_,inkG,colG,washG,LM,LMW,LMH,LD:LD?(()=>{const c=document.createElement('canvas');c.width=LD.width;c.height=LD.height;c.getContext('2d').drawImage(LD,0,0);return c})():null}}
  W=w;H=h;
  for(const w of Object.values(WET)){w.c.width=w.c.height=1;w.active=false}
  for(const o of [{c:cv,x:dctx},bg,baked,stk,idm,rimA,rimB,ghost,ovl]){o.c.width=Math.round(W*dpr);o.c.height=Math.round(H*dpr);o.x.setTransform(dpr,0,0,dpr,0,0)}for(const o of LAZY)if(o.c.width)need(o);
- measureLdg();buildBands();renderBg();initWater();baked.x.drawImage(bg.c,0,0,W,H);if(old)baked.x.drawImage(old,0,0,old.width/dpr,old.height/dpr);if(olds)for(const [o,c] of olds){o.x.drawImage(c,0,0,c.width/dpr,c.height/dpr);freeC(c)}freeC(old);dirty=true}
+ measureLdg();buildBands();renderBg();initWater();if(grids){/* where-the-ink-is maps: same cell size, so copy the overlap row by row */const cpG=(A,B,w0,h0,w1,h1)=>{if(!A||!B)return;for(let y=0;y<Math.min(h0,h1);y++)for(let x=0;x<Math.min(w0,w1);x++)B[y*w1+x]=A[y*w0+x]};cpG(grids.inkG,inkG,grids.GW,grids.GH_,GW,GH_);cpG(grids.colG,colG,grids.GW,grids.GH_,GW,GH_);cpG(grids.washG,washG,grids.GW,grids.GH_,GW,GH_);cpG(grids.LM,LM,grids.LMW,grids.LMH,LMW,LMH);if(grids.LD){const x=ldCtx();x.save();x.setTransform(1,0,0,1,0,0);x.drawImage(grids.LD,0,0);x.restore()}}baked.x.drawImage(bg.c,0,0,W,H);if(old)baked.x.drawImage(old,0,0,old.width/dpr,old.height/dpr);if(olds)for(const [o,c] of olds){o.x.drawImage(c,0,0,c.width/dpr,c.height/dpr);freeC(c)}freeC(old);dirty=true}
 function buildBands(){
  const list=[V(cur)];
  const rows=H>=W*.8,k=list.length;bands=list.map((s,i)=>rows?{s,x:0,y:Math.round(i*H/k),w:W,h:Math.round((i+1)*H/k)-Math.round(i*H/k)}:{s,x:Math.round(i*W/k),y:0,w:Math.round((i+1)*W/k)-Math.round(i*W/k),h:H});
@@ -738,7 +747,7 @@ function drip(x,y,vol,o){if(!upright||drips.length>(o&&o.wash?260:60)||vol<.1)re
    paler film (the wall shows through), the root where it hangs off the letter stays full colour, and the pigment piles
    up in the bead where the run stops — the same flow that leaves a dark ring round a dried drop. Dyes move with their
    solvent and settle less than heavy pigment paints. */
-const SINK={oil:.42,alcpaint:.36,water:.4,alcohol:.2,stain:.22,bleed:.22,flow:.24,future:.18,fluid:.16,solid:0,chrome:0,etch:0},pigQ=[];
+const SINK={oil:.2,alcpaint:.17,water:.2,/* paint runs stay as solid as the letter all the way down (reference photos): only a slight thinning */alcohol:.2,stain:.22,bleed:.22,flow:.24,future:.18,fluid:.16,solid:0,chrome:0,etch:0},pigQ=[];
 const sinkOf=ty=>{const k=SINK[ty];if(k!==undefined)return k;const I=INK[ty];return !I||I.chrome||I.etch||I.solid?0:.3};
 function dcolNow(d,trav,done){const g=d.pg;if(!g)return d.col;if(done)return g.deep;const t=clamp((trav-g.root)/(g.root*1.6));return t<=0?d.col:t>=1?g.lite:mixHex(d.col,g.lite,t)}
 /* where a run drains out of a letter, the paint just above it has gone with it: a paler patch fading up into the letter */
@@ -927,33 +936,33 @@ function buffAt(a,b){lForce=true;{const r=36;for(let cy=Math.max(0,(b.y-r)>>1);c
  {const u=tcan(D,'bu'),X=(b.x-R2)*dpr,Y=(b.y-R2)*dpr;u.x.drawImage(baked.c,X,Y,D,D,0,0,D,D);u.x.globalCompositeOperation='destination-in';u.x.drawImage(idm.c,X,Y,D,D,0,0,D,D);
   if(vio){u.x.globalCompositeOperation='source-atop';u.x.globalAlpha=.78;u.x.fillStyle='#6b58c9';u.x.fillRect(0,0,D,D);u.x.globalAlpha=1}
   u.x.globalCompositeOperation='source-over';if(!ghostRet.cap){ghostRet.cap=1;ghostRet.tl=new Set();ghostRet.nz=null}ghostTiles(X,Y,D);
-  if(vio)ghostRet.vio=1;ghostRet.t=performance.now();ghostRet.x0=Math.min(ghostRet.x0,X);ghostRet.y0=Math.min(ghostRet.y0,Y);ghostRet.x1=Math.max(ghostRet.x1,X+D);ghostRet.y1=Math.max(ghostRet.y1,Y+D);ghostRet.k=Math.max(ghostRet.k,ty&&GHOST[ty]?.34:0)}
+  if(vio)ghostRet.vio=1;ghostRet.t=performance.now();ghostRet.x0=Math.min(ghostRet.x0,X);ghostRet.y0=Math.min(ghostRet.y0,Y);ghostRet.x1=Math.max(ghostRet.x1,X+D);ghostRet.y1=Math.max(ghostRet.y1,Y+D);ghostRet.k=Math.max(ghostRet.k,ty&&GHOST[ty]?Math.min(.6,GHOST[ty]*1.7):0)}
  if(satOn&&SAT){erase({x:SAT.getContext('2d')},b,.5,R2*1.05);lForce=true}if(glL.c.width){erase(glL,b,.6,R2*1.05);glDirty=true}if(shL.c.width){erase(shL,b,.6,R2*1.05);shDirty=true}if(metal.c.width){erase(metal,b,.45,R2*1.05);shineDirty=true;if(metalOn&&++buffN%40===0)dirty=true}if(fjL.c.width)erase(fjL,b,.45,R2*1.05);
  if(L>.5){smearDir(baked,a,b,.22,R2*.6,false);smearDir(idm,a,b,.3,R2*.65,false)}/* the rag drags the colour along the rub */
  /* thin ink lifts easily, heavy ink hangs on: wipe back to the wall wherever little ink went down */
  if(LD){const D=Math.round(2*R2*dpr),X=Math.round((b.x-R2)*dpr),Y=Math.round((b.y-R2)*dpr),t=tcan(D,'lf');t.x.setTransform(1,0,0,1,0,0);t.x.globalCompositeOperation='copy';t.x.globalAlpha=1;t.x.drawImage(bg.c,X,Y,D,D,0,0,D,D);
   t.x.globalCompositeOperation='destination-out';t.x.globalAlpha=.92;t.x.drawImage(LD,X/2,Y/2,D/2,D/2,0,0,D,D);t.x.drawImage(LD,X/2,Y/2,D/2,D/2,0,0,D,D);t.x.globalAlpha=1;
   t.x.globalCompositeOperation='destination-in';const g=t.x.createRadialGradient(D/2,D/2,0,D/2,D/2,D/2);g.addColorStop(0,'#000');g.addColorStop(1,'rgba(0,0,0,0)');t.x.fillStyle=g;t.x.fillRect(0,0,D,D);t.x.globalCompositeOperation='source-over';
-  baked.x.save();baked.x.setTransform(1,0,0,1,0,0);baked.x.globalAlpha=.15;baked.x.drawImage(t.c,0,0,D,D,X,Y,D,D);baked.x.restore()}
+  baked.x.save();baked.x.setTransform(1,0,0,1,0,0);baked.x.globalAlpha=.15*(1-Math.min(.6,(GHOST[ty]||0)*1.6));baked.x.drawImage(t.c,0,0,D,D,X,Y,D,D);baked.x.restore()}
  /* wipe striations: the pad's fibres lift ink in parallel streaks along the rub, leaving the letter uneven, not blurred */
  if(L>.5)wipeStreaks(a,b,R2);
  t.x.drawImage(bg.c,(b.x-R2)*dpr,(b.y-R2)*dpr,D,D,0,0,D,D);t.x.globalAlpha=g;t.x.drawImage(ghost.c,(b.x-R2)*dpr,(b.y-R2)*dpr,D,D,0,0,D,D);t.x.globalAlpha=1;soft(t.c,D/2);
- baked.x.save();baked.x.setTransform(1,0,0,1,0,0);baked.x.globalAlpha=.035;baked.x.drawImage(t.c,(b.x-R2)*dpr,(b.y-R2)*dpr);baked.x.restore();
+ baked.x.save();baked.x.setTransform(1,0,0,1,0,0);baked.x.globalAlpha=.035*(1-Math.min(.6,(GHOST[ty]||0)*1.6));baked.x.drawImage(t.c,(b.x-R2)*dpr,(b.y-R2)*dpr);baked.x.restore();
  /* the pad picks up dissolved dye and smears it out as a wide, soft cloud along the rub direction */
- if(ty&&cc&&cc[0]==='#'&&DYEB[ty]!==undefined&&ty!=='etch'){/* the cloud is just the ink itself, thinned — so black over a yellow door reads brown, violet stays violet */const wc=vio?'#6a44c4':blu?mixHex(cc,'#3a52a8',.6):cc;pad.col=pad.col?mixHex(pad.col,wc,.25):wc;pad.load=Math.min(1.8,pad.load+(DYEB[ty]+.18)*.6)}
- if(pad.load>.03&&pad.col){const th=L>.5?Math.atan2(b.y-a.y,b.x-a.x):pad.th||0;pad.th=th;const bx=baked.x,rx=R2*(2.9+Math.random()*.6),ry=R2*(2+Math.random()*.4);
-  /* the dissolved dye tints the wall like a wash: multiply, so it never covers the letters and stays a stain on dark walls */bx.save();bx.globalCompositeOperation='multiply';bx.globalAlpha=Math.min(.3,.2*pad.load)*(.85+Math.random()*.3);bx.translate(b.x+(Math.random()-.5)*10,b.y+(Math.random()-.5)*10);bx.rotate(th);bx.drawImage(feather(qh(...hex(washTint(pad.col)))),-rx,-ry,2*rx,2*ry);bx.restore();
-  /* the wet wash sinks: dissolved dye gathers deeper along the lower part of the smear */if(upright){const G0=gDir();bx.save();bx.globalCompositeOperation='multiply';bx.globalAlpha=Math.min(.12,.08*pad.load);bx.translate(b.x+G0.x*R2*.75,b.y+G0.y*R2*.75);bx.rotate(Math.atan2(G0.y,G0.x)-Math.PI/2);bx.drawImage(feather(qh(...hex(washTint(pad.col)))),-R2*1.4,-R2*.55,R2*2.8,R2*1.1);bx.restore()}
-  if(++buffN%9===0){const st=Math.random()*TAU;bx.save();bx.globalAlpha=.025*pad.load;bx.strokeStyle=pad.col;bx.lineWidth=1.1;bx.beginPath();bx.ellipse(b.x,b.y,rx*.9,ry*.8,th,st,st+Math.PI*(.5+Math.random()*.8));bx.stroke();bx.restore()}
+ if(ty&&cc&&cc[0]==='#'&&DYEB[ty]!==undefined&&ty!=='etch'){/* the cloud is just the ink itself, thinned — so black over a yellow door reads brown, violet stays violet */const wc=vio?'#7262b0':blu?mixHex(cc,'#3a52a8',.6):cc;pad.col=pad.col?mixHex(pad.col,wc,.25):wc;pad.load=Math.min(1.8,pad.load+(DYEB[ty]+.18)*.6)}
+ if(pad.load>.03&&pad.col){const th=L>.5?Math.atan2(b.y-a.y,b.x-a.x):pad.th||0;pad.th=th;const bx=baked.x;
+  /* the dissolved dye tints the wall like a wash: multiply, so it never covers the letters and stays a stain on dark walls *//* the rag leaves a mottled cloud, patchy and denser where it pressed, not a clean oval */for(let q=0;q<3;q++){const rx=R2*(1.3+Math.random()*1.3),ry=rx*(.55+Math.random()*.3),ox=(Math.random()-.5)*R2*1.3,oy=(Math.random()-.5)*R2*.9;bx.save();bx.globalCompositeOperation='multiply';bx.globalAlpha=Math.min(.22,.15*pad.load)*(.35+Math.random()*.9);bx.translate(b.x+ox,b.y+oy);bx.rotate(th+(Math.random()-.5)*.6);bx.drawImage(feather(qh(...hex(washTint(pad.col)))),-rx,-ry,2*rx,2*ry);bx.restore()}
+  /* the wet wash sinks: dissolved dye gathers deeper along the lower part of the smear */if(upright){const G0=gDir();bx.save();bx.globalCompositeOperation='multiply';bx.globalAlpha=Math.min(.08,.055*pad.load);bx.translate(b.x+G0.x*R2*.75,b.y+G0.y*R2*.75);bx.rotate(Math.atan2(G0.y,G0.x)-Math.PI/2);bx.drawImage(feather(qh(...hex(washTint(pad.col)))),-R2*1.4,-R2*.55,R2*2.8,R2*1.1);bx.restore()}
+  if(false&&++buffN%9===0){const st=Math.random()*TAU;bx.save();bx.globalAlpha=.025*pad.load;bx.strokeStyle=pad.col;bx.lineWidth=1.1;bx.beginPath();bx.ellipse(b.x,b.y,rx*.9,ry*.8,th,st,st+Math.PI*(.5+Math.random()*.8));bx.stroke();bx.restore()}
   /* solvent runs down carrying tinted dye: a streaky curtain below the rag, fading as it goes */
   /* how much tag is under the rag: the solvent only carries real colour where it's dissolving ink; off the tag it's mostly clear solvent */
   const onTag=(()=>{let n=0,k=0;for(let a=0;a<9;a++){const q=a?R2*.75:0,an=a*.785;k++;const px=b.x+Math.cos(an)*q,py=b.y+Math.sin(an)*q;if(lmAt(px|0,py|0)||inkAt(px,py))n++}return n/k})();
-  if(upright&&Math.random()<.55*(.25+.75*onTag)){const G0=gDir(),ln=R2*(2.2+Math.random()*2.6)*(.6+.4*Math.min(1,pad.load))*(.5+.5*onTag);bx.save();bx.globalCompositeOperation='multiply';bx.globalAlpha=Math.min(.17,.12*pad.load)*(.18+.82*onTag);bx.translate(b.x+G0.x*R2*.35,b.y+G0.y*R2*.35);bx.rotate(Math.atan2(G0.y,G0.x)-Math.PI/2);bx.drawImage(streakTex(qh(...hex(washTint(pad.col)))),-R2*1.25,0,R2*2.5,ln);bx.restore()}
+  if(upright&&Math.random()<.8*(.25+.75*onTag)){const G0=gDir(),ln=R2*(2.2+Math.random()*2.6)*(.6+.4*Math.min(1,pad.load))*(.5+.5*onTag);bx.save();bx.globalCompositeOperation='multiply';bx.globalAlpha=Math.min(.24,.17*pad.load)*(.18+.82*onTag);bx.translate(b.x+G0.x*R2*.35,b.y+G0.y*R2*.35);bx.rotate(Math.atan2(G0.y,G0.x)-Math.PI/2);bx.drawImage(streakTex(qh(...hex(washTint(pad.col)))),-R2*1.25,0,R2*2.5,ln);bx.restore()}
   }
- {const ci=inkCell(b.x,b.y);if(ty&&cc&&cc[0]==='#'&&DYEB[ty]>.01){/* every pass dilutes it: the first runs carry real colour, later ones are paler, thinner, see-through water */const w=washG[ci]=(washG[ci]||0)+1,str=Math.exp(-(w-1)/6),base=vio?'#7d66cf':blu?mixHex(cc,'#3a52a8',.55):cc,sm0=surfAt(b.x,b.y).mean,wall='#'+sm0.map(v=>Math.round(v).toString(16).padStart(2,'0')).join(''),k=Math.min(1,DYEB[ty]+.35),col=mixHex(base,wall,Math.min(.92,1-(.12+.88*str)*k*.85));
+ {const ci=inkCell(b.x,b.y);if(ty&&cc&&cc[0]==='#'&&DYEB[ty]>.01){/* every pass dilutes it: the first runs carry real colour, later ones are paler, thinner, see-through water */const w=washG[ci]=(washG[ci]||0)+1,str=Math.exp(-(w-1)/6),base=vio?'#8174b8':blu?mixHex(cc,'#3a52a8',.55):cc,sm0=surfAt(b.x,b.y).mean,wall='#'+sm0.map(v=>Math.round(v).toString(16).padStart(2,'0')).join(''),k=Math.min(1,DYEB[ty]+.35),col=mixHex(base,wall,Math.min(.92,1-(.12+.88*str)*k*.85));
   if(upright){/* the solvent carries the dissolved ink itself: runs are the ink's own colour, see-through like a dye wash
    (dark on dark walls, a tint on light ones), thin streaks rather than fat paint drips, paler with every pass */
-  const hot=str>.55,n=Math.random()<(hot?.16:.07)*str+.012?1:0,wcol=pad.col?mixHex(col,pad.col,.3):col;for(let j=0;j<n;j++){let dx=b.x+(Math.random()-.5)*R2*1.5,dy=b.y+R2*(.1+Math.random()*.6);
+  const hot=str>.55,n=Math.random()<(hot?.28:.13)*str+.02?1:0,wcol=pad.col?mixHex(col,pad.col,.3):col;for(let j=0;j<n;j++){let dx=b.x+(Math.random()-.5)*R2*1.5,dy=b.y+R2*(.1+Math.random()*.6);
    /* a run starting on the tag carries the dissolved colour; one starting off it is mostly clear solvent — faint */const on=!!(lmAt(dx|0,dy|0)||inkAt(dx,dy));drip(dx,dy,(1+Math.random()*1.8)*(.6+str*.8)*(on?1:.6),{ty,col:on?wcol:mixHex(wcol,wall,.7),al:(hot?.42:.2+.22*str)*(on?1:.35),r:hot?.8+Math.random()*1:.5+Math.random()*.6,soft:1,delay:Math.random()*300})}}}}
  {
   pad.load*=.968}
@@ -1000,13 +1009,20 @@ function mergeRuns(dt){const G=gDir(),gm=Math.hypot(G.x,G.y)||1,ux=G.x/gm,uy=G.y
   else if(gap>1&&(tail.ph%1)<.45){/* only some runs get drawn across — most hang straight */const m=Math.min(Math.abs(lat),dt*(6+10*(1-Math.abs(lat)/(rr*1.9+2))))*side;tail.x+=nx*m;tail.y+=ny*m}}}
 function runDrips(dt){if(!drips.length)return;mergeRuns(dt);
  for(let i=drips.length-1;i>=0;i--){const d=drips[i];if(d.dead){drips.splice(i,1);continue}if(d.t0&&performance.now()<d.t0)continue;const s=surfAt(d.x,d.y),gr=(s.id==='shutter'&&(d.y%11.636)<2.4)||(s.id==='tiles'&&((d.y%64)<3||(d.x%64)<3)),G=gDir(),still=G.m<.18,sp=(40+d.vol*45)*(d.thick?.42:1)*(1-s.absorb*.6)*(1-s.rough*.5)*(d.wet?1.7:1)*(gr?.18:1)*Math.max(0,(G.m-.15)/.85),y0=d.y,x0=d.x;
-  if(!d.gx){d.gx=G.x;d.gy=G.y}if(ledgeLive()&&!d.led&&!d.et&&d.y<LDG().y)d.preL=1;const nowT=performance.now();/* a run can hesitate once on a drier patch: a brief, slight swell, not a blob */if(false){/* no stall swells: real runs don't bulge mid-way */d.pz=nowT+90+Math.random()*180;d.pzn=1}const pz=d.pz&&nowT<d.pz;if(d.pz&&!pz){d.pz=0;d.bd=0}if(d.visc<1)d.visc=Math.max(.2,d.visc-dt*.04);const sp2=(pz?sp*.3:sp)*(d.visc||1);d.gx+=(G.x-d.gx)*Math.min(1,dt*3);d.gy+=(G.y-d.gy)*Math.min(1,dt*3);d.x+=d.gx*sp2*dt;d.y+=d.gy*sp2*dt;if(still)d.vol-=dt*.15;d.vol-=dt*((.28+s.absorb*.9+s.rough*.5)*(d.wet?.75:1)+(gr?.7:0));if(d.rT&&d.r<d.rT)d.r=Math.min(d.rT,d.r+dt*.8);if(d.wet)d.r=Math.max(.8,d.r*(1-dt*.03));if(d.et)d.r=Math.max(.45,d.r*(1-dt*.9));if(d.sy===undefined){d.sy=y0;d.sx=x0;d.fq=.025+Math.random()*.035}const trav=Math.hypot(d.x-d.sx,d.y-d.sy),travP=Math.hypot(x0-d.sx,y0-d.sy);
+  if(!d.gx){d.gx=G.x;d.gy=G.y}if(ledgeLive()&&!d.led&&!d.et&&d.y<LDG().y)d.preL=1;const nowT=performance.now();/* a run can hesitate once on a drier patch: a brief, slight swell, not a blob */if(false){/* no stall swells: real runs don't bulge mid-way */d.pz=nowT+90+Math.random()*180;d.pzn=1}const pz=d.pz&&nowT<d.pz;if(d.pz&&!pz){d.pz=0;d.bd=0}if(d.visc<1)d.visc=Math.max(.2,d.visc-dt*.04);const sp2=(pz?sp*.3:sp)*(d.visc||1);d.gx+=(G.x-d.gx)*Math.min(1,dt*3);d.gy+=(G.y-d.gy)*Math.min(1,dt*3);d.x+=d.gx*sp2*dt;d.y+=d.gy*sp2*dt;if(still)d.vol-=dt*.15;d.vol-=dt*((.28+s.absorb*.9+s.rough*.5)*(d.wet?.75:1)+(gr?.7:0));if(d.rT&&d.r<d.rT)d.r=Math.min(d.rT,d.r+dt*.8);if(d.wet)d.r=Math.max(.8,d.r*(1-dt*.03));if(d.et)d.r=Math.max(.45,d.r*(1-dt*.9));if(d.sy===undefined){d.sy=y0;d.sx=x0;d.fq=.025+Math.random()*.035}
+  /* EMERGING: a run is born inside the letter and only shows once it leaves the paint. The moment it does, it is still
+     joined on: a neck that flares into the letter's lower edge (the paint being pulled down), so it never floats off
+     with a gap. Its shape is measured from that exit point, not from where it was born out of sight. Once out, it
+     stays drawn — a wobble back over the edge doesn't chop it into dots — and it only goes out of sight again when it
+     runs properly under another letter. */
+  {const op=lmAt(d.x,d.y)||(!!stroke&&!!fh&&fh[inkCell(d.x,d.y)]>0);if(op)d.uc=(d.uc||0)+1;else d.uc=0;if(!op&&!d.em){d.em=1;/* left the letter it was born in: the neck joins here. Coming out from far below its birth (a film that dried away under it) it's already a running line: no new neck */const far=Math.hypot(x0-d.sx,y0-d.sy)>Math.max(16,R()*1.6);d.ex=far?d.sx:x0;d.ey=far?d.sy:y0}}
+  const trav=d.em?Math.hypot(d.x-d.ex,d.y-d.ey):0,travP=d.em?Math.max(0,trav-Math.hypot(d.x-x0,d.y-y0)):0;
   /* shape of a real run (from reference photos): a short smooth flare where it leaves the letter — no bulb — then an even width
-     all the way down, thinning only a little as it spends paint, with a faint waver */const shp=t=>(d.soft?1:1+1.1*Math.exp(-t/(d.r*1.1+1.5)))*(.78+.22*clamp(d.vol/d.v0))*(1+.06*Math.sin(t*.09+d.ph)),re=d.r*shp(trav),reP=d.r*shp(travP);
-  if(ledgeLive()&&d.preL&&!d.led&&d.y>=LDG().y&&Math.abs(d.gy)>.6){const col=typeof d.col==='string'?(d.wash?d.col:d.col):'#808080',stop=ledgeHit(d,d.x,col[0]==='#'?col:'#808080',d.r);d.preL=0;if(stop){d.vol=-1;drips.splice(i,1);continue}continue}
+     all the way down, thinning only a little as it spends paint, with a faint waver */const shp=t=>(d.soft?1:1+1.5*Math.exp(-t/(d.r*1.8+2.2)))*(.78+.22*clamp(d.vol/d.v0))*(1+.06*Math.sin(t*.09+d.ph)),re=d.r*shp(trav),reP=d.r*shp(travP);
+  if(ledgeLive()&&d.preL&&!d.led&&d.y>=LDG().y&&Math.abs(d.gy)>.6&&d.soft){/* a thin diluted buff run just soaks into the ledge edge: no pool */drips.splice(i,1);continue}if(ledgeLive()&&d.preL&&!d.led&&d.y>=LDG().y&&Math.abs(d.gy)>.6){const col=typeof d.col==='string'?(d.wash?d.col:d.col):'#808080',stop=ledgeHit(d,d.x,col[0]==='#'?col:'#808080',d.r);d.preL=0;if(stop){d.vol=-1;drips.splice(i,1);continue}continue}
   const wob=(Math.sin((d.x+d.y)*d.fq+d.ph)*.7+Math.sin((d.x+d.y)*d.fq*2.3+d.ph*1.7)*.3)*(d.wet?.9:.55+d.r*.28)*(1+s.rough*2.5),xw=d.x-d.gy*wob,yw=d.y+d.gx*wob,px0=x0-d.gy*wob,py0=y0+d.gx*wob,done=d.vol<=0||d.y>H||d.y<-10||d.x<-10||d.x>W+10;
   /* a run reaching a finished letter further down doesn't paint across it: it merges into the paint and carries on underneath, showing again below it */
-  /* runs only show on bare wall: anywhere over a letter — finished, or the one being written right now — they're hidden, so a run appears where there's a gap and stays out of sight inside the paint */const onPaint=(px,py)=>lmAt(px,py)||(!!stroke&&!!fh&&fh[inkCell(px,py)]>0),under=onPaint(xw,yw)||onPaint(px0,py0);
+  /* runs only show on bare wall: anywhere over a letter — finished, or the one being written right now — they're hidden, so a run appears where there's a gap and stays out of sight inside the paint */const onPaint=(px,py)=>lmAt(px,py)||(!!stroke&&!!fh&&fh[inkCell(px,py)]>0),under=d.em?d.uc>2&&onPaint(xw,yw):true;
   /* MIXING: wet paint mixes. A run passing through (under) a letter, or across another run, that's still wet takes on
      its colour — black through wet blue comes out the other side a dark blue — and leaves a darker track inside the
      letter where it went through. Dry paint it just slides under. */
@@ -1135,7 +1151,7 @@ function flushStreaks(cur,all){if(!stroke||!stroke.sq)return;const depth=(pen.ti
   x.save();x.globalCompositeOperation='destination-out';x.lineCap='round';x.lineJoin='round';x.globalAlpha=1;
   const sl=Math.hypot(q.b.x-q.a.x,q.b.y-q.a.y);
   for(const g of stroke.gaps){if(g.ph===undefined){g.ph=Math.random()*6.283;g.f1=1/(18+Math.random()*30);g.f2=1/(30+Math.random()*50);g.dist=0}g.dist+=sl;
-   const o=clamp(g.o+.22*Math.sin(g.dist*g.f1+g.ph),-1,1)*q.hw*.92,ex=q.b.x+q.nx*o,ey=q.b.y+q.ny*o,sx=g.lx===undefined?q.a.x+q.nx*o:g.lx,sy=g.lx===undefined?q.a.y+q.ny*o:g.ly;g.lx=ex;g.ly=ey;
+   const o=clamp(g.o+.22*Math.sin(g.dist*g.f1+g.ph),-1,1)*q.hw*.7,/* kept off the very edge so a streak never reads as an outline */ex=q.b.x+q.nx*o,ey=q.b.y+q.ny*o,sx=g.lx===undefined?q.a.x+q.nx*o:g.lx,sy=g.lx===undefined?q.a.y+q.ny*o:g.ly;g.lx=ex;g.ly=ey;
    const fade=Math.max(0,Math.sin(g.dist*g.f2+g.ph*1.7)*.6+.4),w=g.w*(.25+q.sv*1.3)*g.s*fade;if(w<.35)continue;
    x.lineWidth=Math.min(q.hw*.5,w);x.beginPath();x.moveTo(sx,sy);x.lineTo(ex,ey);x.stroke()}
   if(q.rail>.04){const S=stroke;x.globalAlpha=clamp(q.rail*1.1);x.lineWidth=q.hw*2*(.35+.45*q.rail);x.lineCap='round';x.beginPath();x.moveTo(S.rlx===undefined?q.a.x:S.rlx,S.rlx===undefined?q.a.y:S.rly);x.lineTo(q.b.x,q.b.y);x.stroke();S.rlx=q.b.x;S.rly=q.b.y}else stroke.rlx=undefined;
@@ -1160,8 +1176,8 @@ function seg(a,b,e,dt){const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d<.01)
  pen.drain=(pen.drain||0)+d;if(pen.squeeze&&(pen.sat||1)>1)pen.sat=Math.max(1,pen.sat-d*.00035);
  /* the nib drains as you draw and refills while it's off the wall: about one and a half tags of non-stop
     drawing before it starts to starve. Felt starves a little sooner; low ink starves much sooner */
- const L0=(DYEINK[pen.ink]?4200:pen.dauber?5000:pen.valve?5600:pen.squeeze?6000:4800)*(.3+Math.min(1,pen.life)*.7),runS=clamp((pen.drain-L0)/(L0*.6))*.4*(pen.valve?clamp((1-f)/.45):1),/* a primed valve keeps pumping paint into the nib: no drain streaks at full flow */
-  wornS=pen.metal?0:clamp(pen.fray-.3)*.75;
+ const L0=(DYEINK[pen.ink]?4200:pen.dauber?5000:pen.valve?5600:pen.squeeze?6000:4800)*(.3+Math.min(1,pen.life)*.7),runS=clamp((pen.drain-L0)/(L0*.6))*.28*(pen.valve?clamp((.7-f)/.4):1),/* a primed valve keeps pumping paint into the nib: no drain streaks at full flow */
+  wornS=pen.metal?0:clamp(pen.fray-.3)*.75*(pen.tip==='chisel'?1:.5);/* a round bullet wears evenly: far less streaking than a chisel's corners */
  const unmix=(pen.shake?clamp(.65-pen.mix)*1.6:0)+runS+wornS,dryT=clamp(pen.tipDry-.3)*1.1,low=pen.life<.35?(.35-pen.life)*1.6:0;
  {/* a squeezed body pushes paint into the nib the whole time: it lays one solid block, it can't starve — only a
    slight bead-streak on glass, where paint pulls back off the very smooth face */const sqF=pen.squeeze?clamp((1.02-(pen.sat||1))/.32):1,gl=pen.squeeze&&!ik.fluid&&!ik.chrome&&(s2.id==='glass'||s2.id==='bus'||s2.id==='mirror')?.075:0;
@@ -1246,7 +1262,7 @@ function settle(col,s){if(demo||!upright||s.absorb>.5)return;const ink=INK[pen.i
  const mk=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
  /* light top: the thinned film lets the wall and the dye's own hue through */
  {const c=mk(),x=c.getContext('2d');x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.globalCompositeOperation='source-in';const g=x.createLinearGradient(GS.sx,GS.sy,GS.ex,GS.ey),wall='#'+s.mean.map(v=>Math.round(v).toString(16).padStart(2,'0')).join(''),lite=dark?(CAST(pen.ink,col)?mixHex(col,CAST(pen.ink,col),.42):mixHex(col,wall,.28)):mixHex(col,wall,.5);
-  g.addColorStop(0,lite);g.addColorStop(.55,lite);g.addColorStop(1,col);x.fillStyle=g;x.fillRect(0,0,w,h);x.globalCompositeOperation='destination-in';const m=x.createLinearGradient(GS.sx,GS.sy,GS.ex,GS.ey);m.addColorStop(0,'rgba(0,0,0,1)');m.addColorStop(.6,'rgba(0,0,0,.35)');m.addColorStop(.75,'rgba(0,0,0,0)');x.fillStyle=m;x.fillRect(0,0,w,h);bleedL.push({c,x:x0,y:y0,t0:now+300,dur:3200,a:.85*str})}
+  g.addColorStop(0,lite);g.addColorStop(.55,lite);g.addColorStop(1,col);x.fillStyle=g;x.fillRect(0,0,w,h);x.globalCompositeOperation='destination-in';const m=x.createLinearGradient(GS.sx,GS.sy,GS.ex,GS.ey);m.addColorStop(0,'rgba(0,0,0,1)');m.addColorStop(.6,'rgba(0,0,0,.35)');m.addColorStop(.75,'rgba(0,0,0,0)');x.fillStyle=m;x.fillRect(0,0,w,h);/* overlaps only ever go darker: the thinned light top never lightens ink that was already there */x.globalCompositeOperation='destination-out';x.drawImage(idm.c,x0,y0,w,h,0,0,w,h);bleedL.push({c,x:x0,y:y0,t0:now+300,dur:3200,a:.85*str})}
  /* dark bottom: pigment piles up */
  {const c=mk(),x=c.getContext('2d');x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.globalCompositeOperation='source-in';x.fillStyle=mixHex(col,'#000000',dark?.6:.35);x.fillRect(0,0,w,h);x.globalCompositeOperation='destination-in';const m=x.createLinearGradient(GS.sx,GS.sy,GS.ex,GS.ey);m.addColorStop(.45,'rgba(0,0,0,0)');m.addColorStop(1,'rgba(0,0,0,1)');x.fillStyle=m;x.fillRect(0,0,w,h);bleedL.push({c,x:x0,y:y0,t0:now+500,dur:3600,a:.7*str})}}
 function wetBead(ink,s){if(pen.ruff||SMOOTH(s)||!s.wet||s.absorb>.3||ink.fluid||ink.solid||ink.etch||ink.chrome||ink.gloss)return;const k=clamp(((ink.wrep||.3)*.9+(ink.bead||0)*.6+(ink.drip||0)*.15)*.5);if(k<.12)return;
@@ -1276,7 +1292,7 @@ function fullDrips(ink,s){const L=stroke.lv||0,w=dripLife()*clamp((L-.95)/.05)*(
   drip(e[0],e[1],(.35+Math.random()*Math.random()*1.3)*(1+over*1.5),{ty:pen.ink,col:curCol(),r:Math.max(.6,Math.min(2.6,r*(.05+Math.random()*.1))),delay:150+Math.random()*1400,src:1,w:r})}t-=sl}}
 /* OVERLAP: paint that isn't fully opaque lets the layer underneath count — where a new stroke crosses paint already
    on the wall the two films stack, so the crossing comes out a little darker (more so the more see-through the paint) */
-function overlapDark(){const ink=INK[pen.ink];if(demo||!stroke||ink.chrome||ink.solid||ink.etch||ink.comp==='multiply')return null;const op=inkAlpha(ink,stroke.s),k=Math.min(.45,(1-op)*3.2);if(k<.03)return null;
+function overlapDark(){const ink=INK[pen.ink];if(demo||!stroke||ink.chrome||ink.solid||ink.etch||ink.comp==='multiply')return null;const op=inkAlpha(ink,stroke.s),k=Math.max(.13,Math.min(.45,(1-op)*3.2));/* every ink reads darker where it doubles up, even an opaque paint (a second coat is denser) */
  const P=dpr,x0=Math.max(0,Math.floor(stroke.x0)),y0=Math.max(0,Math.floor(stroke.y0)),x1=Math.min(W-1,Math.ceil(stroke.x1)),y1=Math.min(H-1,Math.ceil(stroke.y1));if(x1<=x0||y1<=y0)return null;
  const mw=Math.ceil((x1-x0)/2)+1,mh=Math.ceil((y1-y0)/2)+1,m=document.createElement('canvas');m.width=mw;m.height=mh;const mx=m.getContext('2d'),im=mx.createImageData(mw,mh);let any=0;
  for(let j=0;j<mh;j++)for(let i=0;i<mw;i++)if(lmAt(x0+i*2,y0+j*2)){im.data[(j*mw+i)*4+3]=255;any=1}if(!any){freeC(m);return null}mx.putImageData(im,0,0);
@@ -1690,7 +1706,7 @@ const BOTTLES=[
  {id:'garveyap',brand:'Art Primo',name:'Steve Garvey Ink 2.0',ink:'stain',colors:['#4a2fd8'],label:'Steve Garvey Ink 2.0 — blue-violet stainer dye + flow enhancer, sticky resin',note:'Alcohol-based. Drippy in a mop or marker; also mixed into other inks to boost staining. Shake well.'},
  {id:'ndi',brand:'Nero d’Inferno',name:'Nuovo Nero d’Inferno',ink:'stain',colors:['#070707'],label:'Nuovo Nero d’Inferno — glossy black leather dye',note:'Glossy black, very permanent.'}];
 try{const mx=JSON.parse(localStorage.getItem('rlMixes')||'[]');for(const m of mx)if(m&&m.id&&!BOTTLES.find(b=>b.id===m.id))BOTTLES.unshift(m)}catch(_){}
-function fillPen(p,b,quiet){p.humect=b.humect||0;p.gloss=b.gloss||0;p.shift=b.shift||0;if(b.juice){p.sat=1+b.juice*.6;if(p.valve)p.flow=Math.min(1.5,.9+b.juice*.6)}p.fill=b.id;p.ink=b.ink;p.colors=b.colors.slice();p.inkLabel=b.label;p.shake=b.shake?1:0;p.mix=b.shake?.25:1;if(!quiet){p.life=1;p.flow=.35}if(p===pen&&!quiet){color=p.colors[0];renderRack();renderColors();renderReact();renderTop();save()}}
+function fillPen(p,b,quiet){p.humect=b.humect||0;p.gloss=b.gloss||0;p.shift=b.shift||0;if(b.juice){p.sat=1+b.juice*.6;if(p.valve)p.flow=Math.min(1.5,.9+b.juice*.6)}p.fill=b.id;p.ink=b.ink;p.colors=b.colors.slice();p.inkLabel=b.label;p.shake=b.shake||p.ball?1:0;p.mix=p.shake?.12:1;/* the empty bullet has its own mixing ball: a fresh fill needs shaking */if(!quiet){p.life=1;p.flow=.35}if(p===pen&&!quiet){color=p.colors[0];renderRack();renderColors();renderReact();renderTop();save()}}
 function showRefills(msg){renderFill();openSheet('penSheet');const fb=$('#fillBox');if(!fb||fb.hidden)return;requestAnimationFrame(()=>{fb.scrollIntoView({block:'start',behavior:'smooth'});fb.classList.remove('pulse');void fb.offsetWidth;fb.classList.add('pulse')});if(msg)toast(msg)}
 /* ---------- INK BENCH: build a custom ink from ingredient types, mapped onto the app's ink physics ---------- */
 const MX={base:'alcohol',col:'leather',pot:60,bind:25,thin:35,c:'#5b3fb0',add:new Set()};
@@ -1920,7 +1936,7 @@ const ro=new ResizeObserver(()=>{layout()});ro.observe(cv);
 /* ---------- boot ---------- */
 try{const st=JSON.parse(localStorage.getItem('mtb')||'{}');for(const p of PENS)if(p.empty){const b=st.fills&&BOTTLES.find(q=>q.id===st.fills[p.id]);if(b)fillPen(p,b,true);else p.life=0}if(pen.fill)color=pen.colors.includes(st.color)?st.color:pen.colors[0]}catch(e){}
 
-renderBrands();renderRack();renderColors();renderSurfs();renderTop();layout();renderReact();
+renderBrands();renderRack();renderColors();renderSurfs();renderTop();doLayout();renderReact();
 
 requestAnimationFrame(frame);
 }
