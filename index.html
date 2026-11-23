@@ -992,7 +992,7 @@ function runDrips(dt){if(!drips.length)return;mergeRuns(dt);
   if(ledgeLive()&&d.preL&&!d.led&&d.y>=LDG().y&&Math.abs(d.gy)>.6){const col=typeof d.col==='string'?(d.wash?d.col:d.col):'#808080',stop=ledgeHit(d,d.x,col[0]==='#'?col:'#808080',d.r);d.preL=0;if(stop){d.vol=-1;drips.splice(i,1);continue}continue}
   const wob=(Math.sin((d.x+d.y)*d.fq+d.ph)*.7+Math.sin((d.x+d.y)*d.fq*2.3+d.ph*1.7)*.3)*(d.wet?.9:.55+d.r*.28)*(1+s.rough*2.5),xw=d.x-d.gy*wob,yw=d.y+d.gx*wob,px0=x0-d.gy*wob,py0=y0+d.gx*wob,done=d.vol<=0||d.y>H||d.y<-10||d.x<-10||d.x>W+10;
   /* a run reaching a finished letter further down doesn't paint across it: it merges into the paint and carries on underneath, showing again below it */
-  const under=trav>d.r*4+6&&(lmAt(xw,yw)||lmAt(px0,py0));
+  /* runs only show on bare wall: anywhere over a letter — finished, or the one being written right now — they're hidden, so a run appears where there's a gap and stays out of sight inside the paint */const onPaint=(px,py)=>lmAt(px,py)||(!!stroke&&!!fh&&fh[inkCell(px,py)]>0),under=onPaint(xw,yw)||onPaint(px0,py0);
   /* MIXING: wet paint mixes. A run passing through (under) a letter, or across another run, that's still wet takes on
      its colour — black through wet blue comes out the other side a dark blue — and leaves a darker track inside the
      letter where it went through. Dry paint it just slides under. */
