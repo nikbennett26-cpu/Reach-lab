@@ -110,7 +110,10 @@ td.num{text-align:right;white-space:nowrap}
 .warn{border-left:3px solid var(--acc);padding-left:10px;font-size:14px}
 .coach{position:fixed;inset:0;z-index:25;display:grid;place-items:center;background:rgba(0,0,0,.55);padding:20px}
 .coach[hidden]{display:none}
-.coach .card{max-width:360px;width:100%;background:#111;border:1px solid var(--line);border-radius:12px;padding:20px}
+.coach .card{max-width:360px;width:100%;background:#111;border:1px solid var(--line);border-radius:12px;padding:20px 14px 0 20px;max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#ff3d1f #2a2a2a;scrollbar-gutter:stable}
+.coach .card::-webkit-scrollbar{width:6px}.coach .card::-webkit-scrollbar-track{background:#2a2a2a;border-radius:3px;margin:12px 0}.coach .card::-webkit-scrollbar-thumb{background:#ff3d1f;border-radius:3px}
+.coach #coachOk{position:sticky;bottom:0;margin-bottom:0;box-shadow:0 -14px 14px #111}.coach .card::after{content:'';display:block;height:20px}
+#coachBar{position:fixed;width:4px;border-radius:2px;background:#2e2e2e;z-index:26;pointer-events:none}#coachBar[hidden]{display:none}#coachBar i{position:absolute;left:0;right:0;border-radius:2px;background:#ff3d1f}
 .coach h2{font:700 28px/1 'Barlow Condensed',sans-serif;text-transform:uppercase;margin:0 0 12px}
 .coach ol{margin:0 0 16px;padding-left:20px}.coach li{margin:7px 0}.coach li b{font-weight:600}
 .shaking{animation:sh .4s}@keyframes sh{20%{transform:rotate(-5deg)}40%{transform:rotate(5deg)}60%{transform:rotate(-3deg)}80%{transform:rotate(2deg)}}
@@ -248,7 +251,7 @@ td.num{text-align:right;white-space:nowrap}
    <li><b>More → Save to blackbook</b> keeps a page so you can compare your style later.</li>
   </ol>
   <button class="btn pri" id="coachOk">Got it</button>
- </div></div>
+ </div><div id="coachBar" hidden><i></i></div></div>
 </div>
 
 <script>
@@ -1775,6 +1778,10 @@ function healWall(){try{if(!W||!baked.c.width)return;const x=baked.x,w=baked.c.w
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(healWall,60)});addEventListener('pageshow',()=>setTimeout(healWall,60));
 setInterval(()=>{if(!down)healWall()},2500);
 for(const c of document.querySelectorAll('canvas'))c.addEventListener('contextrestored',()=>{healWall();dirty=true});
+/* a scroll bar for the quick-start card that shows on every phone (mobile browsers hide the native one) */
+{const cd=document.querySelector('#coach .card'),bar=$('#coachBar'),th=bar.firstElementChild;const upd=()=>{if($('#coach').hidden)return;const r=cd.getBoundingClientRect(),over=cd.scrollHeight-cd.clientHeight;if(over<4){bar.hidden=true;return}bar.hidden=false;
+ const top=r.top+12,h=r.height-24;bar.style.left=(r.right-9)+'px';bar.style.top=top+'px';bar.style.height=h+'px';const th0=Math.max(28,h*cd.clientHeight/cd.scrollHeight);th.style.height=th0+'px';th.style.top=((h-th0)*cd.scrollTop/over)+'px'};
+ cd.addEventListener('scroll',upd,{passive:true});addEventListener('resize',upd);new MutationObserver(()=>requestAnimationFrame(upd)).observe($('#coach'),{attributes:true,attributeFilter:['hidden']});requestAnimationFrame(upd);setTimeout(upd,300)}
 $('#coachOk').addEventListener('click',()=>{coach.hidden=true;try{localStorage.setItem('mtbCoach','1')}catch(_){}setTimeout(()=>maybeGetApp(),900)});
 /* ---------- "Get the app" pop-up: install / Add to Home Screen / download ---------- */
 const PUBLIC_URL='https://raw.githack.com/nikbennett26-cpu/reach-lab/main/index.html';
