@@ -193,7 +193,7 @@ td.num{text-align:right;white-space:nowrap}
   <div class="row" id="leanBox"><div><label class="lbl" for="lean">Lean <span id="leanV"></span> — a tilting stylus adds to this</label><br><input id="lean" type="range" min="0" max="60" step="5" value="0"></div></div>
   <div class="row" id="fillBox" hidden><div style="width:100%"><div class="row" style="justify-content:space-between;align-items:center;margin:0 0 6px"><span class="lbl">Fill with ink</span><button class="btn pri" id="mixOpen">Mix your own ink</button></div><div class="bottles" id="bottles"></div></div></div>
   <div class="row" id="vsBox" hidden><div><label class="lbl" for="vs">Flow valve: <span id="vsV"></span></label><br><input id="vs" type="range" min="1" max="5" step="1" value="3"></div></div>
-  <div class="row"><button class="btn" id="flip" hidden>Flip end</button><button class="btn" id="newpen">New pen</button></div>
+  <div class="row"><button class="btn" id="flip" hidden>Flip end</button><button class="btn pri" id="newnib">New nib</button><button class="btn" id="newpen">New pen</button></div>
  </section>
 
  <section class="sheet" id="surfSheet" aria-label="Surfaces"><div class="grab"></div>
@@ -657,8 +657,8 @@ const thinCol=(ty,col,k)=>{const c=CAST(ty,col);return c?mixHex(col,c,k):col};
 const curCol=()=>pen.dirtAmt>.05?mixHex(color,pen.dirtCol,Math.round(pen.dirtAmt*10)/10):color;
 function tipPath(x,c,y){const ctx=tipCtx||stk.x,fr=pen.metal?0:pen.fray,sc=curScale;ctx.beginPath();
  if(pen.tip==='chisel'){const rd=pen.round||0,a=angle*Math.PI/180,w=pen.w*MM*(1+fr*.15)*sc*(1+rd*.1)*(1-leanNow*.28),t=pen.th*MM*(1+fr*.5)*Math.max(.35,sc)*(1+rd*.8)*(1-leanNow*.6);ctx.save();ctx.translate(c,y);ctx.rotate(a);if(rd>.05&&ctx.roundRect)ctx.roundRect(-w/2,-t/2,w,t,Math.min(t,w)/2*rd);else ctx.rect(-w/2,-t/2,w,t);
-  for(let i=0,k=Math.round(fr*10);i<k;i++){const u=(Math.random()-.5)*w,v=(Math.random()<.5?-1:1)*(t/2+Math.random()*fr*5);ctx.moveTo(u+.6+fr,v);ctx.arc(u,v,.6+fr*1.4,0,TAU)}ctx.restore()}
- else{const r=pen.w*MM/2*(1+fr*.3)*sc*(pen.metal?1:1-leanNow*.32);if(leanNow>.05&&!pen.metal&&ctx.ellipse){const la=stroke&&stroke.v>.05?Math.atan2(stroke.vy,stroke.vx):0;ctx.ellipse(c,y,r,r*(1-leanNow*.45),la,0,TAU)}else ctx.arc(c,y,r,0,TAU);for(let i=0,k=Math.round(fr*9);i<k;i++){const a=Math.random()*TAU,d=r+Math.random()*fr*5;ctx.moveTo(c+Math.cos(a)*d+.6+fr,y+Math.sin(a)*d);ctx.arc(c+Math.cos(a)*d,y+Math.sin(a)*d,.6+fr*1.2,0,TAU)}}}
+  if(fr>.4&&Math.random()<(fr-.4)*.35){/* a loose fibre on a wrecked nib: the odd fleck right at the edge, not a spray */const u=(Math.random()-.5)*w,v=(Math.random()<.5?-1:1)*(t/2+Math.random()*fr*1.6),rr=.4+fr*.6;ctx.moveTo(u+rr,v);ctx.arc(u,v,rr,0,TAU)}ctx.restore()}
+ else{const r=pen.w*MM/2*(1+fr*.3)*sc*(pen.metal?1:1-leanNow*.32);if(leanNow>.05&&!pen.metal&&ctx.ellipse){const la=stroke&&stroke.v>.05?Math.atan2(stroke.vy,stroke.vx):0;ctx.ellipse(c,y,r,r*(1-leanNow*.45),la,0,TAU)}else ctx.arc(c,y,r,0,TAU);if(fr>.4&&Math.random()<(fr-.4)*.35){const a=Math.random()*TAU,d=r+Math.random()*fr*1.6,rr=.4+fr*.5;ctx.moveTo(c+Math.cos(a)*d+rr,y+Math.sin(a)*d);ctx.arc(c+Math.cos(a)*d,y+Math.sin(a)*d,rr,0,TAU)}}}
 function bleedAt(x,y,r,al,gx,gy=1){const ctx=stk.x,g=ctx.createRadialGradient(0,0,0,0,0,r),rgb=hex(color).join(',');
  g.addColorStop(0,`rgba(${rgb},${al})`);g.addColorStop(.6,`rgba(${rgb},${al*.6})`);g.addColorStop(1,`rgba(${rgb},0)`);
  ctx.save();ctx.translate(x,y);ctx.scale(gx,gy);ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,r,0,TAU);ctx.fill();ctx.restore()}
@@ -1129,7 +1129,7 @@ function streaks(a,b,sv){if(!stroke||!stroke.gaps)return;const dx=b.x-a.x,dy=b.y
  (stroke.sq=stroke.sq||[]).push({a,b,nx,ny,hw,sv,rail});flushStreaks(b,false)}
 function flushStreaks(cur,all){if(!stroke||!stroke.sq)return;const depth=(pen.tip==='chisel'?Math.max(pen.w,pen.th):pen.w)*MM*.6+2,x=stk.x;
  while(stroke.sq.length&&(all||Math.hypot(stroke.sq[0].b.x-cur.x,stroke.sq[0].b.y-cur.y)>depth)){const q=stroke.sq.shift();
-  if(q.sv<.1){for(const g of stroke.gaps)g.lx=undefined;continue}
+  if(q.sv<.15){for(const g of stroke.gaps)g.lx=undefined;continue}
   /* streaks wander, swell and fade along the stroke like real starved/unshaken ink; erased at full strength
      with round caps so overlapping pieces never double up into a hatch pattern */
   x.save();x.globalCompositeOperation='destination-out';x.lineCap='round';x.lineJoin='round';x.globalAlpha=1;
@@ -1160,7 +1160,7 @@ function seg(a,b,e,dt){const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d<.01)
  pen.drain=(pen.drain||0)+d;if(pen.squeeze&&(pen.sat||1)>1)pen.sat=Math.max(1,pen.sat-d*.00035);
  /* the nib drains as you draw and refills while it's off the wall: about one and a half tags of non-stop
     drawing before it starts to starve. Felt starves a little sooner; low ink starves much sooner */
- const L0=(DYEINK[pen.ink]?4200:pen.dauber?5000:pen.valve?5600:pen.squeeze?6000:4800)*(.3+Math.min(1,pen.life)*.7),runS=clamp((pen.drain-L0)/(L0*.6))*.55,
+ const L0=(DYEINK[pen.ink]?4200:pen.dauber?5000:pen.valve?5600:pen.squeeze?6000:4800)*(.3+Math.min(1,pen.life)*.7),runS=clamp((pen.drain-L0)/(L0*.6))*.4*(pen.valve?clamp((1-f)/.45):1),/* a primed valve keeps pumping paint into the nib: no drain streaks at full flow */
   wornS=pen.metal?0:clamp(pen.fray-.3)*.75;
  const unmix=(pen.shake?clamp(.65-pen.mix)*1.6:0)+runS+wornS,dryT=clamp(pen.tipDry-.3)*1.1,low=pen.life<.35?(.35-pen.life)*1.6:0;
  {/* a squeezed body pushes paint into the nib the whole time: it lays one solid block, it can't starve — only a
@@ -1748,14 +1748,15 @@ function cname(c){if(pen.fb2&&FB2[c])return FB2[c][1];if(pen.ink==='chrome')retu
 function renderCSheet(){const html=pen.colors.map(c=>`<button class="cs" data-c="${c}" aria-pressed="${c===color}"><i style="background:${pen.fb2&&FB2[c]?`linear-gradient(135deg,${FB2[c][0]} 50%,${c} 50%)`:c}"></i>${cname(c)}${METAL[c]?' · metallic':''}</button>`).join('');
  $('#cgrid').innerHTML=html;$('#cgrid2').innerHTML=html;$('#colTitle').textContent='Colours';$('#colHint').textContent=`${pen.brand} ${pen.name} — ${pen.colors.length} colour${pen.colors.length>1?'s':''}`+(pen.empty&&!pen.fill?'. Fill it with an ink first.':'');$('#colDot').style.background=color}
 function renderColors(){renderFill();renderCSheet();$('#colors').innerHTML=`<button class="sw" style="background:${color}" data-c="${color}" aria-label="Colour: ${cname(color)} — change" aria-pressed="true"></button>${pen.colors.length>1?`<span class="ccount">${pen.colors.length}</span>`:''}`;
- $('#angleBox').style.display=pen.tip==='chisel'?'':'none';$('#angleV').textContent=angle+'°';const fb=$('#flip');fb.hidden=!pen.ends;$('#vsBox').hidden=!pen.adjust;if(pen.adjust){$('#vs').value=pen.vs;$('#vsV').textContent=['Trickle','Low','Medium','High','Flood'][pen.vs-1]}if(pen.ends)fb.textContent='Flip to '+pen.ends[1-(pen.end||0)].tip;showFlow();showMix();showHint()}
+ $('#angleBox').style.display=pen.tip==='chisel'?'':'none';$('#angleV').textContent=angle+'°';const fb=$('#flip');fb.hidden=!pen.ends;$('#newnib').hidden=!!(pen.metal||INK[pen.ink].solid||pen.ink==='etch'&&pen.tip==='needle');$('#vsBox').hidden=!pen.adjust;if(pen.adjust){$('#vs').value=pen.vs;$('#vsV').textContent=['Trickle','Low','Medium','High','Flood'][pen.vs-1]}if(pen.ends)fb.textContent='Flip to '+pen.ends[1-(pen.end||0)].tip;showFlow();showMix();showHint()}
 function meter(id,lbl,txt,w,cls){$(id).style.width=clamp(w)*100+'%';$(id).className=cls||'';$(lbl).textContent=txt}
 function showMix(){if(pen.shake)meter('#mixI','#mixLbl',`Mixed ${Math.round(pen.mix*100)}%`,pen.mix,pen.mix<.5?'low':'');else meter('#mixI','#mixLbl','No mixing ball',0)}
 function showFlow(){
  if(pen.valve)meter('#flowI','#flowLbl',`Ink flow ${Math.round(pen.flow*100)}%`,pen.flow/1.5,pen.flow>1.1?'hot':pen.flow<.4?'low':'');
  else if(pen.squeeze){const sat=pen.sat||1;meter('#flowI','#flowLbl',`Squeeze ${Math.round(sat*100)}%`,sat/1.6,sat>1.15?'hot':'')}else meter('#flowI','#flowLbl','Felt: steady flow',.66*lifeF());
  meter('#lifeI','#lifeLbl',`Ink left ${Math.round(pen.life*100)}%`,pen.life,pen.life<.15?'low':'');
- if(pen.tipDry>.2)meter('#frayI','#frayLbl',pen.tipDry>.7?'Tip: dried out':'Tip: drying',1-pen.tipDry,'low');else if(pen.metal)meter('#frayI','#frayLbl','Tip: metal, no wear',1);else if(INK[pen.ink].solid){const w=pen.sw||0;meter('#frayI','#frayLbl',w<.12?'Tip: bullet point':w<.55?'Tip: wearing flat':w<.97?'Tip: nearly flat':'Tip: flat face',1-w*.6,'')}else if((pen.mush||0)>.3)meter('#frayI','#frayLbl','Tip: mushed down',1-pen.mush*.7,pen.mush>.6?'low':'');else if((pen.round||0)>.3&&pen.fray<.3)meter('#frayI','#frayLbl','Tip: corners rounded',1-pen.round*.6,pen.round>.7?'low':'');else meter('#frayI','#frayLbl',pen.fray<.05?'Tip: fresh':pen.fray<.3?'Tip: bedded in':pen.fray<.7?'Tip: fraying':'Tip: wrecked',1-pen.fray,pen.fray>.3?'low':'')}
+ if(pen.tipDry>.2)meter('#frayI','#frayLbl',pen.tipDry>.7?'Tip: dried out':'Tip: drying',1-pen.tipDry,'low');else if(pen.metal)meter('#frayI','#frayLbl','Tip: metal, no wear',1);else if(INK[pen.ink].solid){const w=pen.sw||0;meter('#frayI','#frayLbl',w<.12?'Tip: bullet point':w<.55?'Tip: wearing flat':w<.97?'Tip: nearly flat':'Tip: flat face',1-w*.6,'')}else if((pen.mush||0)>.3)meter('#frayI','#frayLbl','Tip: mushed down',1-pen.mush*.7,pen.mush>.6?'low':'');else if((pen.round||0)>.3&&pen.fray<.3)meter('#frayI','#frayLbl','Tip: corners rounded',1-pen.round*.6,pen.round>.7?'low':'');else{if(pen.fray>.7&&!saidNib++)toast('Nib\u2019s wrecked \u2014 Pens \u203a New nib swaps it');meter('#frayI','#frayLbl',pen.fray<.05?'Tip: fresh':pen.fray<.3?'Tip: bedded in':pen.fray<.7?'Tip: fraying':'Tip: wrecked',1-pen.fray,pen.fray>.3?'low':'')}}
+var saidNib=0;
 function showHint(){const h=[];if(pen.shake)h.push('<b>Tap the pen card</b> to shake');if(pen.valve)h.push('<b>hold the tip still</b> on the board to prime');if(pen.squeeze)h.push('<b>hold still</b> to squeeze out more'+(upright&&INK[pen.ink].drip>.5?' (it drips)':''));if(pen.ends)h.push('<b>Flip</b> switches ends');if(pen.adjust)h.push('<b>Flow valve</b> below: high flow and slow strokes drip, quick strokes stay clean');if(pen.tip==='chisel')h.push('<b>twist two fingers</b> to turn the chisel');$('#hint').innerHTML=h.join(' · ')}
 function swatch(s){ensure(s);const c=document.createElement('canvas');c.width=c.height=68;const x=c.getContext('2d');x.drawImage(s.tile,0,0,TS*.3,TS*.3,0,0,68,68);const im=PHI[s.id];if(im)drawPhoto(x,im,0,0,68,68);else if(s.scene)s.scene(x,0,0,68,68);return c}
 function renderSurfs(){const box=$('#surfs');box.innerHTML='';for(const s of SURF){const b=document.createElement('button');b.className='sc';b.dataset.id=s.id;
@@ -1841,6 +1842,9 @@ $('#upright').addEventListener('click',e=>{upright=!upright;e.currentTarget.text
 $('#vs').addEventListener('input',e=>{pen.vs=+e.target.value;$('#vsV').textContent=['Trickle','Low','Medium','High','Flood'][pen.vs-1];audio();clack();showHint()});
 $('#capBtn').addEventListener('click',()=>{audio();pen.capped=!pen.capped;pen.idle=0;clack();renderCap();toast(pen.capped?'Capped':'Cap off — leave it open and the tip dries')});
 $('#age1').addEventListener('click',()=>age(1));$('#age12').addEventListener('click',()=>age(12));
+/* NEW NIB: pull the worn felt and push a fresh one in. The ink stays in the barrel, but a dry new nib has to soak up
+   before it flows (valve pens need priming again); a nib that was dried out comes back too */
+$('#newnib').addEventListener('click',()=>{if(pen.metal||INK[pen.ink].solid)return toast('That tip doesn\u2019t wear out');audio();pen.fray=0;pen.round=0;pen.mush=0;pen.tipDry=0;pen.dirtAmt=0;if(pen.valve)pen.flow=Math.min(pen.flow,.25);showFlow();save();toast(pen.valve?'New nib in \u2014 prime it on the wall to soak it':'New nib in \u2014 sharp edges again');rattle()});
 $('#newpen').addEventListener('click',()=>{if(pen.empty&&!pen.fill)return toast('Fill it with an ink first');audio();pen.life=1;pen.sw=0;pen.fray=0;pen.round=0;pen.mush=0;pen.tipDry=0;pen.dirtAmt=0;pen.capped=true;renderCap();pen.flow=.2;pen.mix=.2;showFlow();showMix();save();toast(`Fresh ${pen.brand} ${pen.name} — shake and prime it`);rattle()});
 $('#snd').addEventListener('click',e=>{muted=!muted;e.currentTarget.textContent=muted?'Sound off':'Sound on';e.currentTarget.setAttribute('aria-pressed',!muted);if(!muted)audio()});
 $('#clear').addEventListener('click',()=>{ledP={};if(LD){const c=LD.getContext('2d');c.save();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,LD.width,LD.height);c.restore()}if(fh){fh.fill(0);flowOn=false}resetBoard();closeSheets();toast('Wall wiped clean')});
