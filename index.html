@@ -121,6 +121,8 @@ td.num{text-align:right;white-space:nowrap}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 #fillBox.pulse{animation:fbp 1.4s ease-out}@keyframes fbp{0%{box-shadow:0 0 0 0 rgba(255,61,31,.75);border-radius:12px}100%{box-shadow:0 0 0 14px rgba(255,61,31,0);border-radius:12px}}
 #moreBtn.newtip{position:relative}#moreBtn.newtip::after{content:'';position:absolute;top:8px;right:calc(50% - 18px);width:8px;height:8px;border-radius:50%;background:#ff3d1f}
+.rackH{grid-column:1/-1;margin:10px 2px 0;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.75}.rackH small{opacity:.6;font-weight:400}
+.artbox{display:flex;align-items:center;gap:10px;margin:6px 0 2px;color:var(--ink,#eee)}.artbox .art{width:84px;height:34px;flex:none}.artbox .artw{font-size:12px;opacity:.8;line-height:1.25}
 </style>
 </head>
 <body>
@@ -185,12 +187,12 @@ td.num{text-align:right;white-space:nowrap}
  </section>
  <section class="sheet" id="penSheet" aria-label="Pens"><div class="grab"></div>
   <h2>Pens</h2>
-  <div class="chips" id="brands" role="group" aria-label="Brand" style="margin:0 -4px 10px;padding:2px 4px"></div>
+  <div class="chips" id="ptypes" role="group" aria-label="Type" style="margin:0 -4px 6px;padding:2px 4px"></div><div class="chips" id="brands" role="group" aria-label="Brand" style="margin:0 -4px 10px;padding:2px 4px"></div>
   <div class="rack" id="rack" role="group" aria-label="Markers"></div>
   <p class="hint" id="hint"></p>
   <div class="row"><div style="width:100%"><span class="lbl">Colour</span><div class="cgrid sm" id="cgrid2"></div></div></div>
-  <div class="row"><div id="angleBox"><label class="lbl" for="angle">Chisel angle <span id="angleV"></span> — or twist two fingers on the wall</label><br><input id="angle" type="range" min="0" max="180" value="40"></div></div>
-  <div class="row" id="leanBox"><div><label class="lbl" for="lean">Lean <span id="leanV"></span> — a tilting stylus adds to this</label><br><input id="lean" type="range" min="0" max="60" step="5" value="0"></div></div>
+  <div class="row"><div id="angleBox"><label class="lbl" for="angle">Chisel angle — or twist two fingers on the wall</label><span id="angleV" class="artbox"></span><br><input id="angle" type="range" min="0" max="180" value="40"></div></div>
+  <div class="row" id="leanBox"><div><label class="lbl" for="lean">Lean — a tilting stylus adds to this</label><span id="leanV" class="artbox"></span><br><input id="lean" type="range" min="0" max="60" step="5" value="0"></div></div>
   <div class="row" id="fillBox" hidden><div style="width:100%"><div class="row" style="justify-content:space-between;align-items:center;margin:0 0 6px"><span class="lbl">Fill with ink</span><button class="btn pri" id="mixOpen">Mix your own ink</button></div><div class="bottles" id="bottles"></div></div></div>
   <div class="row" id="vsBox" hidden><div><label class="lbl" for="vs">Flow valve: <span id="vsV"></span></label><br><input id="vs" type="range" min="1" max="5" step="1" value="3"></div></div>
   <div class="row"><button class="btn" id="flip" hidden>Flip end</button><button class="btn pri" id="newnib">New nib</button><button class="btn" id="newpen">New pen</button></div>
@@ -500,10 +502,16 @@ const SURF=[
    x.globalCompositeOperation='screen';x.globalAlpha=.85;x.fillStyle='#fff';x.fillRect(X,Y+H*.494,W,Math.max(1,H*.004));x.globalAlpha=.4;x.fillRect(X,Y+H*.17,W,Math.max(1,H*.003));x.restore()}},
  {id:'plastic',name:'Black plastic',absorb:0,rough:.02,repel:.7,flex:.2,gx:1,gen(u,v){const k=n(128,128,u,v);return[n(20,20,u,v),38+5*k,40+5*k,45+5*k]}},
  {id:'wplastic',name:'White plastic',absorb:0,rough:.02,repel:.7,flex:.2,gx:1,gen(u,v){const k=n(128,128,u,v),m=n(16,16,u,v);return[n(20,20,u,v),238+6*k-4*m,238+6*k-4*m,234+6*k-4*m]}},
+ {id:'stairs',name:'Subway stairwell',absorb:.06,rough:.28,repel:.15,flex:0,gx:1,
+  /* ribbed grey panel lining an underground stairwell: fine vertical ribs, panel seams, grime that's been rubbed and rained on */
+  gen(u,v){const rib=.5+.5*Math.cos(u*40*TAU+Math.sin(v*3*TAU)*.15),seam=(u*2%1)<.01||(v*2%1)<.008,g1=n(6,6,u,v),g2=n(24,48,u,v),f=n(128,128,u,v),dirt=Math.pow(g1,1.6)*.7+g2*.3,
+    base=150-32*dirt+16*rib-10*(1-rib)+6*f;if(seam)return[.0,88+10*f,90+10*f,94+10*f];return[.25+.55*rib+.2*f,base,base+2,base+6]},
+  scene(x,X,Y,W,H){x.save();/* overhead strip light: bright near the top, falling off down the wall */const g=x.createLinearGradient(X,Y,X,Y+H);g.addColorStop(0,'rgba(255,255,250,.22)');g.addColorStop(.35,'rgba(255,255,250,.05)');g.addColorStop(1,'rgba(0,0,0,.28)');x.globalCompositeOperation='soft-light';x.fillStyle=g;x.fillRect(X,Y,W,H);
+   /* old buffed stains and water marks run down between the ribs */let r=7;const Q=()=>(r=(Math.imul(r,1103515245)+12345)>>>0)/4294967296;x.globalCompositeOperation='multiply';for(let i=0;i<40;i++){const cx=X+Q()*W,cy=Y+Q()*H*.6,w=6+Q()*46,h=H*(.15+Q()*.55),lg=x.createLinearGradient(0,cy,0,cy+h);lg.addColorStop(0,'rgba(60,62,66,0)');lg.addColorStop(.2,`rgba(60,62,66,${(.1+Q()*.2).toFixed(2)})`);lg.addColorStop(1,'rgba(60,62,66,0)');x.fillStyle=lg;x.fillRect(cx,cy,w,h)}x.restore()}},
  {id:'concrete',name:'Concrete',absorb:.65,rough:.8,repel:0,flex:0,gx:1,gen(u,v){const a=n(32,32,u,v),b=n(64,64,u,v),c=n(128,128,u,v),base=.5*a+.3*b+.2*c,pit=c<.2,g=128+50*base-(pit?35:0);return[pit?base*.3:base,g,g,g-4]}},
  {id:'canvas',name:'Cotton canvas',absorb:.85,rough:.6,repel:0,flex:1,gx:1,gen(u,v){const wx=.5+.5*Math.sin(u*72*TAU),wy=.5+.5*Math.sin(v*72*TAU),h=(.5*wx+.5*wy)*.7+.3*n(64,64,u,v);return[h,214+30*h,205+28*h,184+24*h]}}
 ];
-const KEEP=['glass','plastic','wplastic'];{const k=KEEP.map(id=>SURF.find(x=>x.id===id));SURF.length=0;SURF.push(...k)}
+const KEEP=['glass','plastic','wplastic','stairs'];{const k=KEEP.map(id=>SURF.find(x=>x.id===id));SURF.length=0;SURF.push(...k)}
 let wetSet=new Set();
 function wetOf(s){ensure(s);if(!s.wv){s.wv=Object.create(s);Object.assign(s.wv,{name:'Wet '+s.name.toLowerCase(),wet:1,absorb:s.absorb>.3?Math.min(.8,s.absorb+.25):0})}return s.wv}
 function V(s){return wetSet.has(s.id)?wetOf(s):s}
@@ -1015,14 +1023,14 @@ function runDrips(dt){if(!drips.length)return;mergeRuns(dt);
      with a gap. Its shape is measured from that exit point, not from where it was born out of sight. Once out, it
      stays drawn — a wobble back over the edge doesn't chop it into dots — and it only goes out of sight again when it
      runs properly under another letter. */
-  {const op=lmAt(d.x,d.y)||(!!stroke&&!!fh&&fh[inkCell(d.x,d.y)]>0);if(op)d.uc=(d.uc||0)+1;else d.uc=0;if(!op&&!d.em){d.em=1;/* left the letter it was born in: the neck joins here. Coming out from far below its birth (a film that dried away under it) it's already a running line: no new neck */const far=Math.hypot(x0-d.sx,y0-d.sy)>Math.max(16,R()*1.6);d.ex=far?d.sx:x0;d.ey=far?d.sy:y0}}
+  {const lm=lmAt(d.x,d.y),op=lm||(!!stroke&&!!fh&&fh[inkCell(d.x,d.y)]>0);if(lm)d.uc=(d.uc||0)+1;else d.uc=0;if(!op&&!d.em){d.em=1;/* left the letter it was born in: the neck joins here. Coming out from far below its birth (a film that dried away under it) it's already a running line: no new neck */const far=Math.hypot(x0-d.sx,y0-d.sy)>Math.max(16,R()*1.6);d.ex=far?d.sx:x0;d.ey=far?d.sy:y0}}
   const trav=d.em?Math.hypot(d.x-d.ex,d.y-d.ey):0,travP=d.em?Math.max(0,trav-Math.hypot(d.x-x0,d.y-y0)):0;
   /* shape of a real run (from reference photos): a short smooth flare where it leaves the letter — no bulb — then an even width
      all the way down, thinning only a little as it spends paint, with a faint waver */const shp=t=>(d.soft?1:1+1.5*Math.exp(-t/(d.r*1.8+2.2)))*(.78+.22*clamp(d.vol/d.v0))*(1+.06*Math.sin(t*.09+d.ph)),re=d.r*shp(trav),reP=d.r*shp(travP);
   if(ledgeLive()&&d.preL&&!d.led&&d.y>=LDG().y&&Math.abs(d.gy)>.6&&d.soft){/* a thin diluted buff run just soaks into the ledge edge: no pool */drips.splice(i,1);continue}if(ledgeLive()&&d.preL&&!d.led&&d.y>=LDG().y&&Math.abs(d.gy)>.6){const col=typeof d.col==='string'?(d.wash?d.col:d.col):'#808080',stop=ledgeHit(d,d.x,col[0]==='#'?col:'#808080',d.r);d.preL=0;if(stop){d.vol=-1;drips.splice(i,1);continue}continue}
   const wob=(Math.sin((d.x+d.y)*d.fq+d.ph)*.7+Math.sin((d.x+d.y)*d.fq*2.3+d.ph*1.7)*.3)*(d.wet?.9:.55+d.r*.28)*(1+s.rough*2.5),xw=d.x-d.gy*wob,yw=d.y+d.gx*wob,px0=x0-d.gy*wob,py0=y0+d.gx*wob,done=d.vol<=0||d.y>H||d.y<-10||d.x<-10||d.x>W+10;
   /* a run reaching a finished letter further down doesn't paint across it: it merges into the paint and carries on underneath, showing again below it */
-  /* runs only show on bare wall: anywhere over a letter — finished, or the one being written right now — they're hidden, so a run appears where there's a gap and stays out of sight inside the paint */const onPaint=(px,py)=>lmAt(px,py)||(!!stroke&&!!fh&&fh[inkCell(px,py)]>0),under=d.em?d.uc>2&&onPaint(xw,yw):true;
+  /* runs only show on bare wall: anywhere over a letter — finished, or the one being written right now — they're hidden, so a run appears where there's a gap and stays out of sight inside the paint */const onPaint=(px,py)=>lmAt(px,py)||(!!stroke&&!!fh&&fh[inkCell(px,py)]>0),under=d.em?d.uc>2&&!!lmAt(xw,yw):true;/* once out, only a finished letter hides it: the letter being written paints over it anyway */
   /* MIXING: wet paint mixes. A run passing through (under) a letter, or across another run, that's still wet takes on
      its colour — black through wet blue comes out the other side a dark blue — and leaves a darker track inside the
      letter where it went through. Dry paint it just slides under. */
@@ -1219,10 +1227,10 @@ function makeChrome(s){const pad=4,x0=Math.max(0,Math.floor((stroke.x0-pad)*dpr)
  if(q<.5)toast(s.wet?'Water on the surface breaks the chrome — it stays dull':s.absorb>.3||s.rough>.3?'Texture is breaking the pigment alignment — dull silver':'Not enough shaking — the chrome will stay dull')}
 /* GLASS SHADOW: paint sits on the front of a clear pane, so light coming through throws a faint, soft copy of the
    tag onto what's behind — offset down and away from the light, never on top of paint */
-function glassShadow(s){if(demo||!stroke||!(s.id==='glass'||s.id==='bus'))return;const P=dpr,o={x:2.6,y:3.6},pad=10,x0=Math.max(0,Math.floor((stroke.x0-pad)*P)),y0=Math.max(0,Math.floor((stroke.y0-pad)*P)),x1=Math.min(stk.c.width,Math.ceil((stroke.x1+pad+o.x)*P)),y1=Math.min(stk.c.height,Math.ceil((stroke.y1+pad+o.y)*P)),w=x1-x0,h=y1-y0;if(w<2||h<2)return;
+function glassShadow(s){if(demo||!stroke||!(s.id==='glass'||s.id==='bus'||s.id==='stairs'))return;const st=s.id==='stairs',P=dpr,o=st?{x:1.4,y:5.2}:{x:2.6,y:3.6},pad=10,x0=Math.max(0,Math.floor((stroke.x0-pad)*P)),y0=Math.max(0,Math.floor((stroke.y0-pad)*P)),x1=Math.min(stk.c.width,Math.ceil((stroke.x1+pad+o.x)*P)),y1=Math.min(stk.c.height,Math.ceil((stroke.y1+pad+o.y)*P)),w=x1-x0,h=y1-y0;if(w<2||h<2)return;
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${2.2*P}px)`}catch(_){}x.drawImage(stk.c,x0,y0,w,h,o.x*P,o.y*P,w,h);x.filter='none';
  x.globalCompositeOperation='source-in';x.fillStyle='#000';x.fillRect(0,0,w,h);x.globalCompositeOperation='destination-out';x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.drawImage(idm.c,x0,y0,w,h,0,0,w,h);
- const b=baked.x;b.save();b.setTransform(1,0,0,1,0,0);b.globalAlpha=INK[pen.ink].chrome?.13:.1;b.drawImage(c,x0,y0);b.restore();freeC(c)}
+ const b=baked.x;b.save();b.setTransform(1,0,0,1,0,0);b.globalAlpha=(INK[pen.ink].chrome?.13:.1)*(st?1.9:1);b.drawImage(c,x0,y0);b.restore();freeC(c)}
 function finChrome(p){const b=baked.x;b.save();b.setTransform(1,0,0,1,0,0);b.drawImage(p.c,p.x,p.y);b.restore();freeC(p.c)}
 function ruinChrome(pt){const X=pt.x*dpr,Y=pt.y*dpr;for(let i=chromes.length-1;i>=0;i--){const p=chromes[i];if(X>=p.x&&X<p.x+p.w&&Y>=p.y&&Y<p.y+p.h){chromes.splice(i,1);toast('Touched before it dried — the mirror is ruined')}}}
 function rimEdge(ink,s){if(ink.chrome)return;if(pen.ink==='solid'||pen.multi)return;if(s.absorb>.3)return;const d=Math.max(1,Math.round(1.4*dpr));
@@ -1384,7 +1392,14 @@ let touchOff={x:0,y:0};try{const o=JSON.parse(localStorage.getItem('rlTouchOff')
 let cvR=null;const cvRect=()=>cvR||(cvR=cv.getBoundingClientRect());addEventListener('resize',()=>{cvR=null});addEventListener('scroll',()=>{cvR=null},true);
 const pt=e=>{const r=cvRect(),t=e.pointerType==='touch';return{x:e.clientX-r.left+(t?touchOff.x:0),y:e.clientY-r.top+(t?touchOff.y:0),t:e.timeStamp}};
 function abortStroke(){friction(false,0,cur);stk.x.save();stk.x.setTransform(1,0,0,1,0,0);stk.x.clearRect(0,0,stk.c.width,stk.c.height);stk.x.restore();stroke=null;hist.pop();dirty=true}
-function setAngle(v){angle=Math.round(((v%180)+180)%180);$('#angle').value=angle;$('#angleV').textContent=angle+'°'}
+/* the chisel angle and lean are shown as pictures, not degrees: the nib's footprint turning on the wall, and the
+   pen leaning onto the wall with the edge that drags lit up */
+function angleArt(a){const r=a*Math.PI/180,c=Math.cos(r),s2=Math.sin(r),w=13,t=4.2,P=(x,y)=>`${(20+x*c-y*s2).toFixed(1)},${(17+x*s2+y*c).toFixed(1)}`,word=a<20||a>160?'flat — thin downstrokes, fat across':a>70&&a<110?'upright — fat downstrokes, thin across':'on the diagonal — thick and thin swap through curves';
+ /* sample marks: a downstroke and a crossbar made with this nib */const dw=Math.max(1.6,Math.abs(w*c)+Math.abs(t*s2)),cw=Math.max(1.6,Math.abs(w*s2)+Math.abs(t*c));
+ return `<svg class="art" viewBox="0 0 84 34" aria-hidden="true"><circle cx="20" cy="17" r="15" fill="none" stroke="currentColor" stroke-opacity=".25"/><polygon points="${P(-w/2,-t/2)} ${P(w/2,-t/2)} ${P(w/2,t/2)} ${P(-w/2,t/2)}" fill="currentColor"/><rect x="${(48-dw/2).toFixed(1)}" y="4" width="${dw.toFixed(1)}" height="26" rx="1" fill="currentColor" opacity=".8"/><rect x="56" y="${(17-cw/2).toFixed(1)}" width="24" height="${cw.toFixed(1)}" rx="1" fill="currentColor" opacity=".8"/></svg><span class="artw">${word}</span>`}
+function leanArt(l){/* l 0..1 → 0..60° off upright */const d=l*60,r=d*Math.PI/180,bx=30,by=31,L=26,tx=bx+Math.sin(r)*L,ty=by-Math.cos(r)*L,nx=Math.cos(r)*3.2,ny=Math.sin(r)*3.2,word=l<.05?'upright — clean full edge':l<.45?'slight lean — the trailing edge drags':'heavy lean — dragged, thin, scratchy edge';
+ return `<svg class="art" viewBox="0 0 84 34" aria-hidden="true"><line x1="6" y1="32" x2="78" y2="32" stroke="currentColor" stroke-opacity=".35" stroke-width="2"/><polygon points="${(bx-nx).toFixed(1)},${(by-ny).toFixed(1)} ${(bx+nx).toFixed(1)},${(by+ny).toFixed(1)} ${(tx+nx).toFixed(1)},${(ty+ny).toFixed(1)} ${(tx-nx).toFixed(1)},${(ty-ny).toFixed(1)}" fill="currentColor" opacity=".85"/><path d="M${bx} ${by} L${bx} ${by-L}" stroke="currentColor" stroke-opacity=".25" stroke-dasharray="2 2"/>${l>.05?`<path d="M${bx+3} ${by-12} A12 12 0 0 1 ${(bx+Math.sin(r)*12+1).toFixed(1)} ${(by-Math.cos(r)*12).toFixed(1)}" fill="none" stroke="var(--accent,#ff4b2b)" stroke-width="1.6"/>`:''}<rect x="${(bx-4-l*10).toFixed(1)}" y="30.5" width="${(8+l*20).toFixed(1)}" height="2.6" rx="1.2" fill="var(--accent,#ff4b2b)"/><path d="M50 22 h${(26-l*12).toFixed(1)}" stroke="currentColor" stroke-width="${(6-l*3.5).toFixed(1)}" stroke-linecap="round" opacity=".8" ${l>.3?'stroke-dasharray="5 1.5 3 1"':''}/></svg><span class="artw">${word}</span>`}
+function setAngle(v){angle=Math.round(((v%180)+180)%180);$('#angle').value=angle;$('#angleV').innerHTML=angleArt(angle)}
 cv.addEventListener('pointerdown',e=>{e.preventDefault();setTimeout(audio,0);try{cv.setPointerCapture(e.pointerId)}catch(_){}ptrs.set(e.pointerId,pt(e));readPress(e);
  if(ptrs.size===2){if(stroke)abortStroke();down=false;
   if(pen.tip==='chisel'){const [p,q]=[...ptrs.values()];twist={base:angle,a0:Math.atan2(q.y-p.y,q.x-p.x),mid:{x:(p.x+q.x)/2,y:(p.y+q.y)/2}};dirty=true}
@@ -1757,14 +1772,21 @@ function makeShift(s){const pad=8,x=Math.max(0,Math.floor(stroke.x0-pad)),y=Math
 const inc=(t,a,b)=>{const c0=t*a,c1=t*b;return c1>=1?1:Math.max(0,(c1-c0)/(1-c0))};
 function runShifts(now){for(let i=shifts.length-1;i>=0;i--){const p=shifts[i],pr=sm(clamp((now-p.t0)/p.T)),d=pr-p.done;if(d<.012&&pr<1)continue;
  const bx=baked.x;bx.save();bx.globalAlpha=inc(.97,p.done,pr);bx.drawImage(p.lay,p.x,p.y,p.w,p.h);bx.globalAlpha=inc(.6,p.done,pr);bx.drawImage(p.ed,p.x,p.y,p.w,p.h);bx.restore();p.done=pr;dirty=true;if(pr>=1)shifts.splice(i,1)}}
-function renderRack(){$('#rack').innerHTML=PENS.filter(p=>brandF==='All'||p.brand===brandF).map(p=>`<button class="pen" data-id="${p.id}" aria-pressed="${p===pen}">${penSVG(p)}<b>${p.brand} ${p.name}</b><span>${p.w} mm ${p.tip} · ${(p.inkLabel||INK[p.ink].label).replace(/ \(.*\)/,'')}</span>${p.metal?'<i class="gh own">Metal tip</i>':''}${ghostTag(p)}</button>`).join('')}
+/* PEN SHELF: grouped by what kind of tool it is (that's how you'd reach for one), then by brand and size */
+const PTYPES=[['ink','Ink markers'],['paint','Paint markers'],['squeeze','Squeezers'],['mop','Mops & daubers'],['stick','Paint sticks'],['empty','Empties']];let typeF='all';
+function ptype(p){if(p.empty)return'empty';const k=penKind(p);if(k==='stick')return'stick';if(k==='mop')return'mop';if(k==='squeeze'||k==='needle')return'squeeze';return['alcpaint','oil','water','chrome','fluid'].includes(p.ink)?'paint':'ink'}
+function renderTypes(){$('#ptypes').innerHTML=[['all','All types'],...PTYPES].filter(([k])=>k==='all'||PENS.some(p=>ptype(p)===k)).map(([k,n])=>`<button class="t solo bf" data-pt="${k}" aria-pressed="${k===typeF}">${n}</button>`).join('')}
+function renderRack(){const card=p=>`<button class="pen" data-id="${p.id}" aria-pressed="${p===pen}">${penSVG(p)}<b>${p.brand} ${p.name}</b><span>${p.w} mm ${p.tip} · ${(p.inkLabel||INK[p.ink].label).replace(/ \(.*\)/,'')}</span>${p.metal?'<i class="gh own">Metal tip</i>':''}${ghostTag(p)}</button>`;
+ const list=PENS.filter(p=>(brandF==='All'||p.brand===brandF)&&(typeF==='all'||ptype(p)===typeF)).sort((a,b)=>a.brand.localeCompare(b.brand)||a.w-b.w);
+ if(typeF!=='all'){$('#rack').innerHTML=list.map(card).join('')||'<p class="hint">Nothing of that kind from this brand.</p>';return}
+ $('#rack').innerHTML=PTYPES.map(([k,n])=>{const g=list.filter(p=>ptype(p)===k);return g.length?`<h3 class="rackH">${n} <small>${g.length}</small></h3>`+g.map(card).join(''):''}).join('')}
 
 const CNAMES=[['Black','#121212'],['White','#f6f6f2'],['Silver','#b9bdc2'],['Gold','#c9a24a'],['Red','#d62b1f'],['Blue','#1f4fbf'],['Yellow','#ffd400'],['Pink','#ff4fa3'],['Magenta','#c0157a'],['Green','#2a8a3a'],['Purple','#6a3aa8'],['Orange','#f07a1a'],['Grey','#8a8d90'],['Copper black','#2b1a12'],['Violet-blue','#3b2fc0'],['Cream frost','#ece6d6'],['Neon green','#3dff6a'],['Neon yellow','#e8ff2a'],['Chrome','#a3a8ad']];
 function cname(c){if(pen.fb2&&FB2[c])return FB2[c][1];if(pen.ink==='chrome')return'Chrome';if(pen.ink==='etch')return'Frost etch';if(pen.ink==='future')return'Future Juice';const v=hex(c);let best='',bd=1e9;for(const[n,h]of CNAMES){const w=hex(h),d=(v[0]-w[0])**2*.3+(v[1]-w[1])**2*.59+(v[2]-w[2])**2*.11;if(d<bd){bd=d;best=n}}return best}
 function renderCSheet(){const html=pen.colors.map(c=>`<button class="cs" data-c="${c}" aria-pressed="${c===color}"><i style="background:${pen.fb2&&FB2[c]?`linear-gradient(135deg,${FB2[c][0]} 50%,${c} 50%)`:c}"></i>${cname(c)}${METAL[c]?' · metallic':''}</button>`).join('');
  $('#cgrid').innerHTML=html;$('#cgrid2').innerHTML=html;$('#colTitle').textContent='Colours';$('#colHint').textContent=`${pen.brand} ${pen.name} — ${pen.colors.length} colour${pen.colors.length>1?'s':''}`+(pen.empty&&!pen.fill?'. Fill it with an ink first.':'');$('#colDot').style.background=color}
 function renderColors(){renderFill();renderCSheet();$('#colors').innerHTML=`<button class="sw" style="background:${color}" data-c="${color}" aria-label="Colour: ${cname(color)} — change" aria-pressed="true"></button>${pen.colors.length>1?`<span class="ccount">${pen.colors.length}</span>`:''}`;
- $('#angleBox').style.display=pen.tip==='chisel'?'':'none';$('#angleV').textContent=angle+'°';const fb=$('#flip');fb.hidden=!pen.ends;$('#newnib').hidden=!!(pen.metal||INK[pen.ink].solid||pen.ink==='etch'&&pen.tip==='needle');$('#vsBox').hidden=!pen.adjust;if(pen.adjust){$('#vs').value=pen.vs;$('#vsV').textContent=['Trickle','Low','Medium','High','Flood'][pen.vs-1]}if(pen.ends)fb.textContent='Flip to '+pen.ends[1-(pen.end||0)].tip;showFlow();showMix();showHint()}
+ $('#angleBox').style.display=pen.tip==='chisel'?'':'none';$('#angleV').innerHTML=angleArt(angle);const fb=$('#flip');fb.hidden=!pen.ends;$('#newnib').hidden=!!(pen.metal||INK[pen.ink].solid||pen.ink==='etch'&&pen.tip==='needle');$('#vsBox').hidden=!pen.adjust;if(pen.adjust){$('#vs').value=pen.vs;$('#vsV').textContent=['Trickle','Low','Medium','High','Flood'][pen.vs-1]}if(pen.ends)fb.textContent='Flip to '+pen.ends[1-(pen.end||0)].tip;showFlow();showMix();showHint()}
 function meter(id,lbl,txt,w,cls){$(id).style.width=clamp(w)*100+'%';$(id).className=cls||'';$(lbl).textContent=txt}
 function showMix(){if(pen.shake)meter('#mixI','#mixLbl',`Mixed ${Math.round(pen.mix*100)}%`,pen.mix,pen.mix<.5?'low':'');else meter('#mixI','#mixLbl','No mixing ball',0)}
 function showFlow(){
@@ -1844,11 +1866,11 @@ $('#colors').addEventListener('click',()=>{renderCSheet();openSheet('colorSheet'
 const pickC=close=>e=>{const b=e.target.closest('.cs');if(!b)return;color=b.dataset.c;renderColors();renderReact();save();if(close){closeSheets();toast(cname(color))}};
 $('#cgrid').addEventListener('click',pickC(true));$('#cgrid2').addEventListener('click',pickC(false));
 $('#colBtn').addEventListener('click',()=>{renderCSheet();openSheet('colorSheet')});
-$('#lean').addEventListener('input',e=>{leanSet=+e.target.value/60;leanNow=Math.max(leanSet,leanSen);$('#leanV').textContent=e.target.value+'°';try{localStorage.setItem('mtbLean',e.target.value)}catch(_){}});
-try{const v=+(localStorage.getItem('mtbLean')||0);leanSet=v/60;$('#lean').value=v}catch(_){}$('#leanV').textContent=Math.round(leanSet*60)+'°';
-$('#angle').addEventListener('input',e=>{angle=+e.target.value;$('#angleV').textContent=angle+'°'});
+$('#lean').addEventListener('input',e=>{leanSet=+e.target.value/60;leanNow=Math.max(leanSet,leanSen);$('#leanV').innerHTML=leanArt(+e.target.value/60);try{localStorage.setItem('mtbLean',e.target.value)}catch(_){}});
+try{const v=+(localStorage.getItem('mtbLean')||0);leanSet=v/60;$('#lean').value=v}catch(_){}$('#leanV').innerHTML=leanArt(leanSet);
+$('#angle').addEventListener('input',e=>{angle=+e.target.value;$('#angleV').innerHTML=angleArt(angle)});
 document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>{tool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>x.setAttribute('aria-pressed',x===b))}));
-$('#brands').addEventListener('click',e=>{const b=e.target.closest('[data-b]');if(!b)return;brandF=b.dataset.b;renderBrands();renderRack()});
+$('#brands').addEventListener('click',e=>{const b=e.target.closest('[data-b]');if(!b)return;brandF=b.dataset.b;renderBrands();renderRack()});$('#ptypes').addEventListener('click',e=>{const b=e.target.closest('[data-pt]');if(!b)return;typeF=b.dataset.pt;renderTypes();renderRack()});
 $('#flip').addEventListener('click',()=>{if(!pen.ends)return;audio();pen.end=1-(pen.end||0);applyEnd(pen);clack();renderRack();renderTop();renderColors();renderReact();toast(`Now using the ${pen.tip} end`)});
 {const b=$('#lightBtn');const sync=()=>{b.textContent=lightOn?'Light & reflections: on':'Light & reflections: off';b.setAttribute('aria-pressed',lightOn)};sync();b.addEventListener('click',()=>{lightOn=!lightOn;try{localStorage.setItem('rlLight',lightOn?'1':'0')}catch(e){}sync();renderBg();const t=document.createElement('canvas');t.width=bg.c.width;t.height=bg.c.height;const tx=t.getContext('2d');tx.drawImage(bg.c,0,0);tx.globalCompositeOperation='destination-out';tx.drawImage(idm.c,0,0);baked.x.save();baked.x.setTransform(1,0,0,1,0,0);baked.x.drawImage(t,0,0);baked.x.restore();freeC(t);lForce=true;dirty=true})}
 {const gb=$('#gravBtn'),order=['auto','down','left','right','up'];gb.textContent=GMODES[gMode];gb.addEventListener('click',()=>{gMode=order[(order.indexOf(gMode)+1)%order.length];try{localStorage.setItem('rlGrav',gMode)}catch(e){}gb.textContent=GMODES[gMode];for(const d of drips){d.gx=undefined;d.gy=undefined}if(ledgeOn)refreshLedge();
@@ -1936,7 +1958,7 @@ const ro=new ResizeObserver(()=>{layout()});ro.observe(cv);
 /* ---------- boot ---------- */
 try{const st=JSON.parse(localStorage.getItem('mtb')||'{}');for(const p of PENS)if(p.empty){const b=st.fills&&BOTTLES.find(q=>q.id===st.fills[p.id]);if(b)fillPen(p,b,true);else p.life=0}if(pen.fill)color=pen.colors.includes(st.color)?st.color:pen.colors[0]}catch(e){}
 
-renderBrands();renderRack();renderColors();renderSurfs();renderTop();doLayout();renderReact();
+renderTypes();renderBrands();renderRack();renderColors();renderSurfs();renderTop();doLayout();renderReact();
 
 requestAnimationFrame(frame);
 }
