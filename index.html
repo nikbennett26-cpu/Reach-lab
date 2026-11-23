@@ -591,15 +591,19 @@ function refreshLedge(){const L=LDG(),y0=L.y-2,h=L.h+26;renderBg();const t=docum
 function ledgeHit(d,xw,col,re){const L=LDG(),k=Math.floor(xw/7),p=(ledP[k]||0)+d.vol,bx=baked.x;ledP[k]=p;ledP[k-1]=(ledP[k-1]||0)+d.vol*.35;ledP[k+1]=(ledP[k+1]||0)+d.vol*.35;
  /* paint spreads along the lip into one continuous bead (neighbouring arrivals merge), and coats the front face with a ragged lower edge */
  const sm=surfAt(xw,L.y-2).mean,a0=d.al&&d.al<.97?d.al:1,c0=col[0]==='#'?col:'#808080',fc=a0<1?mixHex(c0,'#ffffff',1-a0):c0,
-  rx=re*1.25+Math.min(7,d.vol*1.5+p*.9),ry=Math.max(1,re*.85)+Math.min(2,p*.35);
+  rx=re*1.7+Math.min(22,d.vol*4.5+p*3.2),ry=Math.max(1.1,re*.9)+Math.min(2.8,p*.5);/* the pool grows as more runs arrive at the same spot */
  /* the run lands on the lip and spreads sideways into a thin bead (soft ends, no hard box), then rolls over the
     front edge as short rounded drops — not a sheet with a cut hem */
  bx.save();if(a0<1)bx.globalCompositeOperation='multiply';bx.fillStyle=fc;bx.beginPath();bx.ellipse(xw,L.y-ry*.2,rx,ry,0,0,TAU);bx.fill();/* a small rounded foot where the run sits on the lip, joined to the run above */bx.beginPath();bx.moveTo(xw-re,L.y-ry*2.4);bx.quadraticCurveTo(xw-re,L.y-ry*.6,xw-rx,L.y-ry*.2);bx.lineTo(xw+rx,L.y-ry*.2);bx.quadraticCurveTo(xw+re,L.y-ry*.6,xw+re,L.y-ry*2.4);bx.closePath();bx.fill();
- {const n=1+(p>1.2?1:0)+(p>2.4?1:0);for(let i=0;i<n;i++){const cx=xw+(i?(Math.random()-.5)*rx*1.2:0),w=Math.max(.7,re*(i?.7:.95)),len=Math.min(L.h*1.1,(2+Math.random()*3)+p*1.3)*(i?.6:1);
-  bx.beginPath();bx.moveTo(cx-w*1.5,L.y);bx.quadraticCurveTo(cx-w,L.y+w*.8,cx-w,L.y+w*1.4);bx.lineTo(cx-w,L.y+len);bx.arc(cx,L.y+len,w,Math.PI,0,true);bx.lineTo(cx+w,L.y+w*1.4);bx.quadraticCurveTo(cx+w,L.y+w*.8,cx+w*1.5,L.y);bx.closePath();bx.fill()}}
+ /* POOL: paint gathers on the lip and drapes over the front face — the more that arrives at a spot the deeper the drape
+    hangs — with a soft, lobed lower edge (each lobe a drop about to fall), then it drips off the bottom */
+ {const fw2=rx*.85,hem=Math.min(L.h*1.05,L.h*.5+p*4+Math.random()*2),nl=Math.max(1,Math.min(4,Math.round(fw2/(re*2.2+2))));
+  bx.beginPath();bx.moveTo(xw-fw2-ry,L.y-ry*.2);bx.quadraticCurveTo(xw-fw2,L.y,xw-fw2,L.y+hem*.35);
+  for(let k2=0;k2<nl;k2++){const x0=xw-fw2+fw2*2*k2/nl,x1=xw-fw2+fw2*2*(k2+1)/nl,dep=hem*(k2===((nl/2)|0)?1:.6+.35*Math.abs(Math.sin(k2*2.1+d.ph)));bx.lineTo(x0,L.y+dep*.75);bx.bezierCurveTo(x0,L.y+dep*1.05,x1,L.y+dep*1.05,x1,L.y+dep*.75)}
+  bx.quadraticCurveTo(xw+fw2,L.y,xw+fw2+ry,L.y-ry*.2);bx.closePath();bx.fill()}
  bx.globalAlpha=.28*a0;bx.fillStyle=mixHex(c0,'#ffffff',.55);bx.beginPath();bx.ellipse(xw,L.y-ry*.35,rx*.7,Math.max(.4,ry*.3),0,0,TAU);bx.fill();bx.restore();
  markInk(xw,L.y,rx,d.id,col);{const ix=idm.x;ix.save();ix.fillStyle=`rgb(${d.id*20},0,0)`;ix.fillRect(xw-rx,L.y-ry,rx*2,L.h+ry);ix.restore()}
- if(p>1.5&&Math.random()<.75){d.y=L.y+L.h+1;d.x=xw;d.vol=Math.min(d.v0*.9,.4+(p-1.5)*.6+Math.random()*.6);d.v0=Math.max(d.v0,d.vol);d.sy=undefined;d.led=1;ledP[k]=p*.55;return false}
+ if(p>.55&&Math.random()<.7+Math.min(.25,(p-.55)*.3)){/* the pool overflows and drips off the front of the ledge */d.y=L.y+L.h+1;d.x=xw;d.vol=Math.min(Math.max(d.v0*.9,.6),.5+(p-.55)*.7+Math.random()*.6);d.v0=Math.max(d.v0,d.vol);d.sy=undefined;d.led=1;ledP[k]=p*.55;return false}
  return true}
 const C=8;let GW=1,GH_=1,water=new Float32Array(1),waterOn=false;const waterCv=document.createElement('canvas'),wctx=waterCv.getContext('2d');const mist=[];
 let wg=new Float32Array(1),wt=new Float32Array(1),wgOn=false;
@@ -1941,11 +1945,11 @@ $('#tipsClear').addEventListener('click',()=>{tips.length=0;$('#tipsList').inner
 for(const ev of ['pointerdown','pointerup'])cv.addEventListener(ev,()=>{canvasT=performance.now()},true);
 $('#status').addEventListener('click',e=>{e.currentTarget.classList.toggle('min')});
 const coach=$('#coach'),seen=(()=>{try{return localStorage.getItem('mtbCoach')}catch(_){return 1}})();
-/* INTRO: a short title card every time the app opens. First time it waits for "Start writing" and then the quick-start
-   card follows; after that it just shows the logo for a moment and gets out of the way (tap to skip). */
+/* INTRO: a title card every time the app opens; the app starts when you press Start writing. The first time, the steps
+   show and the quick-start card follows. */
 {const it=$('#intro'),lg=document.querySelector('#coach img');if(lg)$('#introLogo').src=lg.src;let gone=false;
  const go=()=>{if(gone)return;gone=true;it.classList.add('out');setTimeout(()=>{it.hidden=true},500);if(!seen)coach.hidden=false};
- $('#introGo').addEventListener('click',go);if(seen){it.querySelector('.steps').hidden=true;$('#introGo').textContent='Tap to start';it.addEventListener('click',go);setTimeout(go,1800)}}
+ $('#introGo').addEventListener('click',go);if(seen)it.querySelector('.steps').hidden=true;/* the app starts when you press Start writing — every time */}
 /* safety net: if Safari drops a layer (memory pressure / back from background), repaint the wall under whatever ink survived */
 function healWall(){try{if(!W||!baked.c.width)return;const x=baked.x,w=baked.c.width,h=baked.c.height;let blank=0;
  for(const [u,v] of [[.1,.1],[.5,.5],[.9,.9],[.2,.8],[.8,.2]]){const d=x.getImageData(Math.floor(w*u),Math.floor(h*v),1,1).data;if(d[3]===0)blank++}
