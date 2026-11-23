@@ -786,12 +786,11 @@ const bleedL=[];
 function queueBleed(){if(INK[pen.ink].comp==='multiply')return;const light=lum(hex(color))>=.68,x0=Math.max(0,Math.floor(stroke.x0*dpr)),y0=Math.max(0,Math.floor(stroke.y0*dpr)),w=Math.min(stk.c.width-x0,Math.ceil((stroke.x1-stroke.x0)*dpr)),h=Math.min(stk.c.height-y0,Math.ceil((stroke.y1-stroke.y0)*dpr));if(w<2||h<2)return;
  let a,id,bk;try{a=stk.x.getImageData(x0,y0,w,h).data;id=idm.x.getImageData(x0,y0,w,h).data;bk=baked.x.getImageData(x0,y0,w,h).data}catch(_){return}
  const keys=Object.keys(INK),out=new ImageData(w,h),o=out.data;let nh=0,nd=0,nb=0;
- for(let y=0;y<h;y++)for(let x=0;x<w;x++){const j=(y*w+x)*4;if(a[j+3]<40||id[j+3]<60)continue;const ty=keys[Math.round(id[j]/20)-1],hard=(ty==='stain'||ty==='bleed')&&lum(hex(color))>=.4&&!(pen.ink==='stain'||pen.ink==='bleed');/* stain only shows through a LIGHT cover; same-colour ink on ink just builds up darker */
-  if(!hard&&!((ty==='alcohol'||ty==='flow')&&light))continue;const r=bk[j],g=bk[j+1],bb=bk[j+2];
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){const j=(y*w+x)*4;if(a[j+3]<40||id[j+3]<60)continue;const ty=keys[Math.round(id[j]/20)-1],bkk=bleedK(pen.ink,ty);if(!bkk)continue;/* how strongly this dye comes up through this top ink (LAYER table) */const hard=(ty==='stain'||ty==='bleed')&&lum(hex(color))>=.4;const r=bk[j],g=bk[j+1],bb=bk[j+2];
   if(!hard&&!((r>g+50&&r>=bb-20)||(bb>g+30&&r>g+25)))continue;
   const gr=.5+.32*n(48,48,(x0+x)/TS,(y0+y)/TS)+.18*Math.random();
   if(ty==='bleed'){o[j]=r*.78+52;o[j+1]=g*.62+44;o[j+2]=bb*.72+62;nh++;nb++}else if(hard){const L=(r+g+bb)/3;o[j]=72+L*.28+(r-L)*.25;o[j+1]=56+L*.22;o[j+2]=168+L*.22;nh++}else{o[j]=r;o[j+1]=g*.85;o[j+2]=bb;nd++}
-  o[j+3]=Math.min(255,(a[j+3]/255)*(id[j+3]/255)*255*gr)}
+  o[j+3]=Math.min(255,(a[j+3]/255)*(id[j+3]/255)*255*gr*bkk)}
  if(nh+nd<30)return;const c0=document.createElement('canvas');c0.width=w;c0.height=h;c0.getContext('2d').putImageData(out,0,0);
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');
  try{x.filter=`blur(${7*dpr}px)`;x.globalAlpha=.5;x.drawImage(c0,0,0);x.filter=`blur(${1.1*dpr}px)`;x.globalAlpha=1;x.drawImage(c0,0,0);x.filter='none'}catch(_){x.drawImage(c0,0,0)}freeC(c0);
@@ -1053,6 +1052,21 @@ function stickDrag(x,y,s,fast){const r=pen.w*MM/2*curScale,X=stk.x,op=pen.multi?
    re-dissolves dry dye where it crosses it — the line drags the old colour along and the nib picks it up and carries
    a fading tint of it out the other side. Oil and water-based paints don't dissolve it; they sit on top (stain inks
    still bleed up through light covers, handled elsewhere). */
+/* LAYER: what an ink does when it goes over another, DRY (see the project doc "ink-behaviour-reference").
+   The rule: can the top ink's solvent dissolve the binder underneath?  d = dissolves (drags/muddies/picks up the
+   old colour), b = the old dye bleeds up into the new film, r = the new ink is repelled (beads and skips).
+   Wet underneath is handled separately (WMIX): wet films always mix a bit. */
+const FAM=t=>({alcohol:'dye',future:'dye',flow:'dye',stain:'stain',bleed:'stain',alcpaint:'apaint',oil:'oil',fluid:'oil',water:'water',chrome:'chrome',solid:'solid'})[t]||null;
+const LAYER={
+ dye:   {dye:{d:1},stain:{d:1},apaint:{d:.45},oil:{d:.3},water:{},chrome:{d:.9},solid:{r:.55}},
+ stain: {dye:{d:1},stain:{d:1},apaint:{d:.45},oil:{d:.3},water:{},chrome:{d:.9},solid:{r:.55}},
+ apaint:{dye:{d:.6,b:.35},stain:{d:.5,b:.75},apaint:{},oil:{d:.45},water:{},chrome:{d:.7},solid:{r:.45}},
+ oil:   {dye:{b:.3},stain:{b:.6},apaint:{},oil:{},water:{},chrome:{},solid:{r:.2}},
+ water: {dye:{b:.8},stain:{b:.95},apaint:{},oil:{r:.35},water:{},chrome:{},solid:{r:.6}},
+ chrome:{dye:{d:.4},stain:{d:.4},apaint:{d:.2},oil:{d:.15},water:{},chrome:{},solid:{r:.4}},
+ solid: {dye:{},stain:{b:.15},apaint:{},oil:{},water:{},chrome:{},solid:{}}};
+const layerRule=(top,under)=>{const a=FAM(top),b=FAM(under);return a&&b?(LAYER[a][b]||{}):{}};
+/* the bleed-thru ink is made to come up through oil paint */const bleedK=(top,under)=>{let b=layerRule(top,under).b||0;if(under==='bleed'&&FAM(top)==='oil')b=Math.max(b,.95);return b};
 const pickQ=[];/* the dye the nib picked up, laid into the fresh line once it's baked onto the wall */
 function layPick(){const L=pickQ.splice(0,600);if(!L.length)return;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const q of L){x0=Math.min(x0,q.x-q.r);y0=Math.min(y0,q.y-q.r);x1=Math.max(x1,q.x+q.r);y1=Math.max(y1,q.y+q.r)}
  const X=Math.max(0,Math.floor(x0*dpr)),Y=Math.max(0,Math.floor(y0*dpr)),w=Math.min(baked.c.width-X,Math.ceil((x1-x0)*dpr)+2),h=Math.min(baked.c.height-Y,Math.ceil((y1-y0)*dpr)+2);if(w<2||h<2)return;
@@ -1065,12 +1079,15 @@ const SOLV={alcohol:1,stain:1,bleed:1,flow:1,future:1,alcpaint:.75,chrome:.4,flu
    wet colour along and carries a fading tint of it. How much depends on the ink going on: thin dyes and water paint
    mix most, alcohol paint and oil less, chrome and solid sticks hardly at all. */
 const WMIX={alcohol:.9,stain:.9,bleed:.9,future:.8,water:.85,flow:.7,alcpaint:.55,oil:.5,fluid:.6,chrome:.15,solid:.1,etch:0};
-function rewet(x,y){if(demo||!stroke)return;const k=SOLV[pen.ink]||0,km=WMIX[pen.ink]??.5;if(!k&&!km)return;const pv=stroke.rw;stroke.rw={x,y};if(!pv)return;const dd=Math.hypot(x-pv.x,y-pv.y);if(dd<.5)return;stroke.rwA=(stroke.rwA||0)+dd;
+function rewet(x,y){if(demo||!stroke)return;const km=WMIX[pen.ink]??.5;if(!FAM(pen.ink)&&!km)return;const pv=stroke.rw;stroke.rw={x,y};if(!pv)return;const dd=Math.hypot(x-pv.x,y-pv.y);if(dd<.5)return;stroke.rwA=(stroke.rwA||0)+dd;
  const pk=stroke.pick;if(pk&&pk.a>.015){const q=stroke.pq||(stroke.pq=[]);if(q.length<600)q.push({x,y,r:R()*curScale*1.15,col:pk.col,a:pk.a,mul:INK[pen.ink].comp==='multiply'});pk.a*=Math.exp(-dd/(8+R()*.9))}
  if(stroke.rwA<4)return;stroke.rwA=0;const cc=colG[inkCell(x,y)];if(!cc||cc[0]!=='#'||cc===curCol())return;const wv=wetAt(x,y),ty=inkAt(x,y);
  if(wv>.3){/* still wet: physical mixing, any ink */const m=km*Math.min(1,wv);if(m<.02)return;smearDir(baked,pv,{x,y},.16*m,R()*.8,true);stroke.pick={col:cc,a:Math.min(.32*km,(pk&&pk.col===cc?pk.a:0)+.07*m)};return}
- /* dry: only alcohol re-dissolves dry dye (and a little of alcohol paint's resin) */const sol=k&&ty?(DYEINK[ty]?1:ty==='alcpaint'?.45:0):0;if(!sol)return;
- smearDir(baked,pv,{x,y},.2*k*sol,R()*.9,true);const cap=DYEINK[pen.ink]?.2:.1;stroke.pick={col:cc,a:Math.min(cap,(pk&&pk.col===cc?pk.a:0)+.045*k*sol)}}
+ /* dry: the table decides */const L=layerRule(pen.ink,ty);
+ if(L.r&&!stroke.s.wet){/* repelled: the new ink pulls back off the old film into beads, leaving skips (punched when the stroke is finished, so later stamps don't fill them) */const q=stroke.rp||(stroke.rp=[]);if(q.length<900)q.push({x,y,r:L.r,rr:R()*curScale})}
+ const sol=L.d||0;if(!sol)return;
+ smearDir(baked,pv,{x,y},.2*sol,R()*.9,true);const cap=DYEINK[pen.ink]?.2:.1;stroke.pick={col:cc,a:Math.min(cap,(pk&&pk.col===cc?pk.a:0)+.045*sol)}}
+
 /* RUNNING LOW: as the barrel empties there's less ink in the nib — the film gets thinner, so the wall shows through
    and the line goes lighter (below ~30% left), and there's no surplus to run, so drips die away first (gone by ~12%)
    while the line keeps going, streakier and paler, until it's dry */
@@ -1162,7 +1179,8 @@ function makeChrome(s){const pad=4,x0=Math.max(0,Math.floor((stroke.x0-pad)*dpr)
  const layer=(fill,al,mask)=>{x.globalCompositeOperation='source-atop';x.globalAlpha=al;try{x.filter=`blur(${dpr}px)`}catch(_){}x.drawImage(t,0,0);x.filter='none';x.globalAlpha=1};
  const inv=(dx,dy,col)=>{tx.globalCompositeOperation='source-over';tx.clearRect(0,0,w,h);tx.fillStyle=col;tx.fillRect(0,0,w,h);tx.globalCompositeOperation='destination-out';tx.drawImage(stk.c,x0,y0,w,h,dx,dy,w,h)};
  inv(-d,-d,'#000');layer(0,.45);inv(d,d,'#fff');layer(0,.75);
- const q=(CHQ[s.id]??.3)*(pen.shake?.25+.75*pen.mix:1)*(s.wet?.35:1);
+ let wetUnder=0;{const P=stroke.pts||[];let n=0,w=0;for(let i=0;i<P.length;i+=2){n++;const t=inkAt(P[i],P[i+1]);if(t&&t!=='chrome'&&wetAt(P[i],P[i+1])>.3)w++}wetUnder=n?w/n:0}/* chrome over wet ink can't align: dull where it crossed */
+ const q=(CHQ[s.id]??.3)*(pen.shake?.25+.75*pen.mix:1)*(s.wet?.35:1)*(1-.65*wetUnder);
  x.globalCompositeOperation='source-atop';x.globalAlpha=(1-q)*.88;x.fillStyle='#8e9398';x.fillRect(0,0,w,h);x.globalAlpha=1;
  tx.globalCompositeOperation='source-over';tx.clearRect(0,0,w,h);tx.drawImage(idm.c,x0,y0,w,h,0,0,w,h);tx.globalCompositeOperation='source-in';tx.fillStyle='#8a8f95';tx.fillRect(0,0,w,h);
  x.globalCompositeOperation='source-atop';x.globalAlpha=/MCP|Mercury/.test(pen.name)||pen.fill==='mcp'?.22:.85;/* thick mercury gel levels over what's under it and stays mirror-bright */x.drawImage(t,0,0);
@@ -1276,7 +1294,11 @@ function fadeLook(){const F=pen.fb2&&FB2[curCol()];if(!F||demo||!stroke)return;c
    if(r1<mf){const sh=.78+.42*r2;d[k]=Math.min(255,m[0]*sh);d[k+1]=Math.min(255,m[1]*sh);d[k+2]=Math.min(255,m[2]*sh)}else{const sh=.75+.4*r2;d[k]=dy[0]*sh;d[k+1]=dy[1]*sh;d[k+2]=dy[2]*sh}}
   else if(b>.05){d[k]=dy[0];d[k+1]=dy[1];d[k+2]=dy[2];d[k+3]=Math.round(255*Math.min(.95,b*2.6))}}
  stk.x.putImageData(S,X,Y)}
-function end(){if(!stroke)return;{const o=overlapDark();if(o)bleedL.push(o)}markLetters();if(stroke.pq&&stroke.pq.length)pickQ.push(...stroke.pq);lForce=true;if(!demo)glossAdd();flushStreaks(null,true);flickTail();const ink=stroke.ink,s=stroke.s,bx=baked.x;
+function repelSkips(){const q=stroke&&stroke.rp;if(!q||!q.length)return;const x=stk.x;x.save();x.globalCompositeOperation='destination-out';
+ for(const p of q){const n=1+Math.round(p.r*5);for(let i=0;i<n;i++){if(Math.random()>p.r*.85)continue;const a=Math.random()*TAU,d=Math.random()*p.rr*.85;x.globalAlpha=.75+Math.random()*.25;x.beginPath();x.arc(p.x+Math.cos(a)*d,p.y+Math.sin(a)*d,p.rr*(.1+Math.random()*.24),0,TAU);x.fill()}}x.restore();
+ if(!saidRepel++)toast('It won’t take over that — the ink is beading off the layer underneath')}
+let saidRepel=0;
+function end(){if(!stroke)return;repelSkips();{const o=overlapDark();if(o)bleedL.push(o)}markLetters();if(stroke.pq&&stroke.pq.length)pickQ.push(...stroke.pq);lForce=true;if(!demo)glossAdd();flushStreaks(null,true);flickTail();const ink=stroke.ink,s=stroke.s,bx=baked.x;
  if(s.wet&&!demo){}else if(stroke.wp&&stroke.wp.length&&!['water','alcohol','flow'].includes(pen.ink)){for(const p of stroke.wp)if(Math.random()<.34*ink.run)drip(p.x+(Math.random()-.5)*R(),p.y+R()*.42,.25+Math.random()*Math.random()*1.4,{ty:pen.ink,col:curCol(),r:Math.max(.9,Math.min(3.6,R()*(.06+Math.random()*.16))),delay:Math.random()*900})}
  else if(stroke.wp&&stroke.wp.length&&blooms.length<900){if(s.absorb<.4)for(const p of stroke.wp)for(let j=0;j<2;j++)if(Math.random()<.5*(ink.run||.8))drip(p.x+(Math.random()-.5)*R()*1.6,p.y+R()*(Math.random()*.5),.3+Math.random()*Math.random()*1.6,{ty:pen.ink,col:curCol(),r:Math.max(.5,Math.min(1.4,R()*(.025+Math.random()*.06))),al:.5+Math.random()*.3,delay:200+Math.random()*1500});const now=performance.now(),r=R();stroke.wp.forEach((p,i)=>blooms.push({x:p.x,y:p.y,r,t0:now+i*9,life:2400+Math.random()*1200,col:color,ty:pen.ink,next:0,dripped:0}))}
  if(!demo)wetBead(ink,s);if(!demo&&!s.wet&&pen.life>.1)thickLook(lowCol(s));if(!demo&&!s.wet)settle(lowCol(s),s);if(!demo&&s.wet&&!dyeSplit(s,curCol()))wetWash(s,ink,curCol());if(!demo)stainDry();if(!demo&&pen.dauber&&s.absorb<.4&&!s.wet){const P=stroke.pts||[],L=clamp(pen.life*1.2);for(let i=0;i<P.length;i+=2)if(Math.random()<.18*L)drip(P[i]+(Math.random()-.5)*R()*1.7,P[i+1]+R()*(.25+Math.random()*.25),.35+Math.random()*Math.random()*1.5*L,{ty:pen.ink,col:curCol(),r:.7+Math.random()*1.3,delay:400+Math.random()*2600})}fadeLook();fullDrips(ink,s);queueBleed();{if(tmp.c.width!==bg.c.width||tmp.c.height!==bg.c.height){tmp.c.width=bg.c.width;tmp.c.height=bg.c.height}const tx=tmp.x;tx.setTransform(1,0,0,1,0,0);tx.globalCompositeOperation='copy';tx.drawImage(stk.c,0,0);tx.globalCompositeOperation='source-in';tx.drawImage(bg.c,0,0);tx.globalCompositeOperation='source-over';bx.save();bx.setTransform(1,0,0,1,0,0);bx.drawImage(tmp.c,0,0);bx.restore()}bx.save();bx.setTransform(1,0,0,1,0,0);applyInk(bx,ink,s);bx.drawImage(stk.c,0,0);bx.restore();if(ink.future){const fx=need(fjL).x;fx.save();fx.setTransform(1,0,0,1,0,0);fx.drawImage(stk.c,0,0);fx.restore();fjOn=true;fjCol=futDry(s)[0];const pl=pool.x;pl.save();pl.setTransform(1,0,0,1,0,0);pl.clearRect(0,0,pool.c.width,pool.c.height);pl.restore()}usedPens.add(pen.brand+' '+pen.name);if(ink.etch)makeEtch(s);rimEdge(ink,s);glassShadow(s);if(ink.chrome)makeChrome(s);{const sh=pen.shift;if(shL.c.width||sh){const g=needSh().x;g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation=sh?'source-over':'destination-out';g.drawImage(stk.c,0,0);g.restore();if(sh)shiftOn=true;shDirty=true}}if(glL.c.width&&!(ink.gloss||pen.gloss)){const g=glL.x;g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='destination-out';g.drawImage(stk.c,0,0);g.restore();glDirty=true}if((ink.gloss||pen.gloss)&&s.absorb<.3&&!ink.chrome){const g=needGl().x;g.save();g.setTransform(1,0,0,1,0,0);g.drawImage(stk.c,0,0);g.restore();glossOn=true;glDirty=true}if(ink.gloss&&s.absorb<.3){bx.save();bx.setTransform(1,0,0,1,0,0);bx.globalCompositeOperation='screen';bx.globalAlpha=.22;bx.drawImage(stk.c,-dpr,-dpr);bx.restore()}
