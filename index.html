@@ -884,13 +884,16 @@ function dyeSplit(s,col){const cast=CAST(pen.ink,col);if(!cast||demo||!upright)r
  stroke.split=1;return true}
 function wetWash(s,ink,col,o){if(ink.solid||ink.fluid||ink.etch)return;const sp=o&&o.dye;if(ink.solid||ink.fluid||ink.etch)return;
  const P=dpr,x0=Math.max(0,Math.floor(stroke.x0*P)),y0=Math.max(0,Math.floor(stroke.y0*P)),x1=Math.min(stk.c.width,Math.ceil(stroke.x1*P)),y1=Math.min(stk.c.height,Math.ceil(stroke.y1*P)),w=x1-x0,h0=y1-y0;if(w<4||h0<4)return;
- const run=(DYEINK[pen.ink]?1.25:ink.opacity>.9?.8:1)*(.7+(ink.run||.8)*.4),L=Math.round(Math.min(460,(170+R()*9)*run)*P),h=Math.min(stk.c.height-y0,h0+L);if(h<4)return;
+ const run=(DYEINK[pen.ink]?1.25:ink.opacity>.9?.8:1)*(.7+(ink.run||.8)*.4),L=Math.round(Math.min(520,(170+R()*9)*run*(.6+Math.random()*.8))*P),h=Math.min(stk.c.height-y0,h0+L);if(h<4)return;
  const m=document.createElement('canvas');m.width=w;m.height=h;const mx=m.getContext('2d');
  /* gravity smear: stack the mark's shape down the wall with falling strength */
  const N=44;for(let k=N;k>=1;k--){mx.globalAlpha=.075*Math.pow(1-k/(N+1),.85);mx.drawImage(stk.c,x0,y0,w,h0,0,(k/N)*L,w,h0)}mx.globalAlpha=.3;mx.drawImage(stk.c,x0,y0,w,h0,0,0,w,h0);
  /* ragged fringe: every column runs its own distance */
- const cm=document.createElement('canvas');cm.width=w;cm.height=h;const cx=cm.getContext('2d');let ph=Math.random()*99;
- for(let x=0;x<w;x+=Math.max(1,Math.round(P))){const f0=.25+.75*Math.pow(.5+.5*Math.sin(x/(7*P)+ph)*Math.sin(x/(17*P)+ph*1.7)+.5*Math.random()*.6,1.3),wf0=wetF((x0+x)/P,stroke.y1),f=f0*(sp?.3+1.05*wf0+Math.max(0,wf0-.55)*2.2:.2+1.1*wf0+Math.max(0,wf0-.6)*1.2),len=h0+L*f,g=cx.createLinearGradient(0,0,0,len);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(Math.min(.99,h0/len),'rgba(0,0,0,.9)');g.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g;cx.fillRect(x,0,Math.max(1,Math.round(P)),len)}
+ const cm=document.createElement('canvas');cm.width=w;cm.height=h;const cx=cm.getContext('2d');
+ /* where the film runs out is random along the mark: wetter and drier patches of wall, clumps of long streaks next to
+    short ones, the odd run that keeps going — never one straight line where it all stops */
+ const nz=(sc)=>{const k=[];for(let i=0;i<w/(sc*P)+3;i++)k.push(Math.random());return x=>{const u=x/(sc*P),i=u|0,t=u-i,t2=t*t*(3-2*t);return k[i]+(k[i+1]-k[i])*t2}},nA=nz(6+Math.random()*5),nB=nz(22+Math.random()*16),nC=nz(70+Math.random()*50);let lng=0;
+ for(let x=0;x<w;x+=Math.max(1,Math.round(P))){if(lng>0)lng--;else if(Math.random()<.012)lng=Math.round((2+Math.random()*5)*P);const f0=Math.max(.04,(.05+1.5*Math.pow(.3*nA(x)+.35*nB(x)+.35*nC(x),1.8))*(.35+1.3*nC(x+w*.37))+(Math.random()-.5)*.18+(lng>0?.5+Math.random()*.4:0)),wf0=wetF((x0+x)/P,stroke.y1),f=f0*(sp?.3+1.05*wf0+Math.max(0,wf0-.55)*2.2:.2+1.1*wf0+Math.max(0,wf0-.6)*1.2),len=h0+L*f,g=cx.createLinearGradient(0,0,0,len);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(Math.min(.99,h0/len),'rgba(0,0,0,.9)');g.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g;cx.fillRect(x,0,Math.max(1,Math.round(P)),len)}
  mx.globalAlpha=1;mx.globalCompositeOperation='destination-in';mx.drawImage(cm,0,0);freeC(cm);
  mx.globalCompositeOperation='source-in';{const st0=(pen.ink==='stain'||pen.ink==='bleed')&&lum(hex(col))<.3;mx.fillStyle=sp?mixHex(o.dye,col,.25):st0?mixHex('#6a4fc0',col,.45):DYEINK[pen.ink]?col:mixHex(col,'#ffffff',lum(hex(col))<.3?.08:.15)}mx.fillRect(0,0,w,h);mx.globalCompositeOperation='source-over';
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${1.2*P}px)`;x.drawImage(m,0,0);x.filter='none'}catch(_){x.drawImage(m,0,0)}freeC(m);
