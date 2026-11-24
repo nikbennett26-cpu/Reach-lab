@@ -701,7 +701,7 @@ function ledgeHit(d,xw,col,re){const L0=LDG(),L={...L0,y:ledgeY(xw)},k=Math.floo
  if(L0.stone){const rr=8+d.vol*10+Math.min(14,p*2),g=bx.createRadialGradient(xw,L.y+4,0,xw,L.y+4,rr*1.6);g.addColorStop(0,'rgba(40,34,26,.22)');g.addColorStop(1,'rgba(40,34,26,0)');bx.save();bx.globalCompositeOperation='multiply';bx.fillStyle=g;bx.beginPath();bx.ellipse(xw,L.y+4+rr*.35,rr*1.6,rr*1.1,0,0,TAU);bx.fill();bx.restore()}
  /* paint spreads along the lip into one continuous bead (neighbouring arrivals merge), and coats the front face with a ragged lower edge */
  const sm=surfAt(xw,L.y-2).mean,a0=d.al&&d.al<.97?d.al:1,c0=col[0]==='#'?col:'#808080',fc=a0<1?mixHex(c0,'#ffffff',1-a0):c0,
-  rx=re*1.7+Math.min(22,d.vol*4.5+p*3.2),ry=Math.max(1.1,re*.9)+Math.min(2.8,p*.5);/* the pool grows as more runs arrive at the same spot */
+  rx=L0.stone?re*2.2+Math.min(40,d.vol*6+p*5.5):re*1.7+Math.min(22,d.vol*4.5+p*3.2),ry=L0.stone?Math.max(1.4,re)+Math.min(3.6,p*.7):Math.max(1.1,re*.9)+Math.min(2.8,p*.5);/* the pool grows as more runs arrive at the same spot — a deep flat stone cill holds a much wider pool *//* the pool grows as more runs arrive at the same spot */
  /* the run lands on the lip and spreads sideways into a thin bead (soft ends, no hard box), then rolls over the
     front edge as short rounded drops — not a sheet with a cut hem */
  bx.save();
@@ -709,13 +709,13 @@ function ledgeHit(d,xw,col,re){const L0=LDG(),L={...L0,y:ledgeY(xw)},k=Math.floo
  if(a0<1)bx.globalCompositeOperation='multiply';bx.fillStyle=fc;bx.beginPath();bx.ellipse(xw,L.y-ry*.2,rx,ry,0,0,TAU);bx.fill();/* a small rounded foot where the run sits on the lip, joined to the run above */bx.beginPath();bx.moveTo(xw-re,L.y-ry*2.4);bx.quadraticCurveTo(xw-re,L.y-ry*.6,xw-rx,L.y-ry*.2);bx.lineTo(xw+rx,L.y-ry*.2);bx.quadraticCurveTo(xw+re,L.y-ry*.6,xw+re,L.y-ry*2.4);bx.closePath();bx.fill();
  /* POOL: paint gathers on the lip and drapes over the front face — the more that arrives at a spot the deeper the drape
     hangs — with a soft, lobed lower edge (each lobe a drop about to fall), then it drips off the bottom */
- {const fw2=rx*.85,hem=Math.min(L.h*1.05,L.h*.5+p*4+Math.random()*2),nl=Math.max(1,Math.min(4,Math.round(fw2/(re*2.2+2))));
+ {const fw2=rx*.85,hem=L0.stone&&p<2.4?Math.min(L.h*.25,1.5+p*1.4):Math.min(L.h*1.05,L.h*.5+p*4+Math.random()*2),nl=Math.max(1,Math.min(4,Math.round(fw2/(re*2.2+2))));
   bx.beginPath();bx.moveTo(xw-fw2-ry,L.y-ry*.2);bx.quadraticCurveTo(xw-fw2,L.y,xw-fw2,L.y+hem*.35);
   for(let k2=0;k2<nl;k2++){const x0=xw-fw2+fw2*2*k2/nl,x1=xw-fw2+fw2*2*(k2+1)/nl,dep=hem*(k2===((nl/2)|0)?1:.6+.35*Math.abs(Math.sin(k2*2.1+d.ph)));bx.lineTo(x0,L.y+dep*.75);bx.bezierCurveTo(x0,L.y+dep*1.05,x1,L.y+dep*1.05,x1,L.y+dep*.75)}
   bx.quadraticCurveTo(xw+fw2,L.y,xw+fw2+ry,L.y-ry*.2);bx.closePath();bx.fill()}
  bx.globalCompositeOperation='source-over';const sg=bx.createLinearGradient(xw-rx*.8,L.y-ry*.6,xw+rx*.6,L.y+ry*.3);sg.addColorStop(0,'rgba(255,255,255,.55)');sg.addColorStop(.5,'rgba(255,255,255,.18)');sg.addColorStop(1,'rgba(255,255,255,0)');bx.fillStyle=sg;bx.globalAlpha=.72*a0;bx.beginPath();bx.ellipse(xw-rx*.12,L.y-ry*.32,rx*.72,Math.max(.6,ry*.32),0,0,TAU);bx.fill();bx.restore();
  markInk(xw,L.y,rx,d.id,col);{const ix=idm.x;ix.save();ix.fillStyle=`rgb(${d.id*20},0,0)`;ix.fillRect(xw-rx,L.y-ry,rx*2,L.h+ry);ix.restore()}
- if(p>.55&&Math.random()<.7+Math.min(.25,(p-.55)*.3)){/* the pool overflows and drips off the front of the ledge */d.y=L.y+L.h+1;d.x=xw;d.vol=Math.min(Math.max(d.v0*.9,.6),.5+(p-.55)*.7+Math.random()*.6);d.v0=Math.max(d.v0,d.vol);d.sy=undefined;d.led=1;ledP[k]=p*.55;return false}
+ const ovf=L0.stone?2.4:.55;/* the stone cill is deep and flat: it fills up and spreads before it spills over the edge */if(p>ovf&&Math.random()<.7+Math.min(.25,(p-ovf)*.3)){/* the pool overflows and drips off the front of the ledge */d.y=L.y+L.h+1;d.x=xw;d.vol=Math.min(Math.max(d.v0*.9,.6),.5+(p-ovf)*.7+Math.random()*.6);d.v0=Math.max(d.v0,d.vol);d.sy=undefined;d.led=1;ledP[k]=p*.55;return false}
  return true}
 const C=8;let GW=1,GH_=1,water=new Float32Array(1),waterOn=false;const waterCv=document.createElement('canvas'),wctx=waterCv.getContext('2d');const mist=[];
 let wg=new Float32Array(1),wt=new Float32Array(1),wgOn=false;
@@ -2027,7 +2027,7 @@ function penSVG(p){const c=p.colors[0],bar=p.barrel||'#1c1c1e',band=p.band,k=pen
  /* marker: long rigid barrel, nib collar, cap on the back */
  return sv+nib(24)+`<rect x="24" y="8" width="13" height="24" rx="2" fill="#b9bec4"/><rect x="37" y="7" width="158" height="26" rx="5" fill="${bar}" stroke="${ln}"/>${band?`<rect x="90" y="7" width="56" height="26" fill="${band}"/>`:''}<rect x="166" y="7" width="29" height="26" rx="4" fill="${p.colors.length>1||p.ink==='alcohol'?c:bar}" stroke="${ln}"/><rect x="40" y="10" width="150" height="4.5" rx="2.2" fill="${hl}"/></svg>`}
 let brandF='All';
-function renderBrands(){$('#brands').innerHTML=['All',...new Set(PENS.map(p=>p.brand))].map(b=>`<button class="t solo bf" data-b="${b}" aria-pressed="${b===brandF}">${b}</button>`).join('')}
+function renderBrands(){const bl=[...new Set(PENS.filter(p=>typeF==='all'||ptype(p)===typeF).map(p=>p.brand))];if(brandF!=='All'&&!bl.includes(brandF))brandF='All';$('#brands').innerHTML=['All',...bl].map(b=>`<button class="t solo bf" data-b="${b}" aria-pressed="${b===brandF}">${b}</button>`).join('')}
 function drippyTag(p){if(p.empty)return'';const d=(INK[p.ink]&&INK[p.ink].drip)||0;return(d>=1.1||(d>=.8&&(p.squeeze||p.adjust||p.w>=10)))?'<i class="drp">Drippy</i>':''}
 function ghostTag(p){if(p.ink==='etch')return'<i class="gh own">Permanent etch · can’t be buffed</i>';if(p.ink!=='stain'&&p.ink!=='bleed')return'';const dk=p.colors.filter(c=>lum(hex(c))<.18).length,n=p.colors.length;return dk===n?'<i class="gh">Violet ghost</i>':dk?'<i class="gh">Ghost: violet on black · own colour</i>':'<i class="gh own">Ghost in own colour</i>'}
 
@@ -2373,7 +2373,7 @@ $('#lean').addEventListener('input',e=>{leanSet=+e.target.value/60;leanNow=Math.
 try{const v=+(localStorage.getItem('mtbLean')||0);leanSet=v/60;$('#lean').value=v}catch(_){}$('#leanV').innerHTML=leanArt(leanSet);
 $('#angle').addEventListener('input',e=>{angle=+e.target.value;$('#angleV').innerHTML=angleArt(angle)});
 document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',ev=>{if(b.dataset.tool==='buff'&&(tool==='buff'||ev.target&&ev.target.id==='buffPlus')){tool='buff';document.querySelectorAll('[data-tool]').forEach(x=>x.setAttribute('aria-pressed',x===b));openBuffMenu();return}tool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>x.setAttribute('aria-pressed',x===b))}));
-$('#brands').addEventListener('click',e=>{const b=e.target.closest('[data-b]');if(!b)return;brandF=b.dataset.b;renderBrands();renderRack()});$('#ptypes').addEventListener('click',e=>{const b=e.target.closest('[data-pt]');if(!b)return;typeF=b.dataset.pt;renderTypes();renderRack()});
+$('#brands').addEventListener('click',e=>{const b=e.target.closest('[data-b]');if(!b)return;brandF=b.dataset.b;renderBrands();renderRack()});$('#ptypes').addEventListener('click',e=>{const b=e.target.closest('[data-pt]');if(!b)return;typeF=b.dataset.pt;renderTypes();renderBrands();renderRack()});
 $('#flip').addEventListener('click',()=>{if(!pen.ends)return;audio();pen.end=1-(pen.end||0);applyEnd(pen);clack();renderRack();renderTop();renderColors();renderReact();toast(`Now using the ${pen.tip} end`)});
 {const b=$('#lightBtn');const sync=()=>{b.textContent=lightOn?'Light & reflections: on':'Light & reflections: off';b.setAttribute('aria-pressed',lightOn)};sync();b.addEventListener('click',()=>{lightOn=!lightOn;try{localStorage.setItem('rlLight',lightOn?'1':'0')}catch(e){}sync();renderBg();const t=document.createElement('canvas');t.width=bg.c.width;t.height=bg.c.height;const tx=t.getContext('2d');tx.drawImage(bg.c,0,0);tx.globalCompositeOperation='destination-out';tx.drawImage(idm.c,0,0);baked.x.save();baked.x.setTransform(1,0,0,1,0,0);baked.x.drawImage(t,0,0);baked.x.restore();freeC(t);lForce=true;slForce=true;dirty=true})}
 {const gb=$('#gravBtn'),order=['auto','down','left','right','up'];gb.textContent=GMODES[gMode];gb.addEventListener('click',()=>{gMode=order[(order.indexOf(gMode)+1)%order.length];try{localStorage.setItem('rlGrav',gMode)}catch(e){}gb.textContent=GMODES[gMode];for(const d of drips){d.gx=undefined;d.gy=undefined}if(ledgeOn)refreshLedge();
