@@ -693,19 +693,32 @@ let ldgDrawn=null;function refreshLedge(){const L=LDG(),sp=ledgeSpan(),y0=Math.m
    and only when it reaches the front edge does it spill over and drip down the face. Kept in photo coordinates so it
    stays put if the screen resizes. */
 const CP={n:290,v:null,c:null,sp:null,in:null};let cillC=null,cillDirty=false,cillTilt=0;
-function cillReset(){CP.v=CP.c=CP.sp=CP.in=null;cillDirty=true}
-function cillHit(d,xw,col,re,L){if(!CP.v){CP.v=new Float32Array(CP.n);CP.c=new Array(CP.n).fill(null);CP.sp=new Float32Array(CP.n);CP.in=new Float32Array(CP.n)}
- const q=L.q,ix=Math.round((xw-q.x)/q.w*CP.n);if(ix<0||ix>=CP.n)return true;const a0=d.al&&d.al<.97?d.al:1,c0=col[0]==='#'?col:'#808080',fc=a0<1?mixHex(c0,'#ffffff',1-a0):c0;
+function cillReset(){CP.v=CP.c=CP.sp=CP.in=null;cillDirty=true;SPOOL.length=0;stDirty=true}
+/* SUBWAY STAIRS: every concrete tread is a level shelf of its own — runs from the wall hit the back of the tread, pool,
+   spread and join along it, creep to the nosing, then spill over and run down the riser onto the next tread, and so on */
+const SPOOL=[];let stC=null,stDirty=false;
+function stairL(i){const g=stairsRailGeom();if(!g.photo)return null;const [u0,u1,v0,v1]=STAIR_STEPS[i],x0=g.ox+g.w*u0,x1=g.ox+g.w*u1,y0=g.oy+g.h_im*v0,y1=g.oy+g.h_im*v1,nx=STAIR_STEPS[i+1];
+ return {y:y0,top:Math.max(3,y1-y0),h:nx?Math.max(6,g.oy+g.h_im*nx[2]-y1):12,px:x0,pw:x1-x0,q:{x:g.ox,y:g.oy,w:g.w,h:g.h_im}}}
+function stairHit(d,st,col){const L=stairL(st.idx);if(!L)return true;const P=SPOOL[st.idx]||(SPOOL[st.idx]={n:Math.max(40,Math.round(L.pw/1.6)),v:null,c:null,sp:null,in:null});
+ const stop=poolHit(P,d,Math.max(L.px+1,Math.min(L.px+L.pw-1,d.x)),col,d.r,L);if(!stop){d.led=0;d.stp=1}return stop}
+function drawStairPools(){if(!stDirty)return;stDirty=false;if(!stC)stC=document.createElement('canvas');if(stC.width!==Math.round(W*dpr)||stC.height!==Math.round(H*dpr)){stC.width=Math.round(W*dpr);stC.height=Math.round(H*dpr)}
+ const x=stC.getContext('2d');x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,stC.width,stC.height);if(!(bands[0]&&bands[0].s.id==='stairs'))return;x.setTransform(dpr,0,0,dpr,0,0);
+ for(let i=0;i<SPOOL.length;i++){const P=SPOOL[i];if(!P||!P.v)continue;const L=stairL(i);if(L)drawPoolSegs(x,P,L,PHI.stairs,L.q)}}
+function cillHit(d,xw,col,re,L){return poolHit(CP,d,xw,col,re,{...L,px:L.q.x,pw:L.q.w})}
+/* one level shelf (the cill, a stair tread): runs land at the back edge, level out sideways into one puddle, creep forward, and spill over the front */
+function poolHit(CP,d,xw,col,re,L){if(!CP.v){CP.v=new Float32Array(CP.n);CP.c=new Array(CP.n).fill(null);CP.sp=new Float32Array(CP.n);CP.in=new Float32Array(CP.n)}
+ const q={x:L.px,w:L.pw},ix=Math.round((xw-q.x)/q.w*CP.n);if(ix<0||ix>=CP.n)return true;const a0=d.al&&d.al<.97?d.al:1,c0=col[0]==='#'?col:'#808080',fc=a0<1?mixHex(c0,'#ffffff',1-a0):c0;
  CP.in[ix]=Math.max(CP.in[ix],Math.min(4,re||d.r||1));const add=Math.max(.25,d.vol)*1.1,sg=2+Math.min(7,d.vol*5);for(let k=-Math.ceil(sg*2.5);k<=Math.ceil(sg*2.5);k++){const j=ix+k;if(j<0||j>=CP.n)continue;const w=Math.exp(-k*k/(2*sg*sg));CP.v[j]+=add*w/(sg*2.5066)*3;if(w>.25)CP.c[j]=CP.c[j]?mixHex(CP.c[j],fc,Math.min(.6,w*.5)):fc}
  /* the paint levels out: it flows from deeper to shallower neighbours, so close puddles join into one */
  for(let it=0;it<6;it++){for(let j=1;j<CP.n-1;j++){const f=(CP.v[j-1]+CP.v[j+1]-2*CP.v[j])*.18;CP.v[j]+=f}for(let j=1;j<CP.n;j++)if(!CP.c[j]&&CP.v[j]>.04)CP.c[j]=CP.c[j-1]||CP.c[j+1];for(let j=CP.n-2;j>=0;j--)if(!CP.c[j]&&CP.v[j]>.04)CP.c[j]=CP.c[j+1]}
- cillDirty=true;dirty=true;markInk(xw,L.y+2,re*2,d.id,col);
+ cillDirty=true;stDirty=true;dirty=true;markInk(xw,L.y+2,re*2,d.id,col);
  /* full to the front edge: the excess spills over and runs down the stone face */
  const FULL=1.6;let mx=-1,mv=0;for(let k=-8;k<=8;k++){const j=ix+k;if(j>=0&&j<CP.n&&CP.v[j]>mv){mv=CP.v[j];mx=j}}
  if(mv>FULL){const ex=Math.min(1.2,mv-FULL);CP.v[mx]-=ex*.7;CP.sp[mx]=Math.min(1,CP.sp[mx]+.35);const sx=q.x+(mx+.5)/CP.n*q.w,fy=L.y+L.top;d.x=sx;d.y=fy+4+CP.sp[mx]*4;d.vol=Math.max(.5,ex+.3);d.v0=Math.max(d.v0,d.vol);d.sy=undefined;d.led=1;d.snap=1;d.col=CP.c[mx]||d.col;return false}
  return true}
 function drawCill(){if(!cillDirty)return;cillDirty=false;if(!cillC)cillC=document.createElement('canvas');if(cillC.width!==Math.round(W*dpr)||cillC.height!==Math.round(H*dpr)){cillC.width=Math.round(W*dpr);cillC.height=Math.round(H*dpr)}
- const x=cillC.getContext('2d');x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,cillC.width,cillC.height);if(!CP.v||!isGlassPhoto())return;const L=LDG(),q=L.q,cw=q.w/CP.n;x.setTransform(dpr,0,0,dpr,0,0);
+ const x=cillC.getContext('2d');x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,cillC.width,cillC.height);if(!CP.v||!isGlassPhoto())return;const L0=LDG();x.setTransform(dpr,0,0,dpr,0,0);drawPoolSegs(x,CP,{...L0,px:L0.q.x,pw:L0.q.w},PHI.glass,L0.q)}
+function drawPoolSegs(x,CP,L,IM,IR){const q={x:L.px,w:L.pw},cw=q.w/CP.n;
  const EPS=.1,hs=k=>{let h=(k*374761393)>>>0;h=Math.imul(h^(h>>>13),1274126177)>>>0;return((h^(h>>>16))>>>0)/4294967296},
   sn=(k,sc)=>{const u=k/sc,i0=Math.floor(u),t=u-i0,t2=t*t*(3-2*t);return hs(i0*7+sc)+(hs(i0*7+7+sc)-hs(i0*7+sc))*t2},
   /* how far the paint has crept across the top: a dome by volume, made uneven by the stone — it runs on further into dips and stops short at grit */
@@ -722,7 +735,7 @@ function drawCill(){if(!cillDirty)return;cillDirty=false;if(!cillC)cillC=documen
   x.save();x.fillStyle=c;x.fill(P2);x.clip(P2);
    {const g=x.createLinearGradient(0,yB-1.5,0,yF);g.addColorStop(0,deep);g.addColorStop(.35,mixHex(c,'#000000',.12));g.addColorStop(.75,c);g.addColorStop(1,mixHex(c,'#ffffff',.06));x.globalAlpha=.85;x.fillStyle=g;x.fillRect(X0-3,yB-2,X1-X0+6,L.top+4);x.globalAlpha=1}
    /* deeper still right under each pour */for(let k=j;k<e;k++)if(CP.in&&CP.in[k]>0){const xx=q.x+(k+.5)*cw,rw=3+CP.in[k]*2.5,rg=x.createRadialGradient(xx,yB,0,xx,yB,rw*2.2);rg.addColorStop(0,deep+'aa');rg.addColorStop(1,deep+'00');x.fillStyle=rg;x.fillRect(xx-rw*2.2,yB-2,rw*4.4,rw*2.4)}
-   /* the stone's texture faintly through the film */{const im=PHI.glass;if(im){x.globalCompositeOperation='soft-light';x.globalAlpha=.35;x.drawImage(im,q.x,q.y,q.w,q.h);x.globalCompositeOperation='source-over';x.globalAlpha=1}}
+   /* the stone's texture faintly through the film */{const im=IM;if(im&&IR){x.globalCompositeOperation='soft-light';x.globalAlpha=.35;x.drawImage(im,IR.x,IR.y,IR.w,IR.h);x.globalCompositeOperation='source-over';x.globalAlpha=1}}
    /* a slight unevenness where it levelled */{let r=(j*7919+e*104729)>>>0;const R2=()=>(r=(Math.imul(r,1103515245)+12345)>>>0)/4294967296;for(let n=0;n<(X1-X0)/7;n++){const bx2=X0+R2()*(X1-X0),by2=yB+2+R2()*L.top*.8,rw=2+R2()*6;x.globalAlpha=.06+R2()*.07;x.fillStyle=R2()<.5?mixHex(c,'#ffffff',.4):deep;x.beginPath();x.ellipse(bx2,by2,rw,rw*.3,0,0,TAU);x.fill()}x.globalAlpha=1}
    /* REFLECTIONS (move as the phone tilts): the dark window frame mirrored just in front of the back edge, and a few soft patches of grey sky further forward */
    {const g=x.createLinearGradient(0,yB,0,yB+Math.min(5,L.top*.4));g.addColorStop(0,'rgba(18,22,26,.32)');g.addColorStop(1,'rgba(18,22,26,0)');x.fillStyle=g;x.fillRect(X0,yB,X1-X0,Math.min(5,L.top*.4))}
@@ -1350,32 +1363,7 @@ function runDrips(dt){runFalls(dt);if(!drips.length)return;mergeRuns(dt);
   if(ledgeLive()&&(d.preL||(y0<ledgeY(x0)&&!d.led))&&!d.led&&d.y>=ledgeY(d.x)&&Math.abs(d.gy||gDir().y)>.5&&!LDG().sl){/* any run crossing the ledge line is caught, even one that started out of sight or arrived in a single big step */const col=typeof d.col==='string'?d.col:'#808080',stop=ledgeHit(d,d.x,col[0]==='#'?col:'#808080',d.r);d.preL=0;if(stop){d.vol=-1;drips.splice(i,1);continue}continue}
   /* ribbed panels: a run is drawn into the nearest groove and follows it down */if(s.id==='stairs'&&!d.et&&!d.onStep&&Math.abs(d.gy)>.8){const P=TS/(40*dpr),g=(Math.round(d.x/P-.5)+.5)*P;d.x+=(g-d.x)*.18}
   /* subway stairs interaction: drips hit the concrete tread, pool at the wall seam, and if wet/heavy creep across the tread & cascade over the riser lip */
-  if(s.id==='stairs'&&!d.et&&!d.soft&&Math.abs(d.gy)>.55){
-   const st=stairsStepAt(d.x,d.y);
-   if(st){
-    const colS=typeof d.col==='string'?d.col:'#808080';
-    if(d.onStep!==st.idx+1){
-     /* first contact with this step's tread: pool flattened onto the horizontal concrete */
-     const pr=Math.min(7.5,Math.max(2.2,d.r*1.8+d.vol*1.5));
-     const bx=baked.x;bx.save();bx.fillStyle=colS;bx.globalAlpha=d.thick?.78:.55;
-     bx.beginPath();bx.ellipse(d.x,st.y0+1.5,pr,pr*.36,0,0,TAU);bx.fill();bx.restore();
-     const imx=idm.x;imx.save();imx.fillStyle='#000';imx.globalAlpha=.7;imx.beginPath();imx.ellipse(d.x,st.y0+1.5,pr,pr*.36,0,0,TAU);imx.fill();imx.restore();
-     dirty=true;
-     if(!d.wet&&d.vol<.55){d.vol=-1;drips.splice(i,1);continue}
-     d.onStep=st.idx+1;d.vol*=.82;
-    }
-    /* creep forward/down-left across the flat tread */
-    if(d.y<st.y1-2){
-     const sp=Math.max(4,vTerm*.34)*dt;
-     d.x-=sp*.36;d.y+=sp*.72;d.vol-=sp*.0045;
-    }else{
-     /* reached front nosing lip: small bead, then cascade vertically down the riser */
-     const bx=baked.x;bx.save();bx.fillStyle=colS;bx.globalAlpha=d.thick?.72:.5;
-     bx.beginPath();bx.ellipse(d.x,st.y1,Math.max(1.5,d.r*1.25),Math.max(1,d.r*.55),0,0,TAU);bx.fill();bx.restore();
-     d.onStep=0;d.y=st.y1+2;d.vol*=.85;
-    }
-   }else if(d.onStep){d.onStep=0}
-  }
+  if(s.id==='stairs'&&!d.et&&!d.soft&&Math.abs(d.gy)>.55){const st=stairsStepAt(d.x,d.y);if(st&&d.onStep!==st.idx+1){d.onStep=st.idx+1;const colS=typeof d.col==='string'&&d.col[0]==='#'?d.col:'#808080';if(stairHit(d,st,colS)){d.vol=-1;drips.splice(i,1);continue}continue}}
   /* ramp wobble smoothly from 0 at the exit edge so the neck stays dead-on the paint, and stitch continuously from d.lx,d.ly */
   const wScale=d.em?sm(clamp(trav/(d.r*3+5))):0,wob=(Math.sin((d.x+d.y)*d.fq+d.ph)*.7+Math.sin((d.x+d.y)*d.fq*2.3+d.ph*1.7)*.3)*(d.wet?.85:.5+d.r*.24)*(1+s.rough*2.2)*wScale,
    xw=d.x-d.gy*wob,yw=d.y+d.gx*wob,px0=d.lx!==undefined?d.lx:x0-d.gy*wob,py0=d.ly!==undefined?d.ly:y0+d.gx*wob,done=d.vol<=0||d.y>H+16||d.y<-16||d.x<-16||d.x>W+16;
@@ -1409,7 +1397,7 @@ function runDrips(dt){runFalls(dt);if(!drips.length)return;mergeRuns(dt);
   if(!under){d.lx=xw;d.ly=yw}else{d.lx=undefined;d.ly=undefined;d.alx=undefined;d.aly=undefined}
   if(!under&&d.ink.chrome&&(CHQ[s.id]??.3)>.7){const bx=baked.x;bx.save();bx.fillStyle='rgba(255,255,255,.8)';if(Math.abs(d.gy)>.97){bx.fillRect(xw-d.r*.55,y0,Math.max(.6,d.r*.45),d.y-y0+.3);bx.fillStyle='rgba(40,44,50,.45)';bx.fillRect(xw+d.r*.35,y0,Math.max(.5,d.r*.4),d.y-y0+.3)}bx.restore()}
   if(!under&&doAux){markWet(xw,yw,d.r+2,.9,TAUS[d.wk]*(d.wet?2.5:1)*1.3);if(d.col&&d.col[0]==='#')markInk(xw,yw,d.r+1,d.id,d.col)}
-  const w=WET[d.wk];w.active=true;w.until=Math.max(w.until,performance.now()+TAUS[d.wk]*4500);if(done){if(d.et)etchRunDry(d);if(d.led&&!d.et&&d.v0>.35&&d.vol<=0&&Math.random()<.8)dropFall(xw,yw+d.r,d.r*(1.1+Math.min(1,d.v0*.4)),typeof d.col==='string'?d.col:null);drips.splice(i,1)}}
+  const w=WET[d.wk];w.active=true;w.until=Math.max(w.until,performance.now()+TAUS[d.wk]*4500);if(done){if(d.et)etchRunDry(d);if(d.led&&!d.stp&&!d.et&&d.v0>.35&&d.vol<=0&&Math.random()<.8)dropFall(xw,yw+d.r,d.r*(1.1+Math.min(1,d.v0*.4)),typeof d.col==='string'?d.col:null);drips.splice(i,1)}}
  dirty=true}
 const SMOOTH=s=>s.absorb<.05&&s.rough<.05;
 /* HAND MIXED: colours lie side by side across the stick face at a fixed angle (how you hold it), drifting a little as the stick twists */
@@ -2128,6 +2116,7 @@ function compose(){const x=dctx;x.save();x.setTransform(1,0,0,1,0,0);x.globalCom
   x.restore()}
  drawStairsLight(x);
  if(isGlassPhoto()&&CP.v){if(typeof tilt!=='undefined'&&tilt&&Math.abs((tilt.x||0)-cillTilt)>.04)cillDirty=true;drawCill();x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.globalCompositeOperation='source-over';x.drawImage(cillC,0,0)}
+ if(SPOOL.length&&bands[0]&&bands[0].s.id==='stairs'){drawStairPools();x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.globalCompositeOperation='source-over';x.drawImage(stC,0,0)}
  if(railC&&railC.width&&ledgeLive()&&LDG().sl){x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.globalCompositeOperation='source-over';x.drawImage(railC,0,0)}
  if(stroke&&stroke.priming&&down&&last&&pen.flow<.6){x.save();x.setTransform(dpr,0,0,dpr,0,0);const r=R()+10;x.lineWidth=3;x.strokeStyle='rgba(0,0,0,.35)';x.beginPath();x.arc(last.x,last.y,r,0,TAU);x.stroke();x.strokeStyle='#ff5a1f';x.beginPath();x.arc(last.x,last.y,r,-Math.PI/2,-Math.PI/2+TAU*clamp(pen.flow/.55));x.stroke();x.restore()}
  if(twist){x.save();x.setTransform(dpr,0,0,dpr,0,0);x.translate(twist.mid.x,twist.mid.y);x.rotate(angle*Math.PI/180);const w=pen.w*MM,t=pen.th*MM;x.fillStyle='rgba(255,90,31,.25)';x.strokeStyle='#ff5a1f';x.lineWidth=2;x.fillRect(-w/2,-t/2,w,t);x.strokeRect(-w/2,-t/2,w,t);x.rotate(-angle*Math.PI/180);x.fillStyle='#ff5a1f';x.font='600 14px Archivo,sans-serif';x.textAlign='center';x.fillText(angle+'°',0,-w/2-10);x.restore()}
