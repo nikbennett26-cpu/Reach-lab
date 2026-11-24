@@ -561,7 +561,7 @@ const cv=$('#cv');let dctx=null;try{dctx=cv.getContext('2d',{desynchronized:true
 const freeC=c=>{if(c&&c.width){c.width=0;c.height=0}};
 const mk=(rf)=>{const c=document.createElement('canvas');return{c,x:c.getContext('2d',rf?{willReadFrequently:true}:undefined)}};
 const bg=mk(),baked=mk(),stk=mk(),idm=mk(),tmp=mk(),rimA=mk(),rimB=mk(),ghost=mk(),tmp2=mk(),metal=mk(),shine=mk(),pool=mk(),etchL=mk(),ovl=mk(),fjL=mk();let fjOn=false;
-INK.future=Object.assign({},INK.alcohol,{label:'Colour-shifting alcohol ink',opacity:.93,bead:.15,bleed:.5,tau:.9,comp:'source-over',rem:[.04,0],drip:1.3,future:1});TAUS.future=.9;INK.solid=Object.assign({},INK.oil,{label:'Solidified paint stick',opacity:.9,bead:.05,bleed:0,tau:3,raise:.3,comp:'source-over',rem:[.05,0],drip:0,solid:1});TAUS.solid=3;INK.etch=Object.assign({},INK.alcohol,{label:'Glass etching fluid',opacity:.1,bead:.35,bleed:.05,tau:1.5,comp:'source-over',rem:[.3,.05],drip:.9,etch:1});TAUS.etch=1.5;
+INK.future=Object.assign({},INK.alcohol,{label:'Colour-shifting alcohol ink',opacity:.93,bead:.15,bleed:.5,tau:.9,comp:'source-over',rem:[.04,0],drip:1.3,future:1});TAUS.future=.9;INK.solid=Object.assign({},INK.oil,{label:'Solidified paint stick',opacity:.9,bead:.05,bleed:0,tau:3,raise:.3,comp:'source-over',rem:[.05,0],drip:0,solid:1});TAUS.solid=3;INK.etch=Object.assign({},INK.alcohol,{label:'Glass etching fluid',opacity:.18,bead:.35,bleed:.05,tau:1.5,comp:'source-over',rem:[.3,.05],drip:.9,etch:1});TAUS.etch=1.5;
 /* special-ink layers stay unallocated until that ink is used (saves 5 full-screen layers of GPU memory) */
 const RUNL=mk();RUNL.c.width=RUNL.c.height=0;/* wet etch runs: drawn in the pen's own colour at full strength here, shown at the same see-through strength as the wet tag, then baked in and frosted when they stop */const EWET=mk();EWET.c.width=EWET.c.height=0;let ewOn=false,ewA=.1;const ewRuns=[];/* EMASK: everything written in the current etch session (strokes + runs, one union — no overlaps); it frosts as ONE on one clock. etchL keeps the finished etch as a union mask too; ETV is the frosted look rendered from both */const EMASK=mk();EMASK.c.width=EMASK.c.height=0;const ETV=document.createElement('canvas'),ETR=document.createElement('canvas'),ETB=document.createElement('canvas');let etS=null,etvP=0,etvDirty=false,etK=.95;/* where runs have been drawn on bare wall */const LAZY=[metal,shine,pool,etchL,fjL];/* shine is only used by Future Juice now */for(const o of LAZY){o.c.width=o.c.height=0}
 function need(o){if(o.c.width!==baked.c.width||o.c.height!==baked.c.height){o.c.width=baked.c.width;o.c.height=baked.c.height;o.x.setTransform(dpr,0,0,dpr,0,0)}return o}
@@ -1359,8 +1359,7 @@ function runDrips(dt){if(!drips.length)return;mergeRuns(dt);
   const stepD=Math.hypot(xw-px0,yw-py0);d.auxA=(d.auxA||0)+stepD;const doAux=done||d.auxA>=3||jb>0;if(doAux)d.auxA=0;
   const ax0=d.alx!==undefined?d.alx:px0,ay0=d.aly!==undefined?d.aly:py0;if(doAux&&!under){d.alx=xw;d.aly=yw}
   if(!under&&!skip){
-   if(d.et){if(!d.ewr){d.ewr=1;ewRuns.push(d)}if(!ewOn){ewOn=true;ewA=inkAlpha(INK.etch,s)}if(!etS)etchAdd(d.ek||1,d.wet)}const targets=[[d.et?need(EWET).x:baked.x,dcolNow(d,trav,done),d.et?'source-over':d.comp||d.ink.comp,d.et?1:(d.wet?(d.ink===INK.water||d.ink===INK.alcohol||d.ink===INK.flow?inkAlpha(d.ink,s)*(.55+.45*clamp(d.vol/d.v0)):Math.min(.97,d.ink.opacity)):inkAlpha(d.ink,s)),px0,py0]];
-   if(d.et)targets.push([need(EMASK).x,'#fff','source-over',1,px0,py0]);
+   if(d.et){if(!d.ewr){d.ewr=1;ewRuns.push(d)}if(!etS)etchAdd(d.ek||1,d.wet)}const targets=[[d.et?need(EMASK).x:baked.x,d.et?'#fff':dcolNow(d,trav,done),d.et?'source-over':d.comp||d.ink.comp,d.et?1:(d.wet?(d.ink===INK.water||d.ink===INK.alcohol||d.ink===INK.flow?inkAlpha(d.ink,s)*(.55+.45*clamp(d.vol/d.v0)):Math.min(.97,d.ink.opacity)):inkAlpha(d.ink,s)),px0,py0]];
    if(doAux){targets.push([idm.x,`rgb(${d.id*20},0,0)`,'source-over',1,ax0,ay0]);if(!(d.soft||d.wash||d.et))targets.push([need(RUNL).x,'#fff','source-over',1,ax0,ay0]);if(!(d.soft||d.et||d.wash||!LD))targets.push([ldCtx(),'#fff','source-over',.05,ax0,ay0]);targets.push([wetC(d.wk).x,'#fff','source-over',.9,ax0,ay0]);if(d.ink.future)targets.push([need(fjL).x,'#fff','source-over',1,ax0,ay0])}
    if(!d.wallHex){const wm=s.mean||[128,128,128];d.wallHex='#'+wm.map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');d.wallLum=lum(wm)}
    for(const [ctx,st,comp,al,sx0,sy0] of targets){if(ctx===fjL.x)fjOn=true;
@@ -1370,7 +1369,7 @@ function runDrips(dt){if(!drips.length)return;mergeRuns(dt);
      if(darkDye){fs=mixHex(st,'#ffffff',1-ea);ea=1;tint=true}
      else{fs=mixHex(st,d.wallHex,1-ea);ea=1}
     }
-    if(d.et&&ctx===EWET.x){const m=re+3,b=d.eb||(d.eb=[1e9,1e9,-1e9,-1e9]);b[0]=Math.min(b[0],xw-m,sx0-m);b[1]=Math.min(b[1],yw-m,sy0-m);b[2]=Math.max(b[2],xw+m,sx0+m);b[3]=Math.max(b[3],yw+m*1.6,sy0+m)}
+    if(d.et&&ctx===EMASK.x){const m=re+3,b=d.eb||(d.eb=[1e9,1e9,-1e9,-1e9]);b[0]=Math.min(b[0],xw-m,sx0-m);b[1]=Math.min(b[1],yw-m,sy0-m);b[2]=Math.max(b[2],xw+m,sx0+m);b[3]=Math.max(b[3],yw+m*1.6,sy0+m)}
     ctx.save();ctx.globalCompositeOperation=tint?'multiply':comp;ctx.globalAlpha=ea;ctx.fillStyle=fs;
     if(dot){ctx.beginPath();ctx.ellipse(xw,yw,re*1.05,re*1.35,0,0,TAU);ctx.fill()}
     else if(!tint&&jb===0&&Math.abs(re-reP)<.18){ctx.strokeStyle=fs;ctx.lineWidth=((ctx===baked.x||ctx===EWET.x||ctx===EMASK.x)?re:re+.3)*2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(sx0,sy0);ctx.lineTo(xw,yw);ctx.stroke()}
@@ -1567,13 +1566,13 @@ function makeChrome(s){const pad=4,x0=Math.max(0,Math.floor((stroke.x0-pad)*dpr)
  if(q<.5)toast(s.wet?'Water on the surface breaks the chrome — it stays dull':s.absorb>.3||s.rough>.3?'Texture is breaking the pigment alignment — dull silver':'Not enough shaking — the chrome will stay dull')}
 /* GLASS SHADOW: paint sits on the front of a clear pane, so light coming through throws a faint, soft copy of the
    tag onto what's behind — offset down and away from the light, never on top of paint */
-function glassShadow(s){if(demo||!stroke||!(s.id==='glass'||s.id==='bus'||s.id==='stairs'))return;const st=s.id==='stairs',P=dpr,o=st?{x:1.4,y:5.2}:{x:2.6,y:3.6},pad=10,x0=Math.max(0,Math.floor((stroke.x0-pad)*P)),y0=Math.max(0,Math.floor((stroke.y0-pad)*P)),x1=Math.min(stk.c.width,Math.ceil((stroke.x1+pad+o.x)*P)),y1=Math.min(stk.c.height,Math.ceil((stroke.y1+pad+o.y)*P)),w=x1-x0,h=y1-y0;if(w<2||h<2)return;
+function glassShadow(s){if(INK[pen.ink]&&INK[pen.ink].etch&&ETCHABLE[s.id])return;if(demo||!stroke||!(s.id==='glass'||s.id==='bus'||s.id==='stairs'))return;const st=s.id==='stairs',P=dpr,o=st?{x:1.4,y:5.2}:{x:2.6,y:3.6},pad=10,x0=Math.max(0,Math.floor((stroke.x0-pad)*P)),y0=Math.max(0,Math.floor((stroke.y0-pad)*P)),x1=Math.min(stk.c.width,Math.ceil((stroke.x1+pad+o.x)*P)),y1=Math.min(stk.c.height,Math.ceil((stroke.y1+pad+o.y)*P)),w=x1-x0,h=y1-y0;if(w<2||h<2)return;
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${2.2*P}px)`}catch(_){}x.drawImage(stk.c,x0,y0,w,h,o.x*P,o.y*P,w,h);x.filter='none';
  x.globalCompositeOperation='source-in';x.fillStyle='#000';x.fillRect(0,0,w,h);x.globalCompositeOperation='destination-out';x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.drawImage(idm.c,x0,y0,w,h,0,0,w,h);
  const b=baked.x;b.save();b.setTransform(1,0,0,1,0,0);b.globalAlpha=(INK[pen.ink].chrome?.13:.1)*(st?1.9:1);b.drawImage(c,x0,y0);b.restore();freeC(c)}
 function finChrome(p){const b=baked.x;b.save();b.setTransform(1,0,0,1,0,0);b.drawImage(p.c,p.x,p.y);b.restore();freeC(p.c)}
 function ruinChrome(pt){const X=pt.x*dpr,Y=pt.y*dpr;for(let i=chromes.length-1;i>=0;i--){const p=chromes[i];if(X>=p.x&&X<p.x+p.w&&Y>=p.y&&Y<p.y+p.h){chromes.splice(i,1);toast('Touched before it dried — the mirror is ruined')}}}
-function rimEdge(ink,s){if(ink.chrome)return;if(pen.ink==='solid'||pen.multi)return;if(s.absorb>.3)return;const d=Math.max(1,Math.round(1.4*dpr));
+function rimEdge(ink,s){/* an etch tag is one even frost — no per-stroke rims, shadows or rings */if(INK[pen.ink]&&INK[pen.ink].etch&&ETCHABLE[s.id])return;if(ink.chrome)return;if(pen.ink==='solid'||pen.multi)return;if(s.absorb>.3)return;const d=Math.max(1,Math.round(1.4*dpr));
  for(const o of [rimA,rimB]){o.x.save();o.x.setTransform(1,0,0,1,0,0);o.x.globalCompositeOperation='copy';o.x.drawImage(stk.c,0,0);o.x.restore()}
  const e=rimB.x;e.save();e.setTransform(1,0,0,1,0,0);e.globalCompositeOperation='destination-in';for(const [dx,dy] of [[d,0],[-d,0],[0,d],[0,-d]])e.drawImage(stk.c,dx,dy);e.restore();
  const r=rimA.x;r.save();r.setTransform(1,0,0,1,0,0);r.globalCompositeOperation='destination-out';r.drawImage(rimB.c,0,0);r.drawImage(idm.c,0,0);r.restore();
@@ -1669,12 +1668,12 @@ let saidRepel=0;
 let _e2=null;function tcan2(w,h){if(!_e2)_e2=document.createElement('canvas').getContext('2d');if(_e2.canvas.width!==w||_e2.canvas.height!==h){_e2.canvas.width=w;_e2.canvas.height=h}_e2.setTransform(1,0,0,1,0,0);return _e2}
 /* CLEAN GLASS: a thin dye has nothing to soak into — the film pulls back (dewets) into patches and beads, leaving small
    bare holes, most where the nib was running dry */
-function glassCrawl(s){if(demo||!stroke||!DYEINK[pen.ink]||!['glass','bus','mirror'].includes(s.id))return;const k=clamp((.8-flowNow(null))/.5+(pen.tipDry||0)*.6);if(k<.05)return;
+function glassCrawl(s){if(INK[pen.ink]&&INK[pen.ink].etch&&ETCHABLE[s.id])return;if(demo||!stroke||!DYEINK[pen.ink]||!['glass','bus','mirror'].includes(s.id))return;const k=clamp((.8-flowNow(null))/.5+(pen.tipDry||0)*.6);if(k<.05)return;
  const P=dpr,x0=stroke.x0,y0=stroke.y0,w=stroke.x1-x0,h=stroke.y1-y0;if(w<2||h<2)return;const n=Math.min(900,Math.round(w*h/260*k)),x=stk.x;x.save();x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='destination-out';
  for(let i=0;i<n;i++){const cx=(x0+Math.random()*w)*P,cy=(y0+Math.random()*h)*P,r=(.8+Math.pow(Math.random(),2)*3.2)*P,g=x.createRadialGradient(cx,cy,0,cx,cy,r);g.addColorStop(0,`rgba(0,0,0,${(.55+k*.4).toFixed(2)})`);g.addColorStop(.7,'rgba(0,0,0,.35)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(cx-r,cy-r,r*2,r*2)}x.restore()}
 /* COFFEE RING: as a dye film dries, it evaporates fastest at the edge and the dye is carried there — a darker rim
    forms round the line on non-absorbent walls, fading in as it dries */
-function coffeeRing(s){if(demo||!stroke||!DYEINK[pen.ink]||s.absorb>.4)return;const P=dpr,pad=2,X=Math.max(0,Math.floor((stroke.x0-pad)*P)),Y=Math.max(0,Math.floor((stroke.y0-pad)*P)),w=Math.min(stk.c.width-X,Math.ceil((stroke.x1-stroke.x0+pad*2)*P)),h=Math.min(stk.c.height-Y,Math.ceil((stroke.y1-stroke.y0+pad*2)*P));if(w<4||h<4)return;
+function coffeeRing(s){if(INK[pen.ink]&&INK[pen.ink].etch&&ETCHABLE[s.id])return;if(demo||!stroke||!DYEINK[pen.ink]||s.absorb>.4)return;const P=dpr,pad=2,X=Math.max(0,Math.floor((stroke.x0-pad)*P)),Y=Math.max(0,Math.floor((stroke.y0-pad)*P)),w=Math.min(stk.c.width-X,Math.ceil((stroke.x1-stroke.x0+pad*2)*P)),h=Math.min(stk.c.height-Y,Math.ceil((stroke.y1-stroke.y0+pad*2)*P));if(w<4||h<4)return;
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d'),k=1.4*P;x.drawImage(stk.c,X,Y,w,h,0,0,w,h);x.globalCompositeOperation='destination-out';for(const [ox,oy] of [[k,0],[-k,0],[0,k],[0,-k]])x.drawImage(stk.c,X,Y,w,h,ox,oy,w,h);
  x.globalCompositeOperation='source-in';x.fillStyle=mixHex(curCol(),'#000000',.45);x.fillRect(0,0,w,h);bleedL.push({c,x:X,y:Y,t0:performance.now()+500,dur:3200,a:.3})}
 function sputter(x,y,r){/* air in a squeezer: the paint spits — small splats round the tip */const c=stk.x,n=3+Math.floor(Math.random()*6);c.save();for(let i=0;i<n;i++){const a=Math.random()*TAU,d=r*(1.05+Math.random()*1.7),rr=Math.random()<.15?1.4+Math.random()*1.6:.35+Math.random()*.8;c.beginPath();c.arc(x+Math.cos(a)*d,y+Math.sin(a)*d,rr,0,TAU);c.fill()}c.restore()}
@@ -2235,21 +2234,19 @@ function makeEtch(s){const pad=4,x=Math.max(0,Math.floor(stroke.x0-pad)),y=Math.
 /* an etch run has stopped: its wet trace is baked into the wall exactly like the wet tag (same colour, same see-through strength),
    and the same frost then creeps through it on the same clock as the letters — so the runs end up the same frosted cream */
 function etchRunDry(d){d.ewd=1}
-function etchWet(s){const x=need(EWET).x;x.save();x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.globalCompositeOperation='source-over';x.drawImage(stk.c,0,0);x.restore();ewOn=true;ewA=inkAlpha(INK.etch,s);
- const m=need(EMASK).x;m.save();m.setTransform(1,0,0,1,0,0);m.globalCompositeOperation='source-over';m.drawImage(stk.c,0,0);m.restore()}
+function etchWet(s){const m=need(EMASK).x;m.save();m.setTransform(1,0,0,1,0,0);m.globalCompositeOperation='source-over';m.drawImage(stk.c,0,0);m.restore()}
 /* the whole tag dries together: frosting waits until you've stopped writing for a moment, then creeps through every stroke and run at once */
-function etchAdd(k,wet){const now=performance.now();if(!etS)etS={t0:now+1400,T:5200*(wet?1.8:1),p:0};else if(now<etS.t0)etS.t0=now+1400;etK=.95*k*(wet?.6:1);etvDirty=true}
+function etchAdd(k,wet){const now=performance.now();if(!etS)etS={t0:now+1000,T:2600*(wet?1.8:1),p:0,r:0};else if(now<etS.t0)etS.t0=now+1000;etK=.95*k*(wet?.6:1);etvDirty=true}
 function renderETV(p){etvDirty=false;etvP=p;const W2=baked.c.width,H2=baked.c.height;for(const c of [ETV,ETR,ETB])if(c.width!==W2||c.height!==H2){c.width=W2;c.height=H2}
  const v=ETV.getContext('2d');v.setTransform(1,0,0,1,0,0);v.globalAlpha=1;v.globalCompositeOperation='source-over';v.clearRect(0,0,W2,H2);
- if(etchL.c.width)v.drawImage(etchL.c,0,0);if(p>0&&EMASK.c.width){v.globalAlpha=p;v.drawImage(EMASK.c,0,0);v.globalAlpha=1}
+ if(etchL.c.width)v.drawImage(etchL.c,0,0);/* wet it already has the etch's look, just fainter; drying firms it up — one layer the whole time */if(etS&&EMASK.c.width){v.globalAlpha=.5+.5*p;v.drawImage(EMASK.c,0,0);v.globalAlpha=1}
  /* etched rim: the union's own edge only — so crossing strokes don't show each other's outlines */
  const b=ETB.getContext('2d');b.setTransform(1,0,0,1,0,0);b.clearRect(0,0,W2,H2);blurDraw(b,ETV,Math.max(1.2,R()*.18)*dpr,W2,H2);
  const r=ETR.getContext('2d');r.setTransform(1,0,0,1,0,0);r.globalCompositeOperation='copy';r.drawImage(ETV,0,0);r.globalCompositeOperation='destination-out';r.drawImage(ETB,0,0);r.drawImage(ETB,0,0);r.globalCompositeOperation='source-in';r.fillStyle='#fbf9f2';r.fillRect(0,0,W2,H2);r.globalCompositeOperation='source-over';
  v.globalCompositeOperation='source-in';v.fillStyle=v.createPattern(frost(),'repeat');v.fillRect(0,0,W2,H2);v.globalCompositeOperation='destination-out';v.globalAlpha=.68;v.fillStyle='#000';v.fillRect(0,0,W2,H2);v.globalAlpha=1;v.globalCompositeOperation='source-over';v.drawImage(ETR,0,0);v.drawImage(ETR,0,0)}
-function etchSession(now){if(!etS)return;const p=sm(clamp((now-etS.t0)/etS.T));if(p-etvP>=.025||(p>=1&&etvP<1))renderETV(p);dirty=true;
+function etchSession(now){if(!etS)return;const p=sm(clamp((now-etS.t0)/etS.T)),live=drips.some(d=>d.et&&!d.dead);if(p-etvP>=.025||(p>=1&&etvP<1)||(live&&now-etS.r>140)){etS.r=now;renderETV(p)}dirty=true;
  if(p>=1&&!drips.some(d=>d.et&&!d.dead)){/* dry: the session's mask joins the finished etch, and the faint wet film is left on the glass under it */
   const L=need(etchL).x;L.save();L.setTransform(1,0,0,1,0,0);L.drawImage(EMASK.c,0,0);L.restore();const m=EMASK.x;m.save();m.setTransform(1,0,0,1,0,0);m.clearRect(0,0,EMASK.c.width,EMASK.c.height);m.restore();
-  if(EWET.c.width){const bx=baked.x;bx.save();bx.setTransform(1,0,0,1,0,0);bx.globalAlpha=ewA;bx.drawImage(EWET.c,0,0);bx.restore();const e=EWET.x;e.save();e.setTransform(1,0,0,1,0,0);e.clearRect(0,0,EWET.c.width,EWET.c.height);e.restore()}
   ewOn=false;ewRuns.length=0;etS=null;etchOn=true;renderETV(0)}}
 function runEtches(now){/* every etch run dries the same way, however it stopped (ran out, caught on a ledge, pooled on a cill) */for(let i=ewRuns.length-1;i>=0;i--){const d=ewRuns[i];if(d.ewd||!drips.includes(d)||d.dead||d.vol<0){etchRunDry(d);ewRuns.splice(i,1)}}etchSession(now);for(let i=etches.length-1;i>=0;i--){const p=etches[i],pr=sm(clamp((now-p.t0)/p.T)),d=pr-p.done;if(d<.01&&pr<1)continue;
  const L=p.k?need(etchL).x:baked.x;L.save();L.setTransform(1,0,0,1,0,0);L.globalAlpha=inc(p.amt,p.done,pr);L.drawImage(p.c,p.x*dpr,p.y*dpr);L.restore();if(p.k)etchOn=true;p.done=pr;dirty=true;if(pr>=1){etches.splice(i,1);freeC(p.c)}}}
