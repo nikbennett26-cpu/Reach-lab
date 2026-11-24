@@ -774,7 +774,7 @@ const FLOWDRIPS=true;
 let ledgeOn=(()=>{try{return localStorage.getItem('rlLedge')!=='0'}catch(e){return true}})(),ledP={};
 const ledgeLive=()=>ledgeOn&&(typeof gMode==='undefined'||gMode==='auto'||gMode==='down');/* sits just above the dock (surface switcher + tools); measured when the board is laid out, kept when the dock hides in full screen */
 let ldgY=null;function measureLdg(){try{const d=document.querySelector('.dock'),r=d&&d.getBoundingClientRect();if(r&&r.height>20&&getComputedStyle(d).display!=='none'&&getComputedStyle(d).visibility!=='hidden'){const top=cv.getBoundingClientRect().top;ldgY=Math.round(r.top-top-16-10)}}catch(e){}}
-const LDG=()=>{const base=ldgY!=null&&ldgY>H*.45&&ldgY<H-20?ldgY:Math.round(H-Math.max(56,H*.07)),sl=ledgeSlope();return sl?{y:Math.round(base-Math.min(150,H*.14)),h:11,sl}:{y:base,h:16,sl:0}};
+const LDG=()=>{const base=ldgY!=null&&ldgY>H*.45&&ldgY<H-20?ldgY:Math.round(H-Math.max(56,H*.07)),sl=ledgeSlope();return sl?{y:Math.round(base-Math.min(70,H*.07)),h:11,sl}:{y:base,h:16,sl:0}};
 /* STAIRWELL: the 'ledge' is the handrail, running down with the stairs */
 function ledgeSlope(){try{const sf=bands&&bands[0]&&bands[0].s;return sf&&(sf.id==='stairs'||sf.base==='stairs')?.42:0}catch(_){return 0}}
 const ledgeY=x=>{const L=LDG();return L.y+L.sl*(x-W/2)};
