@@ -691,42 +691,49 @@ let ldgDrawn=null;function refreshLedge(){const L=LDG(),sp=ledgeSpan(),y0=Math.m
    paint levels out into ONE puddle: it spreads sideways and merges with its neighbours, creeps forward across the top,
    and only when it reaches the front edge does it spill over and drip down the face. Kept in photo coordinates so it
    stays put if the screen resizes. */
-const CP={n:290,v:null,c:null,sp:null};let cillC=null,cillDirty=false;
-function cillReset(){CP.v=CP.c=CP.sp=null;cillDirty=true}
-function cillHit(d,xw,col,re,L){if(!CP.v){CP.v=new Float32Array(CP.n);CP.c=new Array(CP.n).fill(null);CP.sp=new Float32Array(CP.n)}
+const CP={n:290,v:null,c:null,sp:null,in:null};let cillC=null,cillDirty=false,cillTilt=0;
+function cillReset(){CP.v=CP.c=CP.sp=CP.in=null;cillDirty=true}
+function cillHit(d,xw,col,re,L){if(!CP.v){CP.v=new Float32Array(CP.n);CP.c=new Array(CP.n).fill(null);CP.sp=new Float32Array(CP.n);CP.in=new Float32Array(CP.n)}
  const q=L.q,ix=Math.round((xw-q.x)/q.w*CP.n);if(ix<0||ix>=CP.n)return true;const a0=d.al&&d.al<.97?d.al:1,c0=col[0]==='#'?col:'#808080',fc=a0<1?mixHex(c0,'#ffffff',1-a0):c0;
- const add=Math.max(.25,d.vol)*1.1,sg=2+Math.min(7,d.vol*5);for(let k=-Math.ceil(sg*2.5);k<=Math.ceil(sg*2.5);k++){const j=ix+k;if(j<0||j>=CP.n)continue;const w=Math.exp(-k*k/(2*sg*sg));CP.v[j]+=add*w/(sg*2.5066)*3;if(w>.25)CP.c[j]=CP.c[j]?mixHex(CP.c[j],fc,Math.min(.6,w*.5)):fc}
+ CP.in[ix]=Math.max(CP.in[ix],Math.min(4,re||d.r||1));const add=Math.max(.25,d.vol)*1.1,sg=2+Math.min(7,d.vol*5);for(let k=-Math.ceil(sg*2.5);k<=Math.ceil(sg*2.5);k++){const j=ix+k;if(j<0||j>=CP.n)continue;const w=Math.exp(-k*k/(2*sg*sg));CP.v[j]+=add*w/(sg*2.5066)*3;if(w>.25)CP.c[j]=CP.c[j]?mixHex(CP.c[j],fc,Math.min(.6,w*.5)):fc}
  /* the paint levels out: it flows from deeper to shallower neighbours, so close puddles join into one */
  for(let it=0;it<6;it++){for(let j=1;j<CP.n-1;j++){const f=(CP.v[j-1]+CP.v[j+1]-2*CP.v[j])*.18;CP.v[j]+=f}for(let j=1;j<CP.n;j++)if(!CP.c[j]&&CP.v[j]>.04)CP.c[j]=CP.c[j-1]||CP.c[j+1];for(let j=CP.n-2;j>=0;j--)if(!CP.c[j]&&CP.v[j]>.04)CP.c[j]=CP.c[j+1]}
  cillDirty=true;dirty=true;markInk(xw,L.y+2,re*2,d.id,col);
  /* full to the front edge: the excess spills over and runs down the stone face */
  const FULL=1.6;let mx=-1,mv=0;for(let k=-8;k<=8;k++){const j=ix+k;if(j>=0&&j<CP.n&&CP.v[j]>mv){mv=CP.v[j];mx=j}}
- if(mv>FULL){const ex=Math.min(1.2,mv-FULL);CP.v[mx]-=ex*.7;CP.sp[mx]=Math.min(1,CP.sp[mx]+.35);const sx=q.x+(mx+.5)/CP.n*q.w,fy=L.y+L.top;d.x=sx;d.y=fy+2;d.vol=Math.max(.5,ex+.3);d.v0=Math.max(d.v0,d.vol);d.sy=undefined;d.led=1;d.snap=1;d.col=CP.c[mx]||d.col;return false}
+ if(mv>FULL){const ex=Math.min(1.2,mv-FULL);CP.v[mx]-=ex*.7;CP.sp[mx]=Math.min(1,CP.sp[mx]+.35);const sx=q.x+(mx+.5)/CP.n*q.w,fy=L.y+L.top;d.x=sx;d.y=fy+4+CP.sp[mx]*4;d.vol=Math.max(.5,ex+.3);d.v0=Math.max(d.v0,d.vol);d.sy=undefined;d.led=1;d.snap=1;d.col=CP.c[mx]||d.col;return false}
  return true}
 function drawCill(){if(!cillDirty)return;cillDirty=false;if(!cillC)cillC=document.createElement('canvas');if(cillC.width!==Math.round(W*dpr)||cillC.height!==Math.round(H*dpr)){cillC.width=Math.round(W*dpr);cillC.height=Math.round(H*dpr)}
  const x=cillC.getContext('2d');x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,cillC.width,cillC.height);if(!CP.v||!isGlassPhoto())return;const L=LDG(),q=L.q,cw=q.w/CP.n;x.setTransform(dpr,0,0,dpr,0,0);
- const reach=j=>Math.min(L.top,L.top*.95*Math.sqrt(Math.min(1,Math.max(0,CP.v[j]-EPS)/(1.6-EPS)))),EPS=.1;/* square-root dome: a puddle's front edge is rounded, with rounded ends — never a wedge */
+ const EPS=.1,hs=k=>{let h=(k*374761393)>>>0;h=Math.imul(h^(h>>>13),1274126177)>>>0;return((h^(h>>>16))>>>0)/4294967296},
+  sn=(k,sc)=>{const u=k/sc,i0=Math.floor(u),t=u-i0,t2=t*t*(3-2*t);return hs(i0*7+sc)+(hs(i0*7+7+sc)-hs(i0*7+sc))*t2},
+  /* how far the paint has crept across the top: a dome by volume, made uneven by the stone — it runs on further into dips and stops short at grit */
+  reach=k=>{const v=Math.max(0,CP.v[k]-EPS)/(1.6-EPS);if(v<=0)return 0;const r=L.top*.95*Math.sqrt(Math.min(1,v));const cap=L.top*(.86+.12*sn(k+40,7)+.05*sn(k+90,2));return Math.min(cap,Math.max(1,r*(.78+.34*sn(k,9)+.14*sn(k,3))+(hs(k)-.5)*.9))};/* even a full cill's front edge is ragged */
+ const tx=(typeof tilt!=='undefined'&&tilt)?tilt.x||0:0;cillTilt=tx;
  let j=0;while(j<CP.n){if(CP.v[j]<EPS){j++;continue}let e=j;while(e<CP.n&&CP.v[e]>=EPS)e++;
-  let best=j;for(let k=j;k<e;k++)if(CP.v[k]>CP.v[best])best=k;const c=CP.c[best]||'#ffffff',X0=q.x+j*cw,X1=q.x+e*cw;
-  /* damp stain soaking into the stone round it */x.save();x.globalCompositeOperation='multiply';x.globalAlpha=.25;x.fillStyle='#5a4c3a';try{x.filter=`blur(${3}px)`}catch(_){}x.beginPath();x.moveTo(X0-4,L.y);for(let k=j;k<e;k++){const xx=q.x+(k+.5)*cw;x.lineTo(xx,L.y+reach(k)+4+(CP.sp[k]?L.h*.5:0))}x.lineTo(X1+4,L.y);x.closePath();x.fill();x.restore();
-  /* one merged puddle: back edge tucked under the frame, front edge following how far the paint has crept */
-  const P2=new Path2D();P2.moveTo(X0-1,L.y-1);P2.lineTo(X1+1,L.y-1);const pts=[];for(let k=e-1;k>=j;k--)pts.push([q.x+(k+.5)*cw,L.y+Math.max(1.2,reach(k))]);P2.quadraticCurveTo(X1+2,pts[0][1]*.5+L.y*.5,pts[0][0],pts[0][1]);for(let k=1;k<pts.length;k++){const m0=(pts[k-1][0]+pts[k][0])/2,m1=(pts[k-1][1]+pts[k][1])/2;P2.quadraticCurveTo(pts[k-1][0],pts[k-1][1],m0,m1)}P2.quadraticCurveTo(X0-2,pts[pts.length-1][1]*.5+L.y*.5,X0-1,L.y-1);P2.closePath();
-  /* a little shadow under the front of the puddle: it stands proud of the stone */x.save();x.fillStyle='rgba(0,0,0,.38)';try{x.filter='blur(.8px)'}catch(_){}x.translate(.8,1.8);x.fill(P2);x.restore();
-  x.fillStyle=c;x.fill(P2);
-  /* TEXTURE: the puddle isn't a flat blob — */x.save();x.clip(P2);const yB=L.y,yF=L.y+L.top,lum0=lum(hex(c)),dk=mixHex(c,'#000000',lum0>.7?.42:.32),lt=mixHex(c,'#ffffff',.55);
-   /* deeper and shaded at the back where it sits in the frame's shadow, a soft lit dome in the middle */{const g=x.createLinearGradient(0,yB-1,0,yF);g.addColorStop(0,dk+'cc');g.addColorStop(.25,dk+'33');g.addColorStop(.55,lt+'22');g.addColorStop(1,dk+'55');x.fillStyle=g;x.fillRect(X0-4,yB-2,X1-X0+8,L.top+4)}
-   /* thin at the edges: the pitted stone shows through the film */{const im=PHI.glass;if(im){x.globalCompositeOperation='overlay';x.globalAlpha=.5;x.drawImage(im,q.x,q.y,q.w,q.h);x.globalAlpha=.22;x.globalCompositeOperation='multiply';x.drawImage(im,q.x,q.y,q.w,q.h);x.globalCompositeOperation='source-over';x.globalAlpha=1}}
-   /* uneven surface: slow ripples where the paint levelled, a few trapped bubbles and specks of grit */{let r=(j*7919+e*104729)>>>0;const R2=()=>(r=(Math.imul(r,1103515245)+12345)>>>0)/4294967296;
-    for(let n=0;n<(X1-X0)/5;n++){const bx2=X0+R2()*(X1-X0),by2=yB+2+R2()*L.top*.8,rw=2+R2()*7;x.globalAlpha=.07+R2()*.1;x.fillStyle=R2()<.5?lt:dk;x.beginPath();x.ellipse(bx2,by2,rw,rw*.28,0,0,TAU);x.fill()}
-    for(let n=0;n<(X1-X0)/14;n++){const bx2=X0+R2()*(X1-X0),by2=yB+2+R2()*L.top*.7,rr=.5+R2()*1.2;x.globalAlpha=.55;x.fillStyle=dk;x.beginPath();x.arc(bx2,by2+.4,rr,0,TAU);x.fill();x.globalAlpha=.7;x.fillStyle=lt;x.beginPath();x.arc(bx2-.3,by2-.2,rr*.55,0,TAU);x.fill()}x.globalAlpha=1}
-   /* gloss: hard specular glints where the sky reflects off the wet dome */{let r2=(j*31+e*17)>>>0;const R3=()=>(r2=(Math.imul(r2,1103515245)+12345)>>>0)/4294967296;for(let n=0;n<Math.max(1,(X1-X0)/45);n++){const gx=X0+6+R3()*(X1-X0-12),gw=6+R3()*14,gy=yB+L.top*(.2+R3()*.18),gh=1.3+R3()*1.1;x.save();x.translate(gx,gy);x.scale(gw,gh);const rg=x.createRadialGradient(0,0,0,0,0,1);rg.addColorStop(0,'rgba(255,255,255,1)');rg.addColorStop(.45,'rgba(255,255,255,.55)');rg.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=rg;x.beginPath();x.arc(0,0,1,0,TAU);x.fill();x.restore()}}
-   /* gloss: a soft window reflection lying along the wet surface */{const g=x.createLinearGradient(0,yB,0,yB+L.top*.5);g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(.5,'rgba(255,255,255,.22)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(X0,yB,X1-X0,L.top*.5)}
+  let best=j;for(let k=j;k<e;k++)if(CP.v[k]>CP.v[best])best=k;const c=CP.c[best]||'#ffffff',X0=q.x+j*cw,X1=q.x+e*cw,yB=L.y,yF=L.y+L.top,
+   deep=mixHex(c,'#000000',.3),edge=mixHex(c,'#000000',.16);
+  /* damp stain soaking into the stone round it */x.save();x.globalCompositeOperation='multiply';x.globalAlpha=.22;x.fillStyle='#5a4c3a';try{x.filter='blur(3px)'}catch(_){}x.beginPath();x.moveTo(X0-4,yB);for(let k=j;k<e;k++)x.lineTo(q.x+(k+.5)*cw,yB+reach(k)+4+(CP.sp[k]?L.h*.45:0));x.lineTo(X1+4,yB);x.closePath();x.fill();x.restore();
+  /* the outline: back edge tucked into the frame's shadow, an irregular creeping front */
+  const P2=new Path2D(),pts=[];for(let k=e-1;k>=j;k--)pts.push([q.x+(k+.5)*cw,yB+reach(k)]);P2.moveTo(X0-1,yB-1.5);P2.lineTo(X1+1,yB-1.5);P2.quadraticCurveTo(X1+1.5,(pts[0][1]+yB)/2,pts[0][0],pts[0][1]);
+  for(let k=1;k<pts.length;k++){const m0=(pts[k-1][0]+pts[k][0])/2,m1=(pts[k-1][1]+pts[k][1])/2;P2.quadraticCurveTo(pts[k-1][0],pts[k-1][1],m0,m1)}const pl=pts[pts.length-1];P2.quadraticCurveTo(X0-1.5,(pl[1]+yB)/2,X0-1,yB-1.5);P2.closePath();
+  /* body: richer and darker where it's deep (the back, where the runs pour in), lighter where it's thin at the front */
+  x.save();x.fillStyle=c;x.fill(P2);x.clip(P2);
+   {const g=x.createLinearGradient(0,yB-1.5,0,yF);g.addColorStop(0,deep);g.addColorStop(.35,mixHex(c,'#000000',.12));g.addColorStop(.75,c);g.addColorStop(1,mixHex(c,'#ffffff',.06));x.globalAlpha=.85;x.fillStyle=g;x.fillRect(X0-3,yB-2,X1-X0+6,L.top+4);x.globalAlpha=1}
+   /* deeper still right under each pour */for(let k=j;k<e;k++)if(CP.in&&CP.in[k]>0){const xx=q.x+(k+.5)*cw,rw=3+CP.in[k]*2.5,rg=x.createRadialGradient(xx,yB,0,xx,yB,rw*2.2);rg.addColorStop(0,deep+'aa');rg.addColorStop(1,deep+'00');x.fillStyle=rg;x.fillRect(xx-rw*2.2,yB-2,rw*4.4,rw*2.4)}
+   /* the stone's texture faintly through the film */{const im=PHI.glass;if(im){x.globalCompositeOperation='soft-light';x.globalAlpha=.35;x.drawImage(im,q.x,q.y,q.w,q.h);x.globalCompositeOperation='source-over';x.globalAlpha=1}}
+   /* a slight unevenness where it levelled */{let r=(j*7919+e*104729)>>>0;const R2=()=>(r=(Math.imul(r,1103515245)+12345)>>>0)/4294967296;for(let n=0;n<(X1-X0)/7;n++){const bx2=X0+R2()*(X1-X0),by2=yB+2+R2()*L.top*.8,rw=2+R2()*6;x.globalAlpha=.06+R2()*.07;x.fillStyle=R2()<.5?mixHex(c,'#ffffff',.4):deep;x.beginPath();x.ellipse(bx2,by2,rw,rw*.3,0,0,TAU);x.fill()}x.globalAlpha=1}
+   /* REFLECTIONS (move as the phone tilts): the dark window frame mirrored just in front of the back edge, and a few soft patches of grey sky further forward */
+   {const g=x.createLinearGradient(0,yB,0,yB+Math.min(5,L.top*.4));g.addColorStop(0,'rgba(18,22,26,.32)');g.addColorStop(1,'rgba(18,22,26,0)');x.fillStyle=g;x.fillRect(X0,yB,X1-X0,Math.min(5,L.top*.4))}
+   {let r2=(j*31+e*17)>>>0;const R3=()=>(r2=(Math.imul(r2,1103515245)+12345)>>>0)/4294967296;for(let n=0;n<Math.max(1,(X1-X0)/38);n++){const gx=X0+8+R3()*(X1-X0-16)+tx*22,gw=7+R3()*16,gy=yB+L.top*(.32+R3()*.16),gh=.9+R3()*.9;x.save();x.translate(gx,gy);x.scale(gw,gh);const rg=x.createRadialGradient(0,0,0,0,0,1);rg.addColorStop(0,'rgba(226,232,236,.62)');rg.addColorStop(.5,'rgba(226,232,236,.24)');rg.addColorStop(1,'rgba(226,232,236,0)');x.fillStyle=rg;x.beginPath();x.arc(0,0,1,0,TAU);x.fill();x.restore()}}
+   /* the rim is the thinnest film: the stone shows through it, so it melts into the cill — no outline */x.globalCompositeOperation='destination-out';x.globalAlpha=.45;try{x.filter='blur(1.4px)'}catch(_){}x.lineWidth=3.2;x.strokeStyle='#000';x.stroke(P2);x.filter='none';x.globalCompositeOperation='source-over';
+   /* just inside it, the meniscus reads a touch darker and more saturated */x.globalAlpha=.35;x.lineWidth=2.2;x.strokeStyle=edge;x.translate(0,-.8);x.stroke(P2);x.globalAlpha=1;
   x.restore();
-  /* meniscus: a slightly darker rim where the film meets the stone, and a bright bead catching the light along the front */x.save();x.strokeStyle=mixHex(c,'#000000',.55);x.globalAlpha=.6;x.lineWidth=1.1;x.stroke(P2);x.restore();x.save();x.clip(P2);x.strokeStyle='#ffffff';x.globalAlpha=.55;x.lineWidth=2.2;x.translate(-.6,-.9);x.stroke(P2);x.restore();
-  x.save();x.strokeStyle='#ffffff';x.globalAlpha=.7;x.lineWidth=1.1;x.beginPath();for(let k=0;k<pts.length;k++){const [px,py]=pts[k];if(k)x.lineTo(px,py-1);else x.moveTo(px,py-1)}x.stroke();x.restore();
-  /* where it has spilled: the paint wraps over the front edge and hangs down the face in soft lobes */
-  for(let k=j;k<e;k++)if(CP.sp[k]>0){const xx=q.x+(k+.5)*cw,sp=CP.sp[k],w=cw*2.2+sp*4,dy=L.top+3+sp*Math.min(L.h*.6,14);x.beginPath();x.moveTo(xx-w,L.y+L.top-1);x.quadraticCurveTo(xx-w*.9,L.y+dy,xx,L.y+dy+w*.5);x.quadraticCurveTo(xx+w*.9,L.y+dy,xx+w,L.y+L.top-1);x.closePath();x.fill()}
-  
+  /* the runs pour in: each one widens into the puddle — one liquid, no join line */
+  if(CP.in)for(let k=j;k<e;k++)if(CP.in[k]>0){const xx=q.x+(k+.5)*cw,w0=Math.max(.8,CP.in[k]),w1=w0*1.7+.8,h=Math.max(4,w0*4);x.fillStyle=CP.c[k]||c;x.beginPath();x.moveTo(xx-w0,yB-h);x.bezierCurveTo(xx-w0,yB-h*.25,xx-w1*.6,yB-.4,xx-w1*1.4,yB+1.2);x.lineTo(xx+w1*1.4,yB+1.2);x.bezierCurveTo(xx+w1*.6,yB-.4,xx+w0,yB-h*.25,xx+w0,yB-h);x.closePath();x.fill()}
+  /* SPILL: a rounded lip of paint bulges over the front edge and the drip hangs from it */
+  for(let k=j;k<e;k++)if(CP.sp[k]>0){const xx=q.x+(k+.5)*cw,sp=CP.sp[k],w=3+sp*4.5,lip=3+sp*4;x.fillStyle=mixHex(c,'#000000',.08);x.beginPath();x.moveTo(xx-w*1.6,yF-2.2);x.bezierCurveTo(xx-w*1.1,yF-1,xx-w,yF+lip*.6,xx-w*.55,yF+lip*.9);x.quadraticCurveTo(xx,yF+lip*1.25,xx+w*.55,yF+lip*.9);x.bezierCurveTo(xx+w,yF+lip*.6,xx+w*1.1,yF-1,xx+w*1.6,yF-2.2);x.closePath();x.fill();
+   x.save();x.globalAlpha=.3;x.fillStyle='rgba(226,232,236,1)';x.beginPath();x.ellipse(xx-w*.25+tx*3,yF+lip*.35,w*.35,.8,0,0,TAU);x.fill();x.restore()}
   j=e}}
 function ledgeHit(d,xw,col,re){const L0=LDG();if(L0.stone)return cillHit(d,xw,col,re,L0);const L={...L0,y:ledgeY(xw)},k=Math.floor(xw/7),p=(ledP[k]||0)+d.vol,bx=baked.x;ledP[k]=p;ledP[k-1]=(ledP[k-1]||0)+d.vol*.35;ledP[k+1]=(ledP[k+1]||0)+d.vol*.35;
  /* SLOPING HANDRAIL: paint can't sit on a slope — it lands on the rail, runs down along the top of it (a thin wet
@@ -2043,7 +2050,7 @@ function compose(){const x=dctx;x.save();x.setTransform(1,0,0,1,0,0);x.globalCom
   if(down&&stroke.cp&&livePt){const a=stroke.cp,b=predPt||livePt,d=Math.hypot(b.x-a.x,b.y-a.y);if(d>.5&&d<120){x.setTransform(dpr,0,0,dpr,0,0);x.fillStyle=inkPat(stroke.s,curCol(),0);tipCtx=x;const n=Math.ceil(d/Math.max(.8,R()*.5));for(let i=1;i<=n;i++){const t=i/n;tipPath(0,a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t);x.fill()}tipCtx=null;x.setTransform(1,0,0,1,0,0)}}
   x.restore()}
  drawStairsLight(x);
- if(isGlassPhoto()&&CP.v){drawCill();x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.globalCompositeOperation='source-over';x.drawImage(cillC,0,0)}
+ if(isGlassPhoto()&&CP.v){if(typeof tilt!=='undefined'&&tilt&&Math.abs((tilt.x||0)-cillTilt)>.04)cillDirty=true;drawCill();x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.globalCompositeOperation='source-over';x.drawImage(cillC,0,0)}
  if(railC&&railC.width&&ledgeLive()&&LDG().sl){x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.globalCompositeOperation='source-over';x.drawImage(railC,0,0)}
  if(stroke&&stroke.priming&&down&&last&&pen.flow<.6){x.save();x.setTransform(dpr,0,0,dpr,0,0);const r=R()+10;x.lineWidth=3;x.strokeStyle='rgba(0,0,0,.35)';x.beginPath();x.arc(last.x,last.y,r,0,TAU);x.stroke();x.strokeStyle='#ff5a1f';x.beginPath();x.arc(last.x,last.y,r,-Math.PI/2,-Math.PI/2+TAU*clamp(pen.flow/.55));x.stroke();x.restore()}
  if(twist){x.save();x.setTransform(dpr,0,0,dpr,0,0);x.translate(twist.mid.x,twist.mid.y);x.rotate(angle*Math.PI/180);const w=pen.w*MM,t=pen.th*MM;x.fillStyle='rgba(255,90,31,.25)';x.strokeStyle='#ff5a1f';x.lineWidth=2;x.fillRect(-w/2,-t/2,w,t);x.strokeRect(-w/2,-t/2,w,t);x.rotate(-angle*Math.PI/180);x.fillStyle='#ff5a1f';x.font='600 14px Archivo,sans-serif';x.textAlign='center';x.fillText(angle+'°',0,-w/2-10);x.restore()}
