@@ -1286,7 +1286,18 @@ function mergeRuns(dt){const G=gDir(),gm=Math.hypot(G.x,G.y)||1,ux=G.x/gm,uy=G.y
 function runHaze(xa,ya,xb,yb,r,a){const P=dpr,pad=12,X=Math.max(0,Math.floor((Math.min(xa,xb)-pad)*P)),Y=Math.max(0,Math.floor((Math.min(ya,yb)-pad)*P)),w=Math.ceil((Math.abs(xb-xa)+pad*2)*P),h=Math.ceil((Math.abs(yb-ya)+pad*2)*P);if(w<2||h<2)return;
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${4.5*P}px)`}catch(_){}x.strokeStyle='#5a3aa8';x.lineCap='round';x.lineWidth=(r*2+3)*P;x.beginPath();x.moveTo(xa*P-X,ya*P-Y);x.lineTo(xb*P-X,yb*P-Y);x.stroke();x.filter='none';
  bleedL.push({c,x:X,y:Y,t0:performance.now()+200,dur:1800,a})}
-function runDrips(dt){if(!drips.length)return;mergeRuns(dt);
+/* smooth 1-D value noise for drip wander */
+function vnz(t,sd){const i=Math.floor(t),f=t-i,u=f*f*(3-2*f),h=k=>{let v=Math.imul((k+sd*7919)|0,374761393)>>>0;v=Math.imul(v^(v>>>13),1274126177)>>>0;return((v^(v>>>16))>>>0)/4294967296};return h(i)+(h(i+1)-h(i))*u}
+/* DROPS THAT LET GO: a bead hanging off an overhang (a ledge or cill edge) swells until its weight beats surface tension,
+   pinches off and falls clear of the wall — you see it drop, it doesn't paint the wall on the way down */
+const falls=[];
+function dropFall(x,y,r,col){if(falls.length>40||!col||col[0]!=='#')return;falls.push({x,y,r:Math.max(1,r),col,vy:20,vx:0,t:0,hang:.18+Math.random()*.35})}
+function runFalls(dt){for(let i=falls.length-1;i>=0;i--){const f=falls[i];f.t+=dt;if(f.t<f.hang)continue;const G=gDir(),gm=Math.hypot(G.x,G.y)||1;f.vy+=980*dt*(G.y/gm);f.vx+=980*dt*(G.x/gm);f.x+=f.vx*dt;f.y+=f.vy*dt;if(f.y>H+30||f.x<-30||f.x>W+30)falls.splice(i,1)}if(falls.length)dirty=true}
+function drawFalls(x){if(!falls.length)return;x.save();x.setTransform(dpr,0,0,dpr,0,0);for(const f of falls){const hang=f.t<f.hang,k=hang?f.t/f.hang:1,sp=Math.hypot(f.vx,f.vy),st=Math.min(5,sp*.012),r=f.r*(hang?.7+.45*k:1);
+  x.fillStyle=f.col;x.globalAlpha=.95;x.beginPath();x.ellipse(f.x,f.y+(hang?r*.6*k:0),r*(hang?1:.85),r*(hang?1+.4*k:1+st*.35),0,0,TAU);x.fill();
+  if(!hang&&st>.3){x.globalAlpha=.35;x.beginPath();x.ellipse(f.x,f.y-r*st*.8,r*.5,r*st,0,0,TAU);x.fill()}
+  x.globalAlpha=.5;x.fillStyle='#ffffff';x.beginPath();x.arc(f.x-r*.35,f.y-r*.25,Math.max(.4,r*.25),0,TAU);x.fill()}x.restore()}
+function runDrips(dt){runFalls(dt);if(!drips.length)return;mergeRuns(dt);
  for(let i=drips.length-1;i>=0;i--){const d=drips[i];if(d.dead){drips.splice(i,1);continue}if(d.t0&&performance.now()<d.t0)continue;
   /* A RUN ALWAYS HANGS OFF PAINT — the finished letters, or the one being written right now — from the paint's lower edge.
      Any tag drip (including wet-wall wash runs and etch runs; only buff/solvent runs have soft:1) that lands on bare wall is
@@ -1307,8 +1318,14 @@ function runDrips(dt){if(!drips.length)return;mergeRuns(dt);
    vTerm=clamp(headDrive,6,115)*(1-s.absorb*.58)*(1-s.rough*.48)*(d.wet?(.95+wf*.95):1)*(gr?.18:1)*gEff*easeIn*easeOut,y0=d.y,x0=d.x;
   if(!d.gx){d.gx=G.x;d.gy=G.y;d.spd=vTerm*.35}if(ledgeLive()&&!d.led&&!d.et&&d.y<ledgeY(d.x))d.preL=1;const nowT=performance.now();
   const pz=d.pz&&nowT<d.pz;if(d.pz&&!pz){d.pz=0;d.bd=0}if(d.visc<1)d.visc=Math.max(.22,d.visc-dt*.028);
-  const vGoal=(pz?vTerm*.28:vTerm);d.spd+=(vGoal-(d.spd||0))*Math.min(1,dt*(2.6+3.2/Math.max(.4,muApp)));const sp2=d.spd;
+  /* PINCH-OFF LURCH: once a heavy head has swollen enough it breaks away from the run and surges ahead on a thin thread */const vGoal=(pz?vTerm*.28:vTerm)*(d.pin&&d.pin<1?2.1:1);d.spd+=(vGoal-(d.spd||0))*Math.min(1,dt*(2.6+3.2/Math.max(.4,muApp)));const sp2=d.spd;
   d.gx+=(G.x-d.gx)*Math.min(1,dt*3.2);d.gy+=(G.y-d.gy)*Math.min(1,dt*3.2);d.x+=d.gx*sp2*dt;d.y+=d.gy*sp2*dt;
+  /* WANDER: a real run never goes laser-straight — it drifts a little side to side, more on rough walls and when it's slow,
+     and grit kicks it sideways in short jinks (it hesitates for a moment as it goes round) */
+  if(d.em&&!d.soft&&!d.onStep&&!d.led&&s.id!=='stairs'){const stp=sp2*dt,tv=(d.tr||0),A=(.07+s.rough*.6+s.absorb*.2)*(d.wet?.55:1)*(1+18/(sp2+12))*(d.thick?.8:1),
+    lat=(vnz(tv/26,(d.ph*997)|0)-.5)*2*A*stp*.55;let kick=0;if(d.kq>0){const q=Math.min(d.kq,stp*.6);kick=q*d.kqd;d.kq-=q}else if(Math.random()<stp*(.006+s.rough*.03)){d.kq=.6+Math.random()*(1.2+s.rough*2);d.kqd=Math.random()<.5?-1:1;d.spd*=.55}
+    const nx=-d.gy,ny=d.gx;d.x+=nx*(lat+kick);d.y+=ny*(lat+kick)}
+  /* tile grout: a run that meets the horizontal grout line slides along it a little before carrying on */if(s.id==='tiles'&&(d.y%64)<3&&!d.gq){d.gq=1;d.kq=3+Math.random()*7;d.kqd=Math.random()<.5?-1:1}else if(s.id==='tiles'&&(d.y%64)>=3)d.gq=0;
   if(still)d.vol-=dt*.09;d.vol-=dt*.62*((.28+s.absorb*.9+s.rough*.5)*(d.wet?(1.22-wf*.68):1)+(gr?.7:0));
   if(d.rT&&d.r<d.rT)d.r=Math.min(d.rT,d.r+dt*.6);if(d.wet)d.r=Math.max(.8,d.r*(1-dt*.02));if(d.et)d.r=Math.max(.45,d.r*(1-dt*.6));
   if(d.sy===undefined){d.sy=y0;d.sx=x0;d.fq=.025+Math.random()*.035}
@@ -1318,6 +1335,8 @@ function runDrips(dt){if(!drips.length)return;mergeRuns(dt);
    if(!lm&&!d.em){d.em=1;d.jn=1;const far=Math.hypot(x0-d.sx,y0-d.sy)>Math.max(16,(d.w||R())*1.6);d.ex=far?d.sx:x0;d.ey=far?d.sy:y0;d.lx=x0;d.ly=y0}}
   const trav=d.em?Math.hypot(d.x-d.ex,d.y-d.ey):0,travP=d.em?Math.max(0,trav-Math.hypot(d.x-x0,d.y-y0)):0;d.tr=trav;
   const caNeck=1/(1+clamp((d.spd||0)*.0055/Math.max(.5,fl.gamma),0,.38)),headSwell=1+(d.em&&!d.soft?(1-vr)*.36*(fl.gamma/Math.max(.6,fl.rho))*(d.thick?1.15:.75):0),shp=t=>(d.soft?1:1+1.5*Math.exp(-t/(d.r*1.8+2.2)))*(.76+.24*vr)*caNeck*headSwell*(1+.05*Math.sin(t*.09+d.ph)),re=d.r*shp(trav),reP=d.r*shp(travP);
+  if(d.em&&!d.pin&&!d.soft&&!d.et&&!d.led&&(d.v0>=.55||d.thick)&&vr<.6&&trav>14+d.r*6){d.pin=Math.random()<.6?.001:2;if(d.pin<1){d.pinY=trav;d.vol=Math.max(d.vol,d.v0*.32)}}
+  if(d.pin&&d.pin<1){d.pin=Math.min(1,(trav-d.pinY)/(22+d.v0*20));if(d.pin>=1)d.pin=1.5}const thr=d.pin&&d.pin<2?.5:1,reD=re*thr,rePD=reP*thr;
   if(ledgeLive()&&(d.preL||(y0<ledgeY(x0)&&!d.led))&&!d.led&&d.y>=ledgeY(d.x)&&Math.abs(d.gy||gDir().y)>.5&&!LDG().sl){/* any run crossing the ledge line is caught, even one that started out of sight or arrived in a single big step */const col=typeof d.col==='string'?d.col:'#808080',stop=ledgeHit(d,d.x,col[0]==='#'?col:'#808080',d.r);d.preL=0;if(stop){d.vol=-1;drips.splice(i,1);continue}continue}
   /* ribbed panels: a run is drawn into the nearest groove and follows it down */if(s.id==='stairs'&&!d.et&&!d.onStep&&Math.abs(d.gy)>.8){const P=TS/(40*dpr),g=(Math.round(d.x/P-.5)+.5)*P;d.x+=(g-d.x)*.18}
   /* subway stairs interaction: drips hit the concrete tread, pool at the wall seam, and if wet/heavy creep across the tread & cascade over the riser lip */
@@ -1371,16 +1390,16 @@ function runDrips(dt){if(!drips.length)return;mergeRuns(dt);
     }
     if(d.et&&ctx===EMASK.x){etGrow(Math.min(xw,sx0)-re-14,Math.min(yw,sy0)-re-14,Math.max(xw,sx0)+re+14,Math.max(yw,sy0)+re+14);const m=re+3,b=d.eb||(d.eb=[1e9,1e9,-1e9,-1e9]);b[0]=Math.min(b[0],xw-m,sx0-m);b[1]=Math.min(b[1],yw-m,sy0-m);b[2]=Math.max(b[2],xw+m,sx0+m);b[3]=Math.max(b[3],yw+m*1.6,sy0+m)}
     ctx.save();ctx.globalCompositeOperation=tint?'multiply':comp;ctx.globalAlpha=ea;ctx.fillStyle=fs;
-    if(dot){ctx.beginPath();ctx.ellipse(xw,yw,re*1.05,re*1.35,0,0,TAU);ctx.fill()}
-    else if(!tint&&jb===0&&Math.abs(re-reP)<.18){ctx.strokeStyle=fs;ctx.lineWidth=((ctx===baked.x||ctx===EWET.x||ctx===EMASK.x)?re:re+.3)*2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(sx0,sy0);ctx.lineTo(xw,yw);ctx.stroke()}
-    else{const nx=-d.gy,ny=d.gx,w0=(ctx===baked.x||ctx===EWET.x||ctx===EMASK.x)?reP:reP+.3,w1=(ctx===baked.x||ctx===EWET.x||ctx===EMASK.x)?re:re+.3;ctx.beginPath();ctx.moveTo(sx0-d.gx*jb+nx*w0,sy0-d.gy*jb+ny*w0);ctx.lineTo(xw+nx*w1,yw+ny*w1);ctx.lineTo(xw-nx*w1,yw-ny*w1);ctx.lineTo(sx0-d.gx*jb-nx*w0,sy0-d.gy*jb-ny*w0);ctx.closePath();ctx.fill();if(!tint){ctx.beginPath();ctx.arc(xw,yw,w1,0,TAU);ctx.fill()}}
+    if(dot){ctx.beginPath();ctx.ellipse(xw,yw,reD*1.05,reD*1.35,0,0,TAU);ctx.fill()}
+    else if(!tint&&jb===0&&Math.abs(reD-rePD)<.18){ctx.strokeStyle=fs;ctx.lineWidth=((ctx===baked.x||ctx===EWET.x||ctx===EMASK.x)?reD:reD+.3)*2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(sx0,sy0);ctx.lineTo(xw,yw);ctx.stroke()}
+    else{const nx=-d.gy,ny=d.gx,w0=(ctx===baked.x||ctx===EWET.x||ctx===EMASK.x)?rePD:rePD+.3,w1=(ctx===baked.x||ctx===EWET.x||ctx===EMASK.x)?reD:reD+.3;ctx.beginPath();ctx.moveTo(sx0-d.gx*jb+nx*w0,sy0-d.gy*jb+ny*w0);ctx.lineTo(xw+nx*w1,yw+ny*w1);ctx.lineTo(xw-nx*w1,yw-ny*w1);ctx.lineTo(sx0-d.gx*jb-nx*w0,sy0-d.gy*jb-ny*w0);ctx.closePath();ctx.fill();if(!tint){ctx.beginPath();ctx.arc(xw,yw,w1,0,TAU);ctx.fill()}}
     if(pz&&!d.bd&&ctx===baked.x){d.bd=1;ctx.beginPath();ctx.ellipse(xw,yw+re*.15,re*1.06,re*1.18,0,0,TAU);ctx.fill()}
     if(ctx===baked.x&&re>1.6&&d.thick&&!d.et&&(d.sn=(d.sn||0)+1)%2===0){ctx.globalAlpha=Math.min(.2,ea*.2);ctx.strokeStyle=mixHex(typeof fs==='string'&&fs[0]==='#'?fs:'#808080','#ffffff',.5);ctx.lineWidth=Math.max(.5,re*.3);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(sx0-reP*.38,sy0);ctx.lineTo(xw-re*.38,yw);ctx.stroke();ctx.globalAlpha=ea}
-    if(done&&!d.soft){if(d.wash&&ctx===baked.x&&typeof st==='string'&&st[0]==='#'&&lum(hex(st))<.6)ctx.fillStyle=mixHex(fs,'#000000',.25);const hd=d.thick?1.38:d.et?1.05:d.wet&&!d.al&&d.ink.opacity>.9?1.32:1.26,rb=Math.max(re,d.r*.8);ctx.beginPath();ctx.ellipse(xw,yw+rb*.25,rb*hd,rb*hd*1.3,Math.atan2(d.gy,d.gx)-Math.PI/2,0,TAU);ctx.fill()}ctx.restore()}}
+    if(done&&!d.soft){if(d.wash&&ctx===baked.x&&typeof st==='string'&&st[0]==='#'&&lum(hex(st))<.6)ctx.fillStyle=mixHex(fs,'#000000',.25);const hd=d.thick?1.38:d.et?1.05:d.wet&&!d.al&&d.ink.opacity>.9?1.32:1.26,rb=Math.max(reD,d.r*(d.pin?1.08:.8));ctx.beginPath();ctx.ellipse(xw,yw+rb*.25,rb*hd,rb*hd*1.3,Math.atan2(d.gy,d.gx)-Math.PI/2,0,TAU);ctx.fill()}ctx.restore()}}
   if(!under){d.lx=xw;d.ly=yw}else{d.lx=undefined;d.ly=undefined;d.alx=undefined;d.aly=undefined}
   if(!under&&d.ink.chrome&&(CHQ[s.id]??.3)>.7){const bx=baked.x;bx.save();bx.fillStyle='rgba(255,255,255,.8)';if(Math.abs(d.gy)>.97){bx.fillRect(xw-d.r*.55,y0,Math.max(.6,d.r*.45),d.y-y0+.3);bx.fillStyle='rgba(40,44,50,.45)';bx.fillRect(xw+d.r*.35,y0,Math.max(.5,d.r*.4),d.y-y0+.3)}bx.restore()}
   if(!under&&doAux){markWet(xw,yw,d.r+2,.9,TAUS[d.wk]*(d.wet?2.5:1)*1.3);if(d.col&&d.col[0]==='#')markInk(xw,yw,d.r+1,d.id,d.col)}
-  const w=WET[d.wk];w.active=true;w.until=Math.max(w.until,performance.now()+TAUS[d.wk]*4500);if(done){if(d.et)etchRunDry(d);drips.splice(i,1)}}
+  const w=WET[d.wk];w.active=true;w.until=Math.max(w.until,performance.now()+TAUS[d.wk]*4500);if(done){if(d.et)etchRunDry(d);if(d.led&&!d.et&&d.v0>.35&&d.vol<=0&&Math.random()<.8)dropFall(xw,yw+d.r,d.r*(1.1+Math.min(1,d.v0*.4)),typeof d.col==='string'?d.col:null);drips.splice(i,1)}}
  dirty=true}
 const SMOOTH=s=>s.absorb<.05&&s.rough<.05;
 /* HAND MIXED: colours lie side by side across the stick face at a fixed angle (how you hold it), drifting a little as the stick twists */
@@ -1824,7 +1843,11 @@ function frame(now){const dt=(now-prev)/1000;prev=now;if(down||!upT)upT=now;cons
  if(waterOn){let any=false;const k=dt*(bands[0]&&bands[0].s.absorb>.3?.06:.04);for(let i=0;i<water.length;i++)if(water[i]>0){water[i]=Math.max(0,water[i]-k);if(water[i]>0)any=true}
   if(!any)waterOn=false;const im=wctx.createImageData(GW,GH_);for(let i=0;i<water.length;i++){im.data[i*4+1]=8;im.data[i*4+2]=16;im.data[i*4+3]=Math.min(255,water[i]*48)}wctx.putImageData(im,0,0);dirty=true}
  if(mist.length){for(let i=mist.length-1;i>=0;i--)if(now-mist[i].t0>420)mist.splice(i,1);dirty=true}
- if(down&&stroke&&now-lastMove>220&&last){stroke.dwell+=dt;if(tool==='draw'&&stroke.dwell<3){const f0=flowNow(null);if(f0>.3)flowDeposit(last.x,last.y,0,f0*1.15,surfAt(last.x,last.y),stroke.dwell)}if(tool==='draw'&&!pen.squeeze&&!pen.metal&&!stroke.ink.solid&&stroke.dwell>.45&&stroke.dwell<2){const f=flowNow(null);if(f>.4){tipScale=1+Math.min(stroke.ink.fluid?.08:.22,(stroke.dwell-.45)*(stroke.ink.fluid?.1:.2)*f);stamp(last.x,last.y,0,null);tipScale=1}}if(pen.valve){stroke.priming=1;stroke.primeAcc=(stroke.primeAcc||0)+dt;if(stroke.primeAcc>(stroke.pumped?.28:.3)){stroke.primeAcc=0;stroke.pumped=1;pump(last)}dirty=true}const s=surfAt(last.x,last.y),ink=stroke.ink,b=ink.bleed*s.absorb;
+ if(down&&stroke&&now-lastMove>220&&last){stroke.dwell+=dt;if(tool==='draw'&&stroke.dwell<3){const f0=flowNow(null);if(f0>.3)flowDeposit(last.x,last.y,0,f0*1.15,surfAt(last.x,last.y),stroke.dwell)}/* BLOB WHEN YOU PAUSE: hold the nib still and ink keeps wicking out of it — the dot grows (fast at first, then slower, like
+   a capillary spread ~ sqrt(time)), sags downward on an upright wall, and once it's heavy enough it lets go as a run */
+if(tool==='draw'&&!pen.squeeze&&!stroke.ink.solid&&!pen.dauber&&stroke.dwell>.25&&stroke.dwell<4.5){const f=flowNow(null);if(f>.35){const ty=pen.ink,cap=(stroke.ink.fluid?.08:pen.metal?.3:{alcohol:.95,stain:.95,bleed:.95,flow:.9,future:.85,water:.75,alcpaint:.6,oil:.38,chrome:.45,etch:.7}[ty]??.6)*Math.min(1.3,f)*(1-stroke.s.absorb*.6),g=cap*Math.sqrt(Math.min(1,(stroke.dwell-.25)/2.6)),sg=upright?R()*g*.22:0;
+  tipScale=1+g;stamp(last.x,last.y+sg,0,null);tipScale=1;
+  if(upright&&flowable()&&!stroke.ink.fluid&&g>.5&&stroke.s.absorb<.6&&(!stroke.bdT||stroke.dwell-stroke.bdT>1.6)){stroke.bdT=stroke.dwell;drip(last.x+(Math.random()-.5)*R()*.4,last.y+sg+R()*(1+g)*.85,.45+g*.9*(stroke.ink.drip??.6))}}}if(pen.valve){stroke.priming=1;stroke.primeAcc=(stroke.primeAcc||0)+dt;if(stroke.primeAcc>(stroke.pumped?.28:.3)){stroke.primeAcc=0;stroke.pumped=1;pump(last)}dirty=true}const s=surfAt(last.x,last.y),ink=stroke.ink,b=ink.bleed*s.absorb;
   if(b>.03&&stroke.dwell<4){bleedAt(last.x,last.y,R()*(1+b*(1.1+stroke.dwell*1.4)),b*.035,s.gx);dirty=true}
   if(ink.future)poolAt(last.x,last.y,R()*1.25,0);if(pen.squeeze&&stroke.dwell>.6&&stroke.dwell<2.5){blob(last.x,last.y,R()*(pen.dauber?Math.min(.45,.25+stroke.dwell*.1):ink.fluid?Math.min(.95,.6+stroke.dwell*.25):pen.w>8?.55+stroke.dwell*.35:1+stroke.dwell*1.6),s);if(!ink.fluid&&(!FLOWDRIPS||!flowable())&&Math.random()<dt*3*ink.drip)drip(last.x+(Math.random()-.5)*R(),last.y+R()*.5,.6+stroke.dwell*.5);dirty=true}}
  if(!down)for(const k in WET){const w=WET[k];if(!w.active)continue;w.acc+=ddt*DRYALL;w.until-=(dk*DRYALL-1)*dt*1000;const kk=1-Math.exp(-w.acc/(TAUS[k]*(bands[0]&&bands[0].s.wet?2.5:1)));
@@ -2068,7 +2091,7 @@ function drawStairsLight(x){
  /* apply 3D bezel relief + backlit colour-tinted light shining through any ink on the fixture (works live mid-stroke too) */
  drawStairsFixture(x,g);
 }
-function compose(){const x=dctx;x.save();x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='source-over';x.globalAlpha=1;x.drawImage(baked.c,0,0);if(waterOn){x.imageSmoothingEnabled=true;x.drawImage(waterCv,0,0,GW*C*dpr,GH_*C*dpr)}for(const m of mist){x.globalAlpha=.7*(1-(performance.now()-m.t0)/420);x.fillStyle='#e6f2ff';x.beginPath();x.arc(m.x*dpr,m.y*dpr,m.s*dpr,0,TAU);x.fill()}x.globalAlpha=1;for(const L of bleedL){x.globalAlpha=L.a*sm(clamp((performance.now()-L.t0)/L.dur));x.drawImage(L.c,L.x,L.y)}x.globalAlpha=1;for(const p of chromes){x.globalAlpha=sm(clamp((performance.now()-p.t0)/p.dur));x.drawImage(p.c,p.x,p.y)}x.globalAlpha=1;if(ewOn&&EWET.c.width){x.globalAlpha=ewA;x.drawImage(EWET.c,0,0);x.globalAlpha=1}if((etchOn&&etchL.c.width)||etS){if(etvDirty||ETV.width!==baked.c.width)renderETV(etS?etvP:0);x.globalAlpha=etK;x.drawImage(ETV,0,0);x.globalAlpha=1;if(etS)x.drawImage(ETW,0,0)}drawFJ(x);drawShift(x);drawShine(x);drawGloss(x);drawLight(x);
+function compose(){const x=dctx;x.save();x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='source-over';x.globalAlpha=1;x.drawImage(baked.c,0,0);if(waterOn){x.imageSmoothingEnabled=true;x.drawImage(waterCv,0,0,GW*C*dpr,GH_*C*dpr)}for(const m of mist){x.globalAlpha=.7*(1-(performance.now()-m.t0)/420);x.fillStyle='#e6f2ff';x.beginPath();x.arc(m.x*dpr,m.y*dpr,m.s*dpr,0,TAU);x.fill()}x.globalAlpha=1;for(const L of bleedL){x.globalAlpha=L.a*sm(clamp((performance.now()-L.t0)/L.dur));x.drawImage(L.c,L.x,L.y)}x.globalAlpha=1;for(const p of chromes){x.globalAlpha=sm(clamp((performance.now()-p.t0)/p.dur));x.drawImage(p.c,p.x,p.y)}x.globalAlpha=1;if(ewOn&&EWET.c.width){x.globalAlpha=ewA;x.drawImage(EWET.c,0,0);x.globalAlpha=1}if((etchOn&&etchL.c.width)||etS){if(etvDirty||ETV.width!==baked.c.width)renderETV(etS?etvP:0);x.globalAlpha=etK;x.drawImage(ETV,0,0);x.globalAlpha=1;if(etS)x.drawImage(ETW,0,0)}drawFJ(x);drawShift(x);drawFalls(x);x.setTransform(1,0,0,1,0,0);drawShine(x);drawGloss(x);drawLight(x);
  if(stroke){x.save();applyInk(x,stroke.ink,stroke.s);x.drawImage(stk.c,0,0);
   if(down&&stroke.cp&&livePt){const a=stroke.cp,b=predPt||livePt,d=Math.hypot(b.x-a.x,b.y-a.y);if(d>.5&&d<120){x.setTransform(dpr,0,0,dpr,0,0);x.fillStyle=inkPat(stroke.s,curCol(),0);tipCtx=x;const n=Math.ceil(d/Math.max(.8,R()*.5));for(let i=1;i<=n;i++){const t=i/n;tipPath(0,a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t);x.fill()}tipCtx=null;x.setTransform(1,0,0,1,0,0)}}
   x.restore()}
