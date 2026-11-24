@@ -705,7 +705,7 @@ function cillHit(d,xw,col,re,L){if(!CP.v){CP.v=new Float32Array(CP.n);CP.c=new A
  return true}
 function drawCill(){if(!cillDirty)return;cillDirty=false;if(!cillC)cillC=document.createElement('canvas');if(cillC.width!==Math.round(W*dpr)||cillC.height!==Math.round(H*dpr)){cillC.width=Math.round(W*dpr);cillC.height=Math.round(H*dpr)}
  const x=cillC.getContext('2d');x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,cillC.width,cillC.height);if(!CP.v||!isGlassPhoto())return;const L=LDG(),q=L.q,cw=q.w/CP.n;x.setTransform(dpr,0,0,dpr,0,0);
- const reach=j=>Math.min(L.top,L.top*Math.pow(Math.min(1,CP.v[j]/1.6),.8)),EPS=.05;
+ const reach=j=>Math.min(L.top,L.top*.95*Math.sqrt(Math.min(1,Math.max(0,CP.v[j]-EPS)/(1.6-EPS)))),EPS=.1;/* square-root dome: a puddle's front edge is rounded, with rounded ends — never a wedge */
  let j=0;while(j<CP.n){if(CP.v[j]<EPS){j++;continue}let e=j;while(e<CP.n&&CP.v[e]>=EPS)e++;
   let best=j;for(let k=j;k<e;k++)if(CP.v[k]>CP.v[best])best=k;const c=CP.c[best]||'#ffffff',X0=q.x+j*cw,X1=q.x+e*cw;
   /* damp stain soaking into the stone round it */x.save();x.globalCompositeOperation='multiply';x.globalAlpha=.25;x.fillStyle='#5a4c3a';try{x.filter=`blur(${3}px)`}catch(_){}x.beginPath();x.moveTo(X0-4,L.y);for(let k=j;k<e;k++){const xx=q.x+(k+.5)*cw;x.lineTo(xx,L.y+reach(k)+4+(CP.sp[k]?L.h*.5:0))}x.lineTo(X1+4,L.y);x.closePath();x.fill();x.restore();
@@ -1305,7 +1305,7 @@ function runDrips(dt){if(!drips.length)return;mergeRuns(dt);
    if(!lm&&!d.em){d.em=1;d.jn=1;const far=Math.hypot(x0-d.sx,y0-d.sy)>Math.max(16,(d.w||R())*1.6);d.ex=far?d.sx:x0;d.ey=far?d.sy:y0;d.lx=x0;d.ly=y0}}
   const trav=d.em?Math.hypot(d.x-d.ex,d.y-d.ey):0,travP=d.em?Math.max(0,trav-Math.hypot(d.x-x0,d.y-y0)):0;d.tr=trav;
   const caNeck=1/(1+clamp((d.spd||0)*.0055/Math.max(.5,fl.gamma),0,.38)),headSwell=1+(d.em&&!d.soft?(1-vr)*.36*(fl.gamma/Math.max(.6,fl.rho))*(d.thick?1.15:.75):0),shp=t=>(d.soft?1:1+1.5*Math.exp(-t/(d.r*1.8+2.2)))*(.76+.24*vr)*caNeck*headSwell*(1+.05*Math.sin(t*.09+d.ph)),re=d.r*shp(trav),reP=d.r*shp(travP);
-  if(ledgeLive()&&d.preL&&!d.led&&d.y>=ledgeY(d.x)&&Math.abs(d.gy)>.6&&!LDG().sl){const col=typeof d.col==='string'?d.col:'#808080',stop=ledgeHit(d,d.x,col[0]==='#'?col:'#808080',d.r);d.preL=0;if(stop){d.vol=-1;drips.splice(i,1);continue}continue}
+  if(ledgeLive()&&(d.preL||(y0<ledgeY(x0)&&!d.led))&&!d.led&&d.y>=ledgeY(d.x)&&Math.abs(d.gy||gDir().y)>.5&&!LDG().sl){/* any run crossing the ledge line is caught, even one that started out of sight or arrived in a single big step */const col=typeof d.col==='string'?d.col:'#808080',stop=ledgeHit(d,d.x,col[0]==='#'?col:'#808080',d.r);d.preL=0;if(stop){d.vol=-1;drips.splice(i,1);continue}continue}
   /* ribbed panels: a run is drawn into the nearest groove and follows it down */if(s.id==='stairs'&&!d.et&&!d.onStep&&Math.abs(d.gy)>.8){const P=TS/(40*dpr),g=(Math.round(d.x/P-.5)+.5)*P;d.x+=(g-d.x)*.18}
   /* subway stairs interaction: drips hit the concrete tread, pool at the wall seam, and if wet/heavy creep across the tread & cascade over the riser lip */
   if(s.id==='stairs'&&!d.et&&!d.soft&&Math.abs(d.gy)>.55){
