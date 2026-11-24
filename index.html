@@ -864,15 +864,15 @@ function queueBleed(){if(INK[pen.ink].comp==='multiply')return;const light=lum(h
  let a,id,bk;try{a=stk.x.getImageData(x0,y0,w,h).data;id=idm.x.getImageData(x0,y0,w,h).data;bk=baked.x.getImageData(x0,y0,w,h).data}catch(_){return}
  const keys=Object.keys(INK),out=new ImageData(w,h),o=out.data;let nh=0,nd=0,nb=0;
  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const j=(y*w+x)*4;if(a[j+3]<40||id[j+3]<60)continue;const ty=keys[Math.round(id[j]/20)-1],bkk=bleedK(pen.ink,ty);if(!bkk)continue;/* how strongly this dye comes up through this top ink (LAYER table) */const hard=(ty==='stain'||ty==='bleed')&&lum(hex(color))>=.4;const r=bk[j],g=bk[j+1],bb=bk[j+2];
-  if(!hard&&!((r>g+50&&r>=bb-20)||(bb>g+30&&r>g+25)))continue;
+  const mx0=Math.max(r,g,bb),ch=mx0-Math.min(r,g,bb);if(!hard&&ch<16)continue;/* any coloured dye comes through, dark reds included — not just bright ones */
   const gr=.5+.32*n(48,48,(x0+x)/TS,(y0+y)/TS)+.18*Math.random();
-  if(ty==='bleed'){o[j]=r*.78+52;o[j+1]=g*.62+44;o[j+2]=bb*.72+62;nh++;nb++}else if(hard){const L=(r+g+bb)/3;o[j]=72+L*.28+(r-L)*.25;o[j+1]=56+L*.22;o[j+2]=168+L*.22;nh++}else{o[j]=r;o[j+1]=g*.85;o[j+2]=bb;nd++}
-  o[j+3]=Math.min(255,(a[j+3]/255)*(id[j+3]/255)*255*gr*bkk)}
+  if(ty==='bleed'){o[j]=r*.78+52;o[j+1]=g*.62+44;o[j+2]=bb*.72+62;nh++;nb++}else if(hard){const L=(r+g+bb)/3;o[j]=72+L*.28+(r-L)*.25;o[j+1]=56+L*.22;o[j+2]=168+L*.22;nh++}else{const k=Math.min(3.2,215/Math.max(20,mx0));o[j]=Math.min(255,r*k);o[j+1]=Math.min(255,g*k*.92);o[j+2]=Math.min(255,bb*k);nd++}
+  o[j+3]=Math.min(255,(a[j+3]/255)*(id[j+3]/255)*255*gr*bkk*(hard?1:Math.min(1,.35+ch/70)))}
  if(nh+nd<30)return;const c0=document.createElement('canvas');c0.width=w;c0.height=h;c0.getContext('2d').putImageData(out,0,0);
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');
  try{x.filter=`blur(${7*dpr}px)`;x.globalAlpha=.5;x.drawImage(c0,0,0);x.filter=`blur(${1.1*dpr}px)`;x.globalAlpha=1;x.drawImage(c0,0,0);x.filter='none'}catch(_){x.drawImage(c0,0,0)}freeC(c0);
- const st=nh>nd?(nb>nh/2?(pen.ink==='oil'?.85:.7):.68):.38;bleedL.push({c,x:x0,y:y0,t0:performance.now()+900,dur:5500,a:st});
- setTimeout(()=>toast(nh>nd?'The stain is bleeding back up through the paint — violet, and it won’t stay hidden':'The dye underneath is bleeding up through the white'),2200)}
+ const st=nh>nd?(nb>nh/2?(pen.ink==='oil'?.85:.7):.68):.38;bleedL.push({c,x:x0,y:y0,t0:performance.now()+2500,dur:26000,a:st,slow:1});/* bleed-through takes time: it creeps up over the next while, not in a flash */
+ setTimeout(()=>toast(nh>nd?'The stain will creep back up through the paint — violet, it won’t stay hidden':'The dye underneath will slowly bleed up through the paint'),2200)}
 /* WET WALL: the fresh mark's ink slides down with the water film as a soft curtain — densest at the mark,
    fading into uneven vertical fringes (like ink on wet canvas). A little of the mark itself goes with it. */
 /* ---------- PATCHY WETNESS: a wet wall is never evenly wet — damp and soaked zones plus old water tracks ---------- */
@@ -891,7 +891,7 @@ function drawWetField(x){buildWetField();const c=document.createElement('canvas'
    while its violet (or blue) dye dissolves into the water film, seeps out of both edges of every line and runs down
    as a curtain of fine see-through streaks. Wetter patches bleed further and run longer. Paint blacks don't split. ---------- */
 /* finished overlay layers are pressed into the wall (in order), so buffing and wiping act on them like any other ink */
-let bleedFlushAt=0;function flushBleed(all){if(!bleedL.length)return;const now=performance.now(),keep=[];for(const L of bleedL){const done=all||(L.top?now>L.t0+9000:now>L.t0+L.dur+300);if(done&&!keep.length){baked.x.save();baked.x.setTransform(1,0,0,1,0,0);baked.x.globalAlpha=L.a;baked.x.drawImage(L.c,L.x,L.y);baked.x.restore();freeC(L.c);dirty=true}else keep.push(L)}bleedL.length=0;bleedL.push(...keep)}
+let bleedFlushAt=0;function flushBleed(all){if(!bleedL.length)return;const now=performance.now(),keep=[];for(const L of bleedL){const done=all||(L.top?now>L.t0+9000:now>L.t0+L.dur+300);if(done&&!keep.some(k=>!k.slow)){baked.x.save();baked.x.setTransform(1,0,0,1,0,0);baked.x.globalAlpha=L.a*(L.slow&&all?sm(clamp((now-L.t0)/L.dur)):1);/* a slow bleed caught part-way keeps only what had come through so far; it no longer holds up the others */baked.x.drawImage(L.c,L.x,L.y);baked.x.restore();freeC(L.c);dirty=true}else keep.push(L)}bleedL.length=0;bleedL.push(...keep)}
 function dyeSplit(s,col){const cast=CAST(pen.ink,col);if(!cast||demo||!upright)return false;buildWetField();
  /* see-through dye: duller than a paint violet, and darker on dark walls (it tints the wall rather than covering it) */
  const wm=s.mean||[140,140,140],wl=(wm[0]*.3+wm[1]*.59+wm[2]*.11)/255,dye0=pen.ink==='stain'||pen.ink==='bleed'?'#5a3aa8':'#3a4c9c',dye=mixHex(dye0,'#000000',Math.max(0,.22-wl*.3)),P=dpr,pad=26,x0=Math.max(0,Math.floor((stroke.x0-pad)*P)),y0=Math.max(0,Math.floor((stroke.y0-pad)*P)),w=Math.min(stk.c.width-x0,Math.ceil((stroke.x1-stroke.x0+pad*2)*P)),h=Math.min(stk.c.height-y0,Math.ceil((stroke.y1-stroke.y0+pad*2)*P));if(w<4||h<4)return false;
