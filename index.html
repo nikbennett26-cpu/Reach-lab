@@ -2077,7 +2077,7 @@ let bip=null;addEventListener('beforeinstallprompt',e=>{e.preventDefault();bip=e
 const isStandalone=()=>{try{return navigator.standalone||matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches}catch(_){return false}};
 const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const inClaude=!onWeb&&!!(window.claude||/claude|anthropic/.test(location.hostname));
-function openGetApp(){const g=$('#getApp');const can=!!bip;
+function openGetApp(){if(/androidplatform/.test(location.host))return;const g=$('#getApp');const can=!!bip;
  $('#gaInstall').hidden=!can;$('#gaGo').hidden=!can;$('#gaIOS').hidden=can||inClaude||!isIOS;$('#gaOther').hidden=can||inClaude||isIOS;
  $('#gaClaude').hidden=!inClaude;{const u=liveURL(),a=$('#gaLink');a.textContent=PUBLIC_URL;a.href=u}$('#gaCopy').hidden=!inClaude;$('#gaDl').hidden=!dlNS;$('#gaOk').hidden=can||inClaude?true:false;
  g.hidden=false}
@@ -2104,6 +2104,7 @@ renderTypes();renderBrands();renderRack();renderColors();renderSurfs();renderTop
 requestAnimationFrame(frame);
 }
 </script>
-<script>if('serviceWorker' in navigator&&location.protocol==='https:'&&!/githack|claude/.test(location.host))navigator.serviceWorker.register('sw.js').catch(()=>{})</script>
+<script>/* inside the Android app: no install prompt, no service worker (the app already holds every file) */if(/androidplatform/.test(location.host)){document.documentElement.classList.add('inapp');try{document.getElementById('getApp').hidden=true;document.getElementById('getAppBtn').hidden=true;document.getElementById('dlApp').hidden=true}catch(_){}}
+else if('serviceWorker' in navigator&&location.protocol==='https:'&&!/githack|claude/.test(location.host))navigator.serviceWorker.register('sw.js').catch(()=>{})</script>
 </body>
 </html>

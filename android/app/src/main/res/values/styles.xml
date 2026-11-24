@@ -1,0 +1,9 @@
+<resources>
+  <style name="Theme.ReachLab" parent="android:Theme.Material.Light.NoActionBar">
+    <item name="android:windowBackground">@color/bg</item>
+    <item name="android:statusBarColor">@color/bg</item>
+    <item name="android:navigationBarColor">#000000</item>
+    <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+  </style>
+  <color name="bg">#f9f9f9</color>
+</resources>

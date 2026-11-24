@@ -1,0 +1,25 @@
+plugins { id 'com.android.application' }
+android {
+  namespace 'com.rsm.reachlab'
+  compileSdk 35
+  defaultConfig {
+    applicationId 'com.rsm.reachlab'
+    minSdk 24
+    targetSdk 35
+    versionCode 1
+    versionName '1.0'
+  }
+  signingConfigs {
+    release {
+      def p = new Properties(); def f = rootProject.file('keystore.properties')
+      if (f.exists()) { p.load(new FileInputStream(f)); storeFile file(p['storeFile']); storePassword p['storePassword']; keyAlias p['keyAlias']; keyPassword p['keyPassword'] }
+    }
+  }
+  buildTypes { release { minifyEnabled false; signingConfig signingConfigs.release } }
+  lint { checkReleaseBuilds false; abortOnError false }
+  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
+dependencies { implementation 'androidx.webkit:webkit:1.12.1' }
+// the app is the same single page as the website: copy it in at build time
+tasks.register('copyWeb', Copy) { from('../../index.html', '../../manifest.webmanifest'); from('../../brand') { into 'brand' }; into 'src/main/assets' }
+preBuild.dependsOn copyWeb
