@@ -82,7 +82,7 @@ button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .btn[aria-pressed=true]{background:#17291e;border-color:#38d96c;color:#f5f5f2}
 .btn[aria-pressed=true]::before{background:#38d96c;box-shadow:0 0 6px rgba(56,217,108,.75)}
 .btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
-#moreSheet .btn.pri{background:#231412;border-color:rgba(255,61,31,.65);color:#ff8470}
+#moreSheet .sheet .btn.pri{background:var(--p2);border-color:var(--line);color:inherit}/* actions, not toggles — they must never look 'on' */
 #moreSheet .btn.pri:active{background:var(--acc);color:#fff}
 .bf{min-height:38px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:transparent;cursor:pointer;font:600 14px 'Barlow Condensed',sans-serif;text-transform:uppercase;flex:none}
 .bf[aria-pressed=true]{background:var(--ink);color:#111;border-color:var(--ink)}
@@ -245,7 +245,7 @@ td.num{text-align:right;white-space:nowrap}
   <h2>Settings</h2>
   <div class="row"><button class="btn pri" id="bookSave">Save to blackbook</button><button class="btn" id="bookOpen">Open blackbook</button><button class="btn" id="wallShare">Share wall</button></div>
   <div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button></div>
-  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><button class="btn" id="calBtn">Calibrate finger</button><button class="btn" id="ledgeBtn" aria-pressed="true">Ledge: on</button><button class="btn" id="lightBtn" aria-pressed="true">Light &amp; reflections: on</button><button class="btn" id="gravBtn">Drips: auto (sensor)</button><button class="btn" id="wxBtn">Weather: mild</button><div style="width:100%;margin-top:8px"><label class="lbl" for="ageR">Age the wall — <span id="ageV">fresh</span></label><input type="range" id="ageR" min="0" max="100" value="0" style="width:100%"></div><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Version 4.3 · 25 Nov · realistic wall ageing</div></div>
+  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><button class="btn" id="calBtn">Calibrate finger</button><button class="btn" id="ledgeBtn" aria-pressed="true">Ledge: on</button><button class="btn" id="lightBtn" aria-pressed="true">Light &amp; reflections: on</button><button class="btn" id="gravBtn">Drips: auto (sensor)</button><button class="btn" id="wxBtn">Weather: mild</button><div style="width:100%;margin-top:8px"><label class="lbl" for="ageR">Age the wall — <span id="ageV">fresh</span></label><input type="range" id="ageR" min="0" max="100" value="0" style="width:100%"></div><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Version 4.4 · 25 Nov · faster, stronger ghosts; age slider brings ghosts back</div></div>
   <div id="tipsBox"><div class="row" style="justify-content:space-between;align-items:center"><span class="lbl">Tips</span><button class="btn" id="tipsClear">Clear</button></div><ol id="tipsList" class="small" style="margin:0 0 12px;padding-left:20px;max-height:180px;overflow:auto;line-height:1.45"><li style="opacity:.6">Tips from your drawing show up here.</li></ol></div>
   <div class="row"><span class="lbl">Weather the wall</span><button class="btn" id="age1">+1 month</button><button class="btn" id="age12">+1 year</button></div>
   <p class="small">A simulation: pens modelled on real ones, dry times sped up, surface physics modelled rather than measured.</p>
@@ -994,7 +994,7 @@ function drawWetField(x){buildWetField();const c=document.createElement('canvas'
    while its violet (or blue) dye dissolves into the water film, seeps out of both edges of every line and runs down
    as a curtain of fine see-through streaks. Wetter patches bleed further and run longer. Paint blacks don't split. ---------- */
 /* finished overlay layers are pressed into the wall (in order), so buffing and wiping act on them like any other ink */
-let bleedFlushAt=0;function flushBleed(all){if(!bleedL.length)return;const now=performance.now(),keep=[];for(const L of bleedL){const done=all||(L.top?now>L.t0+9000:now>L.t0+L.dur+300);if(done&&!keep.some(k=>!k.slow)){baked.x.save();baked.x.setTransform(1,0,0,1,0,0);baked.x.globalAlpha=L.a*(L.slow&&all?sm(clamp((now-L.t0)/L.dur)):1);/* a slow bleed caught part-way keeps only what had come through so far; it no longer holds up the others */baked.x.drawImage(L.c,L.x,L.y);baked.x.restore();freeC(L.c);dirty=true}else keep.push(L)}bleedL.length=0;bleedL.push(...keep)}
+let bleedFlushAt=0;function flushBleed(all,full){if(!bleedL.length)return;const now=performance.now(),keep=[];for(const L of bleedL){const done=all||(L.top?now>L.t0+9000:now>L.t0+L.dur+300);if(done&&!keep.some(k=>!k.slow)){baked.x.save();baked.x.setTransform(1,0,0,1,0,0);baked.x.globalAlpha=L.a*(L.slow&&all&&!full?sm(clamp((now-L.t0)/L.dur)):1);/* a slow bleed caught part-way keeps only what had come through so far; it no longer holds up the others */baked.x.drawImage(L.c,L.x,L.y);baked.x.restore();freeC(L.c);dirty=true}else keep.push(L)}bleedL.length=0;bleedL.push(...keep)}
 function busyHaze(x0,y0,w,h,dye,aMax,now){
  /* translucent haze pooled inside busy loops, tight turns, and overlapping strokes (fast 1/4-res density map) */
  const sc=4,bw=Math.max(8,Math.ceil(w/sc)),bh=Math.max(8,Math.ceil(h/sc)),dc=document.createElement('canvas');dc.width=bw;dc.height=bh;const dx=dc.getContext('2d');
@@ -1077,13 +1077,14 @@ function stainDry(){/* new ink covers the violet cast still forming underneath, 
  bleedL.push({c,x:x0,y:y0,t0:performance.now()+TAUS[pen.ink]*1400,dur:5000,a:.16,stain:1})}
 /* after you stop buffing, the dye works back up through the wipe: a fainter ghost of the tag returns */
 const ghostRet={t:0,x0:1e9,y0:1e9,x1:-1,y1:-1,k:0,cap:0,vio:0};
-setInterval(()=>{if(!ghostRet.t||performance.now()-ghostRet.t<1400||down)return;const x0=Math.max(0,Math.floor(ghostRet.x0)),y0=Math.max(0,Math.floor(ghostRet.y0)),w=Math.min(ghost.c.width,Math.ceil(ghostRet.x1))-x0,h=Math.min(ghost.c.height,Math.ceil(ghostRet.y1))-y0,k=ghostRet.k;
+function ghostFire(force){if(!ghostRet.t||(!force&&(performance.now()-ghostRet.t<1400||down)))return;const x0=Math.max(0,Math.floor(ghostRet.x0)),y0=Math.max(0,Math.floor(ghostRet.y0)),w=Math.min(ghost.c.width,Math.ceil(ghostRet.x1))-x0,h=Math.min(ghost.c.height,Math.ceil(ghostRet.y1))-y0,k=ghostRet.k;
  const vio=ghostRet.vio;ghostRet.t=0;ghostRet.x0=ghostRet.y0=1e9;ghostRet.x1=ghostRet.y1=-1;ghostRet.k=0;ghostRet.cap=0;ghostRet.vio=0;if(w<4||h<4||k<.02)return;
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${1.4*dpr}px)`}catch(_){}x.drawImage(ghost.c,x0,y0,w,h,0,0,w,h);x.filter='none';
  try{const im=x.getImageData(0,0,w,h),dd=im.data,th=(pad.th||0)+Math.PI/2,cx=Math.cos(th),sy=Math.sin(th),ph=Math.random()*9,S=3.2*dpr;for(let i=0;i<dd.length;i+=4){if(!dd[i+3])continue;const px=(i>>2)%w,py=(i>>2)/w|0,u=(px*cx+py*sy)/S;dd[i+3]*=.62+.38*(.5+.5*Math.sin(u+ph))*(.6+.4*Math.sin(u*.37+ph*2))}x.putImageData(im,0,0)}catch(_){}
  const g=ghost.x;g.save();g.setTransform(1,0,0,1,0,0);g.clearRect(x0,y0,w,h);g.restore();
  {/* a stain doesn't jump back: a faint first show, then the dye keeps wicking up through the wiped film for minutes */const c2=document.createElement('canvas');c2.width=w;c2.height=h;c2.getContext('2d').drawImage(c,0,0);const n0=performance.now();
- bleedL.push({c,x:x0,y:y0,t0:n0+300,dur:6000,a:k*.4,slow:1},{c:c2,x:x0,y:y0,t0:n0+6300,dur:150000,a:k*.6/(1-k*.4),slow:1})}if(!saidGhost++)toast('The tag is ghosting back through the buff')},500);
+ bleedL.push({c,x:x0,y:y0,t0:n0+300,dur:4000,a:k*.4,slow:1},{c:c2,x:x0,y:y0,t0:n0+4300,dur:40000,a:k*.6/(1-k*.4),slow:1})}if(!saidGhost++)toast('The tag is ghosting back through the buff')}
+setInterval(()=>ghostFire(false),500);
 let saidGhost=0;const buffC={};
 function runBleed(now){if(!bleedQ.length)return;const bx=baked.x;
  for(let i=bleedQ.length-1;i>=0;i--){const q=bleedQ[i];if(now<q.t)continue;q.t=now+220+Math.random()*120;q.k++;if(q.ghost&&q.k===1&&!saidGhost++)toast('The dye ink is ghosting back through the buff');
@@ -1129,7 +1130,7 @@ function buffAt(a,b){lForce=true;slForce=true;{const r=36;for(let cy=Math.max(0,
  {const u=tcan(D,'bu'),X=(b.x-R2)*dpr,Y=(b.y-R2)*dpr;u.x.drawImage(baked.c,X,Y,D,D,0,0,D,D);u.x.globalCompositeOperation='destination-in';u.x.drawImage(idm.c,X,Y,D,D,0,0,D,D);
   if(vio){u.x.globalCompositeOperation='source-atop';u.x.globalAlpha=.78;u.x.fillStyle='#6b58c9';u.x.fillRect(0,0,D,D);u.x.globalAlpha=1}
   u.x.globalCompositeOperation='source-over';if(!ghostRet.cap){ghostRet.cap=1;ghostRet.tl=new Set();ghostRet.nz=null}ghostTiles(X,Y,D);
-  if(vio)ghostRet.vio=1;ghostRet.t=performance.now();ghostRet.x0=Math.min(ghostRet.x0,X);ghostRet.y0=Math.min(ghostRet.y0,Y);ghostRet.x1=Math.max(ghostRet.x1,X+D);ghostRet.y1=Math.max(ghostRet.y1,Y+D);ghostRet.k=Math.max(ghostRet.k,ty&&GHOST[ty]?Math.min(.6,GHOST[ty]*1.7):0)}
+  if(vio)ghostRet.vio=1;ghostRet.t=performance.now();ghostRet.x0=Math.min(ghostRet.x0,X);ghostRet.y0=Math.min(ghostRet.y0,Y);ghostRet.x1=Math.max(ghostRet.x1,X+D);ghostRet.y1=Math.max(ghostRet.y1,Y+D);ghostRet.k=Math.max(ghostRet.k,ty&&GHOST[ty]?(GHOST[ty]>=.3?Math.min(.9,.8+(GHOST[ty]-.3)):GHOST[ty]*1.7):0)}/* buff-proof stain/bleed inks come back hard */
  if(satOn&&SAT){erase({x:SAT.getContext('2d')},b,.5,R2*1.05);lForce=true;slForce=true}if(glL.c.width){erase(glL,b,.6,R2*1.05);glDirty=true}if(shL.c.width){erase(shL,b,.6,R2*1.05);shDirty=true}if(metal.c.width){erase(metal,b,.45,R2*1.05);shineDirty=true;if(metalOn&&++buffN%40===0)dirty=true}if(fjL.c.width)erase(fjL,b,.45,R2*1.05);
  if(L>.5){smearDir(baked,a,b,.22,R2*.6,false);smearDir(idm,a,b,.3,R2*.65,false)}/* the rag drags the colour along the rub */
  /* thin ink lifts easily, heavy ink hangs on: wipe back to the wall wherever little ink went down */
@@ -1289,7 +1290,7 @@ function runDrips(dt){runFalls(dt);if(!drips.length)return;mergeRuns(dt);
    for(const [ctx,st,comp,al,sx0,sy0] of targets){if(ctx===fjL.x)fjOn=true;
     let ea=al*(ctx===baked.x&&d.al?d.al:1),fs=st;let tint=false;
     if(ctx===baked.x&&ea<.97&&typeof st==='string'&&st[0]==='#'&&comp==='source-over'){
-     const darkDye=d.ink.comp==='multiply'||(d.wash&&lum(hex(st))<d.wallLum*.85);
+     const darkDye=d.ink.comp==='multiply'||d.wash;
      if(darkDye){fs=mixHex(st,'#ffffff',1-ea);ea=1;tint=true}
      else{fs=mixHex(st,d.wallHex,1-ea);ea=1}
     }
@@ -1689,10 +1690,10 @@ function rollerAt(a0,b){const now=performance.now(),a=rollerAt.p&&now-rollerAt.t
  for(let t=0;t<=1;t+=.25)markInk(a.x+dx*t,a.y+dy*t,R2,Object.keys(INK).indexOf('water')+1,rollCol);dirty=true}
 const JETK={water:.88,alcpaint:.62,oil:.45,solid:.55,chrome:.7,fluid:.5,alcohol:.32,future:.3,flow:.4,stain:.1,bleed:.08,etch:0};
 function jetAt(a,b){const ty=inkAt(b.x,b.y),r=ty?(JETK[ty]??.5):0,rad=60;if(r>0){restoreBg(b,r*.6,rad);erase(idm,b,r*.55,rad)}restoreBg(b,.08,rad);/* the jet also cleans grime */
- markWet(b.x,b.y,rad+4,.7,1.2);if(ty&&Math.random()<.45){const c=colG[inkCell(b.x,b.y)];drip(b.x+(Math.random()-.5)*rad*1.6,b.y+rad*.6,.4+Math.random()*.5,{ty,col:typeof c==='string'&&c[0]==='#'?mixHex(c,'#ffffff',.65):'#b9b9c0',wash:1,soft:1,al:.35,r:.6+Math.random()*.9,delay:80})}dirty=true}
+ markWet(b.x,b.y,rad+4,.7,1.2);if(ty&&Math.random()<.45){const c=colG[inkCell(b.x,b.y)];drip(b.x+(Math.random()-.5)*rad*1.6,b.y+rad*.6,.4+Math.random()*.5,{ty,col:typeof c==='string'&&c[0]==='#'?c:'#8a857c',wash:1,soft:1,al:.22,r:.6+Math.random()*.9,delay:80})}dirty=true}
 function solventAt(a,b){if((solventAt.n=(solventAt.n||0)+1)%2)return;/* solvent re-dissolves the dye: it lifts further, smears wider and runs more */const ty=inkAt(b.x,b.y);if(!ty)return;smearDir(baked,a,b,.3,28,false);restoreBg(b,(GHOST[ty]?.1:.22),20);
  const c=colG[inkCell(b.x,b.y)];if(typeof c==='string'&&c[0]==='#'){const bx=baked.x,rr=70;bx.save();bx.globalCompositeOperation='multiply';bx.globalAlpha=.07;try{bx.drawImage(feather(washTint(c)),b.x-rr,b.y-rr*.7,rr*2,rr*1.4)}catch(_){}bx.restore();
-  if(Math.random()<.5)drip(b.x+(Math.random()-.5)*40,b.y+10,.5+Math.random()*.6,{ty,col:mixHex(c,'#ffffff',.55),wash:1,soft:1,al:.4,r:.6+Math.random()*.9,delay:120})}dirty=true}
+  if(Math.random()<.5)drip(b.x+(Math.random()-.5)*40,b.y+10,.5+Math.random()*.6,{ty,col:c,wash:1,soft:1,al:.26,r:.6+Math.random()*.9,delay:120})}dirty=true}
 function openBuffMenu(){const m=$('#buffMenu');m.querySelectorAll('[data-bm]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.bm===buffMode));m.hidden=!m.hidden}
 document.addEventListener('click',e=>{const m=document.getElementById('buffMenu');if(!m||m.hidden)return;const k=e.target.closest&&e.target.closest('[data-bm]');if(k){buffMode=k.dataset.bm;document.querySelector('[data-tool=buff] .bfl').textContent=BUFFN[buffMode];toast(BUFFT[buffMode]);m.hidden=true;return}if(!e.target.closest('#buffMenu')&&!e.target.closest('[data-tool=buff]'))m.hidden=true});
 function toolMove(a,b){if(tool==='spray')return;toolAcc+=Math.hypot(b.x-a.x,b.y-a.y);const fing=tool==='smudge';if(toolAcc<(tool==='buff'&&!fing?22:3))return;toolAcc=0;if(tool==='buff')liveRunHit(a,b,buffMode);if(tool==='buff'&&!fing){if(buffMode==='paint')return rollerAt(a,b);if(buffMode==='jet')return jetAt(a,b);buffAt(a,b);if(buffMode==='solvent')solventAt(a,b);return}if(chromes.length)ruinChrome(b);
@@ -1738,7 +1739,7 @@ cv.addEventListener('pointerdown',e=>{e.preventDefault();setTimeout(audio,0);try
   if(pen.tip==='chisel'){const [p,q]=[...ptrs.values()];twist={base:angle,a0:Math.atan2(q.y-p.y,q.x-p.x),mid:{x:(p.x+q.x)/2,y:(p.y+q.y)/2}};dirty=true}
   else toast('Two-finger twist turns chisel tips');return}
  if(ptrs.size>2)return;
- if(tool==='draw'&&pen.empty&&(!pen.fill||pen.life<=0)){showRefills(pen.fill?'Out of ink — refill it':'This marker is empty — pick an ink to fill it');return}hudFade(true);down=true;downId=e.pointerId;saidDry=0;saidSpray=0;push();last=pt(e);if(tool==='draw'){begin(last,e);feed(last,e);if(stroke&&!(pen.valve&&pen.flow<.35)){stamp(last.x,last.y,0,e);compose();dirty=false}}else if(tool==='spray'){audio();sprayAcc=0;sprayAt(last)}else if(tool==='buff'){pad.load=0;pad.col=null;buffAt(last,last)}});
+ if(tool==='draw'&&pen.empty&&(!pen.fill||pen.life<=0)){showRefills(pen.fill?'Out of ink — refill it':'This marker is empty — pick an ink to fill it');return}hudFade(true);down=true;downId=e.pointerId;saidDry=0;saidSpray=0;push();last=pt(e);if(tool==='draw'){begin(last,e);feed(last,e);if(stroke&&!(pen.valve&&pen.flow<.35)){stamp(last.x,last.y,0,e);compose();dirty=false}}else if(tool==='spray'){audio();sprayAcc=0;sprayAt(last)}else if(tool==='buff'){ageDrop();pad.load=0;pad.col=null;buffAt(last,last)}});
 const RAW='onpointerrawupdate' in window;let livePt=null,predPt=null,lastC=0;
 const mv=e=>{if(e.type==='pointermove'&&RAW&&down&&e.pointerId===downId&&tool==='draw'&&!twist){if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,pt(e));return}if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,pt(e));
  if(twist&&ptrs.size===2){const [p,q]=[...ptrs.values()],d=Math.atan2(q.y-p.y,q.x-p.x)-twist.a0;setAngle(twist.base+d*180/Math.PI);twist.mid={x:(p.x+q.x)/2,y:(p.y+q.y)/2};dirty=true;return}
@@ -2430,21 +2431,22 @@ function ageDrop(){if(ageSnap){snapPool.push(ageSnap);ageSnap=null;const r=$('#a
    · the surface itself: glass gets a dusty film, water-spot rings and fine scratches; plastic yellows, chalks and
      scuffs; concrete darkens with ground-in dirt */
 function ageHash(x,y){let h=Math.imul(x|0,374761393)^Math.imul(y|0,668265263);h=Math.imul(h^(h>>>13),1274126177);return((h^(h>>>16))>>>0)/4294967296}
-function ageApply(v){const a=v/100;$('#ageV').textContent=a===0?'fresh':a<.2?'a few days':a<.45?'a few weeks':a<.75?'a couple of months':'half a year';if(!ageSnap){if(a===0)return;flushBleed(true);ageSnap=poolC(baked.c)}
+function ageApply(v){const a=v/100;$('#ageV').textContent=a===0?'fresh':a<.2?'a few days':a<.45?'a few weeks':a<.75?'a couple of months':'half a year';if(a>0&&(ghostRet.t||bleedL.some(L=>L.slow))){if(ageSnap){snapPool.push(ageSnap);ageSnap=null}ghostFire(true)}
+ if(!ageSnap){if(a===0)return;flushBleed(true,true);ageSnap=poolC(baked.c)}
  const b=baked.x,w=baked.c.width,h=baked.c.height,P=dpr;b.save();b.setTransform(1,0,0,1,0,0);b.globalCompositeOperation='copy';b.globalAlpha=1;b.drawImage(ageSnap,0,0);b.globalCompositeOperation='source-over';
  if(a<=0){b.restore();dirty=true;return}
  const sid=cur?cur.id:'';let D,M,G;try{D=b.getImageData(0,0,w,h);M=idm.x.getImageData(0,0,w,h).data;G=bg.x.getImageData(0,0,w,h).data}catch(_){b.restore();return}
- const d=D.data,edges=[];
+ const d=D.data,edges=[],IK=Object.keys(INK),CHALK=IK.map(k=>/^(alcpaint|water|oil|chrome|fluid|solid)$/.test(k)||(INK[k]&&(INK[k].solid||INK[k].chrome))?1:0);/* only paint chalks into pinholes — dyes soak in and just fade */
  /* 1+2: fade and chalk, pixel by pixel inside the ink */
- for(let y=0;y<h;y++){const row=y*w;for(let x=0;x<w;x++){const q=(row+x)*4;let ia=M[q+3];if(ia<8){/* the anti-aliased fringe of a stroke isn't in the ink map: catch it by its difference from the bare wall */const df=Math.abs(d[q]-G[q])+Math.abs(d[q+1]-G[q+1])+Math.abs(d[q+2]-G[q+2]);if(df<24)continue;ia=Math.min(140,df)}
-   let r=d[q],g=d[q+1],bl=d[q+2];const mx=Math.max(r,g,bl),mn=Math.min(r,g,bl),l=(mx+mn)/510,sat=mx?(mx-mn)/mx:0;
+ for(let y=0;y<h;y++){const row=y*w;for(let x=0;x<w;x++){const q=(row+x)*4;let ia=M[q+3];if(ia<8){/* the anti-aliased fringe of a stroke isn't in the ink map: catch it by its difference from the bare wall */const df=Math.abs(d[q]-G[q])+Math.abs(d[q+1]-G[q+1])+Math.abs(d[q+2]-G[q+2]);if(df<24)continue;ia=-Math.min(140,df)}/* negative = fringe/haze: fades, but no pinholes */
+   const fr=ia<0;if(fr)ia=-ia;let r=d[q],g=d[q+1],bl=d[q+2];const mx=Math.max(r,g,bl),mn=Math.min(r,g,bl),l=(mx+mn)/510,sat=mx?(mx-mn)/mx:0;
    let hue=0;if(mx!==mn){hue=mx===r?((g-bl)/(mx-mn))%6:mx===g?(bl-r)/(mx-mn)+2:(r-g)/(mx-mn)+4;hue=(hue*60+360)%360}
    /* how fast this colour bleaches */const rate=sat<.12?(l<.25?.32:.2):(hue<20||hue>290)?1:hue<65?.62:hue<170?.45:.36;
    const f=Math.min(.92,a*rate*(.55+.45*sat)),Y=.3*r+.59*g+.11*bl;
    r+=(Y-r)*f*.62;g+=(Y-g)*f*.62;bl+=(Y-bl)*f*.62;/* bleached pigment goes paler and chalky… */const wh=f*.28;r+=(236-r)*wh;g+=(232-g)*wh;bl+=(224-bl)*wh;/* …and thin colour lets the wall through */const k=f*.2*(1-(ia/255)*.3);r+=(G[q]-r)*k;g+=(G[q+1]-g)*k;bl+=(G[q+2]-bl)*k;
    if(sat<.12&&l<.25){r+=a*14;g+=a*10;bl+=a*4}/* old black goes brown-grey */
    /* chalking pinholes: crisp, clustered, worst on thin edges */const n1=ageHash(x,y),n2=ageHash((x/(5*P))|0,(y/(5*P))|0),n3=ageHash((x/(17*P))|0,(y/(17*P))|0);const pin=a*a*(.004+.16*(1-ia/255))*(n2>.82?3.2:.35)*(n3>.6?1.6:.5);
-   if(n1<pin){r=G[q]*.92;g=G[q+1]*.92;bl=G[q+2]*.92}
+   if(!fr&&n1<pin&&CHALK[(inkG[inkCell(x/P,y/P)]||0)-1]){r=G[q]*.92;g=G[q+1]*.92;bl=G[q+2]*.92}
    d[q]=r;d[q+1]=g;d[q+2]=bl;
    if(x%Math.max(2,Math.round(2*P))===0&&y+2<h&&M[q+3+w*4*2]<8&&ia>150)edges.push(x,y)}}
  b.putImageData(D,0,0);
