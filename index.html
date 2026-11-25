@@ -912,7 +912,7 @@ let gMode=(()=>{try{return localStorage.getItem('rlGrav')||'auto'}catch(e){retur
 const gDir=()=>{if(gMode!=='auto'){const v=GVEC[gMode];return{x:v.x,y:v.y,m:1,flat:0}}if(!grav.live)return{x:0,y:1,m:1,flat:0};if(grav.m<.24)return{x:0,y:1,m:0,flat:1};let x=grav.x,y=grav.y;if(y>0&&Math.abs(x)<y*.28){const k=clamp((Math.abs(x)/(y*.28)-.35)/.65);x*=k*k}const m=Math.hypot(x,y)||1e-6,mag=sm(clamp((grav.m-.24)/.36));return{x:x/m,y:y/m,m:mag,flat:0}};
 function drip(x,y,vol,o){if(!upright||drips.length>(o&&o.wash?320:180)||vol<.1)return;const s=surfAt(x,y);if(s.absorb>.8)return;const ty=o?o.ty:pen.ink;
  if(o&&o.et)etchOn=true;drips.push({wash:o&&o.wash,et:o&&o.et,x,y,vol,v0:vol,wet:s.wet,t0:o&&o.delay?performance.now()+o.delay:0,al:o&&o.al,thick:o?!!o.thick:THICK(),visc:o&&o.visc?o.visc:1,soft:!!(o&&o.soft),w:o&&o.w?o.w:R(),r:Math.min(o&&o.thick?3.6:!o&&THICK()?2.8:1.9,o&&o.r?o.r:!o&&THICK()?Math.max(1.5,Math.min(2.8,R()*(.09+Math.random()*.08))):DYEINK[ty]?Math.max(.5,Math.min(1.3,R()*(.025+Math.random()*.05))):Math.max(.7,Math.min(1.9,R()*(.04+Math.random()*.09)))),ek:o&&o.ek,col:o?o.col:INK[ty]&&INK[ty].etch&&ETCHABLE[s.id]?color:(INK[ty]&&INK[ty].future&&Math.random()<.65?color:color),ink:INK[ty],comp:o?'source-over':null,wk:o?(ty==='fluid'?'fluid':ty):pen.wet||pen.ink,id:Object.keys(INK).indexOf(ty)+1,ty,ph:Math.random()*9});
- {const d=drips[drips.length-1],k=sinkOf(ty);/* DYE RUNS carry the heavy settled pigment: as dark as the tag's settled bottom and rim, darker still from a flooded nib */if(DYEINK[ty]&&!d.soft&&!d.wash&&!d.et&&typeof d.col==='string'&&d.col[0]==='#'&&s.absorb<=.4){const ov=pen.valve?clamp((pen.flow-.7)/.6):pen.squeeze?clamp(((pen.sat||1)-.7)/.5):clamp((flowNow(null)-.6)/.6);d.col=mixHex(d.col,'#000000',(lum(hex(d.col))<.3?.45:.3)+.22*ov)}if(k>0&&!d.wash&&!d.et&&!d.soft&&!d.al&&typeof d.col==='string'&&d.col[0]==='#'){const kk=Math.min(.6,k*(d.wet?1.3:1)),wall='#'+s.mean.map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
+ {const d=drips[drips.length-1],k=sinkOf(ty);/* DYE RUNS carry the heavy settled pigment: as dark as the tag's settled bottom and rim, darker still from a flooded nib */if(DYEINK[ty]&&!d.soft&&!d.wash&&!d.et&&!s.wet&&typeof d.col==='string'&&d.col[0]==='#'&&s.absorb<=.4){/* (on a wet wall the runs carry the split-off dye instead) */const ov=pen.valve?clamp((pen.flow-.7)/.6):pen.squeeze?clamp(((pen.sat||1)-.7)/.5):clamp((flowNow(null)-.6)/.6);d.col=mixHex(d.col,'#000000',(lum(hex(d.col))<.3?.45:.3)+.22*ov)}if(k>0&&!d.wash&&!d.et&&!d.soft&&!d.al&&typeof d.col==='string'&&d.col[0]==='#'){const kk=Math.min(.6,k*(d.wet?1.3:1)),wall='#'+s.mean.map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
   d.wall=wall;d.kk=kk;d.pg={lite:mixHex(d.col,wall,kk*.4),deep:lum(hex(d.col))>.55?d.col:mixHex(d.col,'#000000',kk*.5),root:d.r*4+4};if(o&&o.src&&pigQ.length<80)pigQ.push({x,y,vol,col:d.col,k,w:o.w||R()})}}}
 /* PIGMENT IN A RUN: the heavy pigment rides down in the bulge at the front of a run, so the trail it leaves is a thinner,
    paler film (the wall shows through), the root where it hangs off the letter stays full colour, and the pigment piles
@@ -1002,6 +1002,15 @@ function drawWetField(x){buildWetField();const c=document.createElement('canvas'
    as a curtain of fine see-through streaks. Wetter patches bleed further and run longer. Paint blacks don't split. ---------- */
 /* finished overlay layers are pressed into the wall (in order), so buffing and wiping act on them like any other ink */
 let bleedFlushAt=0;function flushBleed(all,full){if(!bleedL.length)return;const now=performance.now(),keep=[];for(const L of bleedL){const done=all||(L.top?now>L.t0+9000:now>L.t0+L.dur+300);if(done&&!keep.some(k=>!k.slow)){baked.x.save();baked.x.setTransform(1,0,0,1,0,0);baked.x.globalAlpha=L.a*(L.slow&&all&&!full?sm(clamp((now-L.t0)/L.dur)):1);/* a slow bleed caught part-way keeps only what had come through so far; it no longer holds up the others */baked.x.drawImage(L.c,L.x,L.y);baked.x.restore();freeC(L.c);dirty=true}else keep.push(L)}bleedL.length=0;bleedL.push(...keep)}
+function runHaze(x0,y0,w,dye,s){if(!RUNL.c.width||!s||!s.wet)return;const P=dpr,h=Math.max(4,RUNL.c.height-y0);if(w<4)return;
+ const sc=4,bw=Math.max(8,Math.ceil(w/sc)),bh=Math.max(8,Math.ceil(h/sc)),dc=document.createElement('canvas');dc.width=bw;dc.height=bh;const dx=dc.getContext('2d');
+ try{dx.filter=`blur(${(5*P/sc*2).toFixed(1)}px)`}catch(_){}dx.drawImage(RUNL.c,x0,y0,w,h,0,0,bw,bh);dx.drawImage(RUNL.c,x0,y0,w,h,0,0,bw,bh);dx.drawImage(idm.c,x0,y0,w,h,0,0,bw,bh);dx.filter='none';
+ try{const im=dx.getImageData(0,0,bw,bh),dd=im.data,rgb=hex(dye);for(let j=0;j<bh;j++)for(let i=0;i<bw;i++){const q=(j*bw+i)*4,al=dd[q+3]/255,dens=clamp((al-.18)/.6);if(dens<=0){dd[q+3]=0;continue}
+   const X=(x0+i*sc)/P,Y=(y0+j*sc)/P,wf=wetF(X,Y),pt=vnz(X/45+Y/160,7)*vnz(Y/70,13);/* patchy: how wet it is here decides how far the dye spreads */
+   const a=Math.min(1,dens*(.1+1.5*wf*wf)*(.15+1.6*pt*pt));dd[q]=rgb[0];dd[q+1]=rgb[1];dd[q+2]=rgb[2];dd[q+3]=Math.round(255*a)}dx.putImageData(im,0,0)}catch(_){freeC(dc);return}
+ const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.imageSmoothingEnabled=true;x.drawImage(dc,0,0,bw,bh,0,0,w,h);freeC(dc);
+ /* it sits under the black letters, not over them */x.globalCompositeOperation='destination-out';x.drawImage(idm.c,x0,y0,w,h,0,0,w,h);
+ bleedL.push({c,x:x0,y:y0,t0:performance.now(),dur:3500,a:.68});dirty=true}
 function busyHaze(x0,y0,w,h,dye,aMax,now){
  /* translucent haze pooled inside busy loops, tight turns, and overlapping strokes (fast 1/4-res density map) */
  const sc=4,bw=Math.max(8,Math.ceil(w/sc)),bh=Math.max(8,Math.ceil(h/sc)),dc=document.createElement('canvas');dc.width=bw;dc.height=bh;const dx=dc.getContext('2d');
@@ -1035,6 +1044,9 @@ function dyeSplit(s,col){const cast=CAST(pen.ink,col);if(!cast||demo||!upright)r
  {const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${2.6*P}px)`}catch(_){}x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.filter='none';x.globalCompositeOperation='source-in';x.fillStyle=dye;x.fillRect(0,0,w,h);bleedL.push({c,x:x0,y:y0,t0:now+100,dur:1200,a:.35})}
  /* translucent haze pooled in busier/overlapping parts of the tag */
  busyHaze(x0,y0,w,h,dye,.64,now);
+ /* once the runs have been going a while, the water they ran through carries dye out sideways: a hazy violet bloom where
+    the runs are thick together, patchy because the wall is wetter in some places than others */
+ {const bx0=x0,bw=w,by0=y0,s0=stroke.s;setTimeout(()=>runHaze(bx0,by0,bw,dye,s0),2400);setTimeout(()=>runHaze(bx0,by0,bw,dye,s0),5200)}
  /* patchy curtain of crisp violet/blue runs */
  wetWash(s,INK[pen.ink],col,{dye});
  /* crisp black letter body stays on top */
