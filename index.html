@@ -2484,7 +2484,7 @@ function ageApply(v){const a=v/100;$('#ageV').textContent=a===0?'fresh':a<.2?'a 
    /* how fast this colour bleaches */const rate=sat<.12?(l<.25?.32:.2):(hue<20||hue>290)?1:hue<65?.62:hue<170?.45:.36;
    const f=Math.min(.92,a*rate*(.55+.45*sat)),Y=.3*r+.59*g+.11*bl;
    r+=(Y-r)*f*.62;g+=(Y-g)*f*.62;bl+=(Y-bl)*f*.62;/* bleached pigment goes paler and chalky… */const wh=f*.28;r+=(236-r)*wh;g+=(232-g)*wh;bl+=(224-bl)*wh;/* …and thin colour lets the wall through */const k=f*.2*(1-(ia/255)*.3);r+=(G[q]-r)*k;g+=(G[q+1]-g)*k;bl+=(G[q+2]-bl)*k;
-   if(sat<.12&&l<.25){r+=a*14;g+=a*10;bl+=a*4}/* old black goes brown-grey */
+   const tyk=IK[(inkG[inkCell(x/P,y/P)]||0)-1];if((tyk==='stain'||tyk==='bleed')&&l<.45){/* staining blacks are built on a violet dye that outlasts the others in sunlight: they drift purple, deepest where the ink was heaviest */const v=a*(1-l)*(.9+.3*(ia/255));r+=(92-r)*v*.55;g+=(52-g)*v*.4;bl+=(150-bl)*v*.62}else if(sat<.12&&l<.25){r+=a*14;g+=a*10;bl+=a*4}/* other old blacks go brown-grey */
    /* chalking pinholes: crisp, clustered, worst on thin edges */const n1=ageHash(x,y),n2=ageHash((x/(5*P))|0,(y/(5*P))|0),n3=ageHash((x/(17*P))|0,(y/(17*P))|0);const pin=a*a*(.004+.16*(1-ia/255))*(n2>.82?3.2:.35)*(n3>.6?1.6:.5);
    if(!fr&&n1<pin&&CHALK[(inkG[inkCell(x/P,y/P)]||0)-1]){r=G[q]*.92;g=G[q+1]*.92;bl=G[q+2]*.92}
    d[q]=r;d[q+1]=g;d[q+2]=bl;
