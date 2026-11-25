@@ -1,13 +1,13 @@
 plugins { id 'com.android.application' }
 android {
   namespace 'com.rsm.reachlab'
-  compileSdk 35
+  compileSdk 36
   defaultConfig {
     applicationId 'com.rsm.reachlab'
     minSdk 24
-    targetSdk 35
-    versionCode 53
-    versionName '6.2'
+    targetSdk 36
+    versionCode 54
+    versionName '6.3'
   }
   signingConfigs {
     release {

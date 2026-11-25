@@ -44,6 +44,11 @@ public class MainActivity extends Activity {
     setContentView(web);
     if (b != null) web.restoreState(b); else web.loadUrl("https://appassets.androidplatform.net/assets/index.html?app=android");
     immersive();
+    // Android 13+ back gesture (Android 16 no longer calls onBackPressed): page history first, then leave
+    if (android.os.Build.VERSION.SDK_INT >= 33) {
+      getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+          () -> { if (web.canGoBack()) web.goBack(); else finish(); });
+    }
   }
 
   private void immersive() {
