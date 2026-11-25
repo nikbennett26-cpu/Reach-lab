@@ -246,7 +246,7 @@ td.num{text-align:right;white-space:nowrap}
   <h2>Settings</h2>
   <div class="row"><button class="btn pri" id="bookSave">Save to blackbook</button><button class="btn" id="bookOpen">Open blackbook</button><button class="btn" id="wallShare">Share wall</button></div>
   <div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button></div>
-  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><button class="btn" id="calBtn">Calibrate finger</button><button class="btn" id="ledgeBtn" aria-pressed="true">Ledge: on</button><button class="btn" id="lightBtn" aria-pressed="true">Light &amp; reflections: on</button><button class="btn" id="gravBtn">Drips: auto (sensor)</button><button class="btn" id="wxBtn">Weather: mild</button><div style="width:100%;margin-top:8px"><label class="lbl" for="ageR">Age the wall — <span id="ageV">fresh</span></label><input type="range" id="ageR" min="0" max="100" value="0" style="width:100%"></div><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Version 4.6 · 25 Nov · buff runs dry as a watery tint</div></div>
+  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><button class="btn" id="calBtn">Calibrate finger</button><button class="btn" id="ledgeBtn" aria-pressed="true">Ledge: on</button><button class="btn" id="lightBtn" aria-pressed="true">Light &amp; reflections: on</button><button class="btn" id="gravBtn">Drips: auto (sensor)</button><button class="btn" id="wxBtn">Weather: mild</button><div style="width:100%;margin-top:8px"><label class="lbl" for="ageR">Age the wall — <span id="ageV">fresh</span></label><input type="range" id="ageR" min="0" max="100" value="0" style="width:100%"></div><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Version 4.7 · 25 Nov · wall no longer shifts when pop-ups appear</div></div>
   <div id="tipsBox"><div class="row" style="justify-content:space-between;align-items:center"><span class="lbl">Tips</span><button class="btn" id="tipsClear">Clear</button></div><ol id="tipsList" class="small" style="margin:0 0 12px;padding-left:20px;max-height:180px;overflow:auto;line-height:1.45"><li style="opacity:.6">Tips from your drawing show up here.</li></ol></div>
   <div class="row"><span class="lbl">Weather the wall</span><button class="btn" id="age1">+1 month</button><button class="btn" id="age12">+1 year</button></div>
   <p class="small">A simulation: pens modelled on real ones, dry times sped up, surface physics modelled rather than measured.</p>
@@ -388,8 +388,14 @@ const save=()=>{try{localStorage.setItem('mtb',JSON.stringify({wet:[...wetSet],p
 let layT=0,layPend=false;function layout(){if(!W)return doLayout();if(document.hidden){layPend=true;return}clearTimeout(layT);layT=setTimeout(doLayout,280)}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&layPend){layPend=false;layout()}});
 function doLayout(){
- cvR=null;const r=cv.getBoundingClientRect();const w=Math.round(r.width),h=Math.round(r.height);if(w<10||h<10)return;
+ cvR=null;const r=(cv.parentElement||cv).getBoundingClientRect();const w=Math.round(r.width),h=Math.round(r.height);if(w<10||h<10)return;
+ /* the viewer's own bars/banners coming and going only nudge the height: keep the wall exactly as it is (pin the canvas
+    to its size) rather than rebuilding it — rebuilding is only for a real change (rotation, new window width) */
+ if(W&&w===W&&Math.abs(h-H)<H*.22){if(h!==H){cv.style.height=H+'px';cv.style.bottom='auto'}else{cv.style.height='';cv.style.bottom=''}cvR=null;return}
+ cv.style.height='';cv.style.bottom='';
  const keep=W&&(w===W&&h===H);if(keep)return;if(down)return void(layT=setTimeout(doLayout,400));
+ /* an aged wall is rebuilt from its un-aged state, then aged again at the same setting — otherwise the whole-wall wear gets carried over as a box */
+ const aged=typeof ageSnap!=='undefined'&&!!ageSnap;if(aged)ageDrop();/* an aged wall's whole-surface wear isn't carried as a box: only the (aged) paint moves across */
  try{flushBleed(true)}catch(_){}
  const cp=o=>{if(!o||!o.c||!o.c.width||!o.c.height)return null;const c=document.createElement('canvas');c.width=o.c.width;c.height=o.c.height;c.getContext('2d').drawImage(o.c,0,0);return c};
  let old=null,olds=null,grids=null;
@@ -399,7 +405,7 @@ function doLayout(){
   /* extract only painted work without allocating two giant full-screen ImageData JS arrays (prevents mobile OOM crash on rotation) */
   old=cp(baked);
   if(old){
-   try{
+   try{if(aged)throw 0;
     const ww=old.width,hh=old.height,ox=old.getContext('2d',{willReadFrequently:true}),bgx=bg.x,strip=Math.max(32,Math.min(128,hh));
     for(let y0=0;y0<hh;y0+=strip){
      const sh=Math.min(strip,hh-y0),a=ox.getImageData(0,y0,ww,sh),bgd=bgx.getImageData(0,y0,ww,sh).data,d=a.data;
@@ -2555,7 +2561,7 @@ $('#coachBtn').addEventListener('click',()=>{closeSheets();coach.hidden=false});
 $('#shakeBtn').addEventListener('click',()=>shake());
 $('#scrim').addEventListener('click',closeSheets);
 document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')step(1);if(e.key==='ArrowLeft')step(-1);if(e.key==='Escape')closeSheets();if(e.key==='p'||e.key==='P'){audio();pump(null)}if(e.key==='s'||e.key==='S')shake();if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault()}});
-let oriT=0;const onRot=()=>{clearTimeout(oriT);oriT=setTimeout(()=>{cvR=null;layout()},120)};addEventListener('orientationchange',onRot);try{screen.orientation&&screen.orientation.addEventListener('change',onRot)}catch(_){}const ro=new ResizeObserver(()=>{layout()});ro.observe(cv);
+let oriT=0;const onRot=()=>{clearTimeout(oriT);oriT=setTimeout(()=>{cvR=null;layout()},120)};addEventListener('orientationchange',onRot);try{screen.orientation&&screen.orientation.addEventListener('change',onRot)}catch(_){}const ro=new ResizeObserver(()=>{layout()});ro.observe(cv.parentElement||cv);
 
 /* ---------- boot ---------- */
 try{const st=JSON.parse(localStorage.getItem('mtb')||'{}');for(const p of PENS)if(p.empty){const b=st.fills&&BOTTLES.find(q=>q.id===st.fills[p.id]);if(b)fillPen(p,b,true);else p.life=0}if(pen.fill)color=pen.colors.includes(st.color)?st.color:pen.colors[0]}catch(e){}
