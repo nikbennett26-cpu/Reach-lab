@@ -82,8 +82,9 @@ button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .btn[aria-pressed=true]{background:#17291e;border-color:#38d96c;color:#f5f5f2}
 .btn[aria-pressed=true]::before{background:#38d96c;box-shadow:0 0 6px rgba(56,217,108,.75)}
 .btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
-#moreSheet .sheet .btn.pri{background:var(--p2);border-color:var(--line);color:inherit}/* actions, not toggles — they must never look 'on' */
-#moreSheet .btn.pri:active{background:var(--acc);color:#fff}
+#moreSheet .btn.pri{background:var(--p2);border-color:var(--line);color:inherit}
+#moreSheet .btn.pri.go{background:#10261a;border-color:#2fd16a;color:#fff;box-shadow:inset 0 0 0 1px #2fd16a}/* actions, not toggles — they must never look 'on' */
+#moreSheet .btn.pri:active{background:#10261a;border-color:#2fd16a;color:#fff}
 .bf{min-height:38px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:transparent;cursor:pointer;font:600 14px 'Barlow Condensed',sans-serif;text-transform:uppercase;flex:none}
 .bf[aria-pressed=true]{background:var(--ink);color:#111;border-color:var(--ink)}
 .rack{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:2px 0 6px}
@@ -245,7 +246,7 @@ td.num{text-align:right;white-space:nowrap}
   <h2>Settings</h2>
   <div class="row"><button class="btn pri" id="bookSave">Save to blackbook</button><button class="btn" id="bookOpen">Open blackbook</button><button class="btn" id="wallShare">Share wall</button></div>
   <div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button></div>
-  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><button class="btn" id="calBtn">Calibrate finger</button><button class="btn" id="ledgeBtn" aria-pressed="true">Ledge: on</button><button class="btn" id="lightBtn" aria-pressed="true">Light &amp; reflections: on</button><button class="btn" id="gravBtn">Drips: auto (sensor)</button><button class="btn" id="wxBtn">Weather: mild</button><div style="width:100%;margin-top:8px"><label class="lbl" for="ageR">Age the wall — <span id="ageV">fresh</span></label><input type="range" id="ageR" min="0" max="100" value="0" style="width:100%"></div><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Version 4.5 · 25 Nov · 15 s ghosts, new paint sits over a returning ghost</div></div>
+  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><button class="btn" id="calBtn">Calibrate finger</button><button class="btn" id="ledgeBtn" aria-pressed="true">Ledge: on</button><button class="btn" id="lightBtn" aria-pressed="true">Light &amp; reflections: on</button><button class="btn" id="gravBtn">Drips: auto (sensor)</button><button class="btn" id="wxBtn">Weather: mild</button><div style="width:100%;margin-top:8px"><label class="lbl" for="ageR">Age the wall — <span id="ageV">fresh</span></label><input type="range" id="ageR" min="0" max="100" value="0" style="width:100%"></div><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Version 4.6 · 25 Nov · buff runs dry as a watery tint</div></div>
   <div id="tipsBox"><div class="row" style="justify-content:space-between;align-items:center"><span class="lbl">Tips</span><button class="btn" id="tipsClear">Clear</button></div><ol id="tipsList" class="small" style="margin:0 0 12px;padding-left:20px;max-height:180px;overflow:auto;line-height:1.45"><li style="opacity:.6">Tips from your drawing show up here.</li></ol></div>
   <div class="row"><span class="lbl">Weather the wall</span><button class="btn" id="age1">+1 month</button><button class="btn" id="age12">+1 year</button></div>
   <p class="small">A simulation: pens modelled on real ones, dry times sped up, surface physics modelled rather than measured.</p>
@@ -1162,7 +1163,7 @@ function buffAt(a,b){lForce=true;slForce=true;{const r=36;for(let cy=Math.max(0,
   if(upright){/* the solvent carries the dissolved ink itself: runs are the ink's own colour, see-through like a dye wash
    (dark on dark walls, a tint on light ones), thin streaks rather than fat paint drips, paler with every pass */
   const hot=str>.55,n=Math.random()<(hot?.28:.13)*str+.02?1:0,wcol=pad.col?mixHex(col,pad.col,.3):col;for(let j=0;j<n;j++){let dx=b.x+(Math.random()-.5)*R2*1.5,dy=b.y+R2*(.1+Math.random()*.6);
-   /* a run starting on the tag carries the dissolved colour; one starting off it is mostly clear solvent — faint */const on=!!(lmAt(dx|0,dy|0)||inkAt(dx,dy));drip(dx,dy,(1+Math.random()*1.8)*(.6+str*.8)*(on?1:.6),{ty,col:on?wcol:mixHex(wcol,wall,.7),al:(hot?.42:.2+.22*str)*(on?1:.35),r:hot?.8+Math.random()*1:.5+Math.random()*.6,soft:1,delay:Math.random()*300})}}}}
+   /* a run starting on the tag carries the dissolved colour; one starting off it is mostly clear solvent — faint */const on=!!(lmAt(dx|0,dy|0)||inkAt(dx,dy));drip(dx,dy,(1+Math.random()*1.8)*(.6+str*.8)*(on?1:.6),{ty,col:on?wcol:mixHex(wcol,wall,.7),al:(hot?.42:.2+.22*str)*(on?1:.35),r:hot?.8+Math.random()*1:.5+Math.random()*.6,soft:1,wash:1,delay:Math.random()*300})}}}}
  {
   pad.load*=.968}
  erase(idm,b,.16,R2);if(metalOn)erase(metal,b,.025,R2);if(fjOn)erase(fjL,b,.18,R2);for(const k in WET)if(WET[k].active)erase(WET[k],b,.3,R2);addWater(b,R2*1.1,.06);
@@ -2568,5 +2569,6 @@ requestAnimationFrame(frame);
 else if('serviceWorker' in navigator&&location.protocol==='https:'&&!/githack|claude/.test(location.host))navigator.serviceWorker.register('sw.js').catch(()=>{})</script>
 <script>/* Apple Pencil / finger double-taps must never select the page (iPad turns it blue) or zoom it */
 (()=>{const ok=e=>e.target&&e.target.closest&&e.target.closest('input,textarea,[contenteditable]');document.addEventListener('selectstart',e=>{if(!ok(e))e.preventDefault()},{capture:true});document.addEventListener('dblclick',e=>{if(!ok(e))e.preventDefault()},{capture:true,passive:false});document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});let lt=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-lt<350&&!ok(e)&&e.cancelable&&!(e.target.closest&&e.target.closest('button,a,label,select')))e.preventDefault();lt=n},{passive:false});document.addEventListener('selectionchange',()=>{const sel=document.getSelection&&document.getSelection();if(sel&&sel.rangeCount&&!ok({target:document.activeElement}))sel.removeAllRanges()})})();</script>
+<script>document.querySelectorAll('#moreSheet .btn.pri').forEach(b=>b.addEventListener('click',()=>{b.classList.add('go');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('go'),1400)}));</script>
 </body>
 </html>
