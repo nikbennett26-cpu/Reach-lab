@@ -245,7 +245,7 @@ td.num{text-align:right;white-space:nowrap}
   <h2>Settings</h2>
   <div class="row"><button class="btn pri" id="bookSave">Save to blackbook</button><button class="btn" id="bookOpen">Open blackbook</button><button class="btn" id="wallShare">Share wall</button></div>
   <div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button></div>
-  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><button class="btn" id="calBtn">Calibrate finger</button><button class="btn" id="ledgeBtn" aria-pressed="true">Ledge: on</button><button class="btn" id="lightBtn" aria-pressed="true">Light &amp; reflections: on</button><button class="btn" id="gravBtn">Drips: auto (sensor)</button><button class="btn" id="wxBtn">Weather: mild</button><div style="width:100%;margin-top:8px"><label class="lbl" for="ageR">Age the wall — <span id="ageV">fresh</span></label><input type="range" id="ageR" min="0" max="100" value="0" style="width:100%"></div><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Version 4.1 · 25 Nov · wet-on-wet bleed, buffing stops live runs</div></div>
+  <div class="row"><button class="btn" id="clear">Wipe wall clean</button><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button><button class="btn" id="calBtn">Calibrate finger</button><button class="btn" id="ledgeBtn" aria-pressed="true">Ledge: on</button><button class="btn" id="lightBtn" aria-pressed="true">Light &amp; reflections: on</button><button class="btn" id="gravBtn">Drips: auto (sensor)</button><button class="btn" id="wxBtn">Weather: mild</button><div style="width:100%;margin-top:8px"><label class="lbl" for="ageR">Age the wall — <span id="ageV">fresh</span></label><input type="range" id="ageR" min="0" max="100" value="0" style="width:100%"></div><div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Version 4.2 · 25 Nov · stair puddles sit on the treads</div></div>
   <div id="tipsBox"><div class="row" style="justify-content:space-between;align-items:center"><span class="lbl">Tips</span><button class="btn" id="tipsClear">Clear</button></div><ol id="tipsList" class="small" style="margin:0 0 12px;padding-left:20px;max-height:180px;overflow:auto;line-height:1.45"><li style="opacity:.6">Tips from your drawing show up here.</li></ol></div>
   <div class="row"><span class="lbl">Weather the wall</span><button class="btn" id="age1">+1 month</button><button class="btn" id="age12">+1 year</button></div>
   <p class="small">A simulation: pens modelled on real ones, dry times sped up, surface physics modelled rather than measured.</p>
@@ -523,15 +523,14 @@ function stairsRailGeom(){
  return {y:Math.round(base-Math.min(70,H*.07)),h:11,sl:.42,photo:0};
 }
 /* Concrete stair treads in the bottom-left of the subway stairwell photo (normalized u0,u1,vTop,vFront) */
-const STAIR_STEPS=[[0,.11,.710,.745],[.12,.25,.775,.820],[.23,.36,.825,.870],[.34,.47,.872,.930],[.46,.58,.935,.990]];
-function stairsStepAt(x,y){
- const g=stairsRailGeom();if(!g.photo)return null;
- for(let i=0;i<STAIR_STEPS.length;i++){
-  const [u0,u1,v0,v1]=STAIR_STEPS[i],x0=g.ox+g.w*u0,x1=g.ox+g.w*u1,y0=g.oy+g.h_im*v0,y1=g.oy+g.h_im*v1;
-  if(x>=x0-4&&x<=x1+4&&y>=y0&&y<=y1)return {idx:i,x0,x1,y0,y1};
- }
- return null;
-}
+/* SUBWAY STAIR TREADS, measured off the photo (u = across, v = down, as fractions of the photo). Each tread meets the
+   wall along a short level back edge [u0..u1] at height v; the tread itself runs out toward the camera, which in the
+   picture is down-and-left (TREAD_SK = dx/dy along it). Everything below a tread's back edge is tread, not wall. */
+const STAIR_STEPS=[[0,.107,.703],[.107,.229,.757],[.229,.345,.811],[.345,.463,.865],[.463,.588,.920],[.588,.708,.974]],TREAD_SK=-.37;
+function stairsStepAt(x,y){const g=stairsRailGeom();if(!g.photo)return null;
+ for(let i=0;i<STAIR_STEPS.length;i++){const [u0,u1,v]=STAIR_STEPS[i],x0=g.ox+g.w*u0,x1=g.ox+g.w*u1,y0=g.oy+g.h_im*v;
+  if(x>=x0-1&&x<=x1+1&&y>=y0-1&&y<=y0+Math.max(10,g.h_im*.03))return {idx:i,x0,x1,y0,y1:y0+10}}
+ return null}
 function renderBg(){const x=bg.x;x.clearRect(0,0,W,H);for(const b of bands){ensure(b.s);const p=x.createPattern(b.s.tile,'repeat');p.setTransform(new DOMMatrix([1/dpr,0,0,1/dpr,0,0]));x.fillStyle=p;x.fillRect(b.x,b.y,b.w,b.h);const im=PHI[b.s.id];if(im){x.save();drawPhoto(x,im,b.x,b.y,b.w,b.h,b.s.id);if(b.s.id!=='stairs'){x.globalCompositeOperation='overlay';x.globalAlpha=.22;x.fillStyle=p;x.fillRect(b.x,b.y,b.w,b.h)}else{const g=stairsRailGeom(),lx=g.ox+g.w*.56,ly=g.oy+g.h_im*.20,lr=Math.max(W,H)*.48,lg=x.createRadialGradient(lx,ly,lr*.04,lx,ly,lr);lg.addColorStop(0,'rgba(255,255,248,.05)');lg.addColorStop(.35,'rgba(255,255,245,.015)');lg.addColorStop(1,'rgba(0,0,0,.20)');x.fillStyle=lg;x.fillRect(b.x,b.y,b.w,b.h);stairsLamp(x,g)}x.restore()}else if(b.s.scene)b.s.scene(x,b.x,b.y,b.w,b.h)}if(bands[0]&&bands[0].s.wet)drawWetField(x);/* broad light from the upper left, baked into the wall */if(lightOn&&!(bands[0]&&bands[0].s.id==='stairs'&&PHI.stairs)){if(!LIT||LIT.width!==Math.ceil(W/2))buildLit();x.drawImage(LIT,0,0,W,H)}if(ledgeLive()){if(LDG().sl){/* the handrail stands in front of the wall: it lives on its own layer above everything painted, so ink, buffs and runs all go behind it */if(!railC)railC=document.createElement('canvas');railC.width=Math.round(W*dpr);railC.height=Math.round(H*dpr);const rx=railC.getContext('2d');rx.setTransform(dpr,0,0,dpr,0,0);drawLedge(rx)}else drawLedge(x)}}
 let railC=null;
 function drawLedge(x){if(isGlassPhoto())return;/* the photo's own stone cill is the ledge */const L=LDG(),m=(bands[0]&&bands[0].s.mean)||[140,140,140],c=k=>'rgb('+m.map(v=>Math.round(Math.max(0,Math.min(255,v*k)))).join(',')+')';x.save();
@@ -590,14 +589,17 @@ function cillReset(){CP.v=CP.c=CP.sp=CP.in=null;cillDirty=true;chanClear();SPOOL
 /* SUBWAY STAIRS: every concrete tread is a level shelf of its own — runs from the wall hit the back of the tread, pool,
    spread and join along it, creep to the nosing, then spill over and run down the riser onto the next tread, and so on */
 const SPOOL=[];let stC=null,stDirty=false;
-function stairL(i){const g=stairsRailGeom();if(!g.photo)return null;const [u0,u1,v0,v1]=STAIR_STEPS[i],x0=g.ox+g.w*u0,x1=g.ox+g.w*u1,y0=g.oy+g.h_im*v0,y1=g.oy+g.h_im*v1,nx=STAIR_STEPS[i+1];
- const depth=Math.min(14,Math.max(5,(y1-y0)*.22));
- return {y:y0,top:depth,h:nx?Math.max(6,g.oy+g.h_im*nx[2]-(y0+depth)):12,px:x0,pw:x1-x0,q:{x:g.ox,y:g.oy,w:g.w,h:g.h_im}}}
-function stairHit(d,st,col){const L=stairL(st.idx);if(!L)return true;const P=SPOOL[st.idx]||(SPOOL[st.idx]={n:Math.max(40,Math.round(L.pw/1.6)),v:null,c:null,sp:null,in:null});
- const stop=poolHit(P,d,Math.max(L.px+1,Math.min(L.px+L.pw-1,d.x)),col,d.r,L);if(!stop){d.led=0;d.stp=1}return stop}
+function stairL(i){const g=stairsRailGeom();if(!g.photo)return null;const [u0,u1,v]=STAIR_STEPS[i],x0=g.ox+g.w*u0,x1=g.ox+g.w*u1,y0=g.oy+g.h_im*v;
+ /* a level tread: paint pools at the wall and spreads out across it toward you; it never runs off the side in view */
+ return {y:y0,top:Math.max(6,g.h_im*.055),h:10,px:x0,pw:x1-x0,q:{x:g.ox,y:g.oy,w:g.w,h:g.h_im},sk:TREAD_SK,len:g.h_im*.3}}
+function stairHit(d,st,col){const L=stairL(st.idx);if(!L)return true;const P=SPOOL[st.idx]||(SPOOL[st.idx]={n:Math.max(40,Math.round(L.pw/1.4)),v:null,c:null,sp:null,in:null});
+ poolHit(P,d,Math.max(L.px+1,Math.min(L.px+L.pw-1,d.x)),col,d.r,L);/* the tread just takes it: an over-full pool spreads further out toward you, off the bottom of the view */if(P.sp)P.sp.fill(0);if(P.v)for(let k=0;k<P.n;k++)P.v[k]=Math.min(P.v[k],1.25);return true}
 function drawStairPools(){if(!stDirty)return;stDirty=false;if(!stC)stC=document.createElement('canvas');if(stC.width!==Math.round(W*dpr)||stC.height!==Math.round(H*dpr)){stC.width=Math.round(W*dpr);stC.height=Math.round(H*dpr)}
- const x=stC.getContext('2d');x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,stC.width,stC.height);if(!(bands[0]&&bands[0].s.id==='stairs'))return;x.setTransform(dpr,0,0,dpr,0,0);
- for(let i=0;i<SPOOL.length;i++){const P=SPOOL[i];if(!P||!P.v)continue;const L=stairL(i);if(L)drawPoolSegs(x,P,L,PHI.stairs,L.q)}}
+ const x=stC.getContext('2d');x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,stC.width,stC.height);if(!(bands[0]&&bands[0].s.id==='stairs'))return;
+ for(let i=0;i<SPOOL.length;i++){const P=SPOOL[i];if(!P||!P.v)continue;const L=stairL(i);if(!L)continue;const yB=L.y,sk=L.sk,X0=L.px,X1=L.px+L.pw,dy=L.len;
+  x.save();x.setTransform(dpr,0,0,dpr,0,0);/* keep it on this tread's top face */x.beginPath();x.moveTo(X0-1,yB-2);x.lineTo(X1+1,yB-2);x.lineTo(X1+1+sk*dy,yB+dy);x.lineTo(X0-1+sk*dy,yB+dy);x.closePath();x.clip();
+  /* draw the puddle in the tread's own frame: 'forward' (away from the wall) is sheared down-and-left like the step */
+  x.setTransform(dpr,0,dpr*sk,dpr,-dpr*sk*yB,0);drawPoolSegs(x,P,L,null,null);x.restore()}}
 function cillHit(d,xw,col,re,L){return poolHit(CP,d,xw,col,re,{...L,px:L.q.x,pw:L.q.w})}
 /* one level shelf (the cill, a stair tread): runs land at the back edge, level out sideways into one puddle, creep forward, and spill over the front */
 function poolHit(CP,d,xw,col,re,L){CP.t=performance.now();CP.ty=d.ty||CP.ty;if(!CP.v){CP.v=new Float32Array(CP.n);CP.c=new Array(CP.n).fill(null);CP.sp=new Float32Array(CP.n);CP.in=new Float32Array(CP.n)}
