@@ -1,3 +1,4 @@
+let buffMark=new Int32Array(1),buffGain=new Float32Array(1);
 function buffAt(a,b){
  const _nowB=performance.now();
  if(_nowB-_bfT>140){_bfT=_nowB;lForce=true;g3Dirty=true;slForce=true}
@@ -27,7 +28,11 @@ function buffAt(a,b){
   const gy0=Math.max(0,Math.floor((b.y-R2*.75)/C)),gy1=Math.min(GH_-1,Math.floor((b.y+R2*.75)/C));
   const gx0=Math.max(0,Math.floor((b.x-R2*.75)/C)),gx1=Math.min(GW-1,Math.floor((b.x+R2*.75)/C));
   for(let gy=gy0;gy<=gy1;gy++)for(let gx=gx0;gx<=gx1;gx++){
-   const i=gy*GW+gx;buffPass[i]=Math.min(12,(buffPass[i]||0)+.45);passAvg+=buffPass[i];passCnt++;
+   const i=gy*GW+gx;/* a PASS is one swipe of the rag over a spot: crossing it counts once, scrubbing back and forth on it in the same swipe adds a little more (capped) */
+   if(buffMark.length!==buffPass.length){buffMark=new Int32Array(buffPass.length);buffGain=new Float32Array(buffPass.length)}
+   if(buffMark[i]!==pad.passId){buffMark[i]=pad.passId;buffGain[i]=0;buffPass[i]=Math.min(12,(buffPass[i]||0)+1)}
+   else if(buffGain[i]<.7){buffGain[i]+=.035;buffPass[i]=Math.min(12,buffPass[i]+.035)}
+   passAvg+=buffPass[i];passCnt++;
   }
  }
  const layerN=passCnt?passAvg/passCnt:1;
@@ -93,7 +98,7 @@ function buffAt(a,b){
  /* pass 1 only shears the dry crust and dissolves the dye into a wet film: the letters stay ~88-95% as dark, edges blur and rag tracks cut faint streaks */
  /* how stubborn this ink is, from the brew's own stats: a staining, deep-bitten dye barely moves on pass 1; a non-staining ink wipes most of the way off */
  const stub=bm?clamp((bm.ghost||0)*.95+(bm.hold||0)*.55+(1-(bm.lift??.8))*.6):.5;
- const passCurve=firstK>.15?((.12+.6*(1-stub))+(1-firstK)*.62):(.82+.24*clamp((layerN-2)/2.5,0,1));
+ const passCurve=(firstK>.15?((.12+.6*(1-stub))+(1-firstK)*.62):(.82+.24*clamp((layerN-2)/2.5,0,1)))*(firstK>.15?1:1-.6*stub);/* a very stubborn ink stays stubborn on every pass, not just the first */
  /* staining dyes hold their dark core on the early passes: ghost (stain) and hold (bite) resist the lift, easy-lift inks still wipe clean */
  const early=clamp((2.6-layerN)/1.6,0,1),resist=bm?clamp(1-(bm.ghost*.45+bm.hold*.35)*early,.25,1):1;
  let lift=clamp(baseLift*passCurve*resist*(.86+.30*pSq)*(1-.42*skate),0,.88);if(!isFinite(lift))lift=.3;

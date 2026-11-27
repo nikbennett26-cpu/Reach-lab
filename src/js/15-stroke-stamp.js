@@ -408,14 +408,20 @@ function texPass(s,ink){if(demo||!stroke)return;const pr=pen.props&&pen.props.te
  if(T.chalk){layer((i,x,y)=>{if(m[i]<.2)return null;const g=ageHash(x+X,y+Y);return[232,230,224,(.13+.1*(g>.8?1:0))*T.chalk*m[i]]},now+dry*.6,dry*2.5)}
  /* METHANOL FLASH: it dries before it can level - fast strokes leave dry-brush streaks */
  if(T.flash&&pts.length>4){let fast=0;for(let i=2;i+1<pts.length;i+=2){if(Math.hypot(pts[i]-pts[i-2],pts[i+1]-pts[i-1])>Rc*.55)fast=1}
-  if(fast){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d'),bgC=document.createElement('canvas');bgC.width=w;bgC.height=h;bgC.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(Gd),w,h),0,0);g.lineCap='round';g.lineJoin='round';g.strokeStyle='rgba(0,0,0,.78)';
-   /* long lanes that follow the stroke; each lane breaks wherever you slowed down or the hash says the brush re-wet, so streaks have natural lengths */
-   const NL=5+(Rc>6?3:0);for(let l=0;l<NL;l++){const o0=((l+.5)/NL*2-1)*Rc*.82,seed=Math.floor(Math.random()*997);let sArc=0,open=false;g.lineWidth=(.5+Math.random()*.8)*P;
+  if(fast){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d'),bgC=document.createElement('canvas');bgC.width=w;bgC.height=h;bgC.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(Gd),w,h),0,0);g.lineCap='round';g.lineJoin='round';g.strokeStyle='#000';
+   /* DRY-BRUSH STREAKS: methanol flashes off before the ink can level, so the film parts into fine hairlines that run WITH the stroke.
+      Each streak fades in and out smoothly along its length (no hard dashes), drifts a little sideways, and is strongest where the
+      stroke was fast and towards the edges, which dry first. Some are bare-wall gaps, a few are thin starved film. */
+   const NL=6+(Rc>5?4:0)+(Rc>9?3:0);
+   for(let l=0;l<NL;l++){const u=Math.random()*2-1,o0=Math.sign(u)*Math.pow(Math.abs(u),.7)*Rc*.86,seed=Math.floor(Math.random()*9973),edgeK=.55+.45*Math.abs(u),wd=(.55+Math.random()*Math.random()*1.6)*P,aMax=(.5+Math.random()*.45)*edgeK,sc=Rc*(4+Math.random()*7);let sArc=0,px=null,py=null;
+    g.lineWidth=wd;g.lineCap='butt';
     for(let i=2;i+1<pts.length;i+=2){const d=Math.hypot(pts[i]-pts[i-2],pts[i+1]-pts[i-1]);if(d<1e-3)continue;sArc+=d;
-     const j=Math.max(0,i-2),k=Math.min(pts.length-2,i+2),dx=pts[k]-pts[j],dy=pts[k+1]-pts[j+1],L2=Math.hypot(dx,dy)||1,nx=-dy/L2,ny=dx/L2,sp=clamp((d/Rc-.55)/1.2),on=sp>.05&&ageHash(l*131+Math.floor(sArc/(Rc*3.2)),seed)>.38;
-     if(on){if(!open){g.beginPath();g.moveTo((pts[i-2]+nx*o0)*P-X,(pts[i-1]+ny*o0)*P-Y);open=true}g.lineTo((pts[i]+nx*o0)*P-X,(pts[i+1]+ny*o0)*P-Y)}
-     else if(open){g.stroke();open=false}}
-    if(open)g.stroke()}
+     const j=Math.max(0,i-2),k=Math.min(pts.length-2,i+2),dx=pts[k]-pts[j],dy=pts[k+1]-pts[j+1],L2=Math.hypot(dx,dy)||1,nx=-dy/L2,ny=dx/L2;
+     const sp=clamp(.35+(d/Rc-.3)/.9),drift=(vnz(sArc/(Rc*9),seed+7)-.5)*Rc*.22,o=o0+drift,qx=(pts[i]+nx*o)*P-X,qy=(pts[i+1]+ny*o)*P-Y;
+     const a=aMax*sp*clamp((vnz(sArc/sc,seed)-.25)/.3);
+     if(px!==null&&a>.02){g.globalAlpha=a;g.beginPath();g.moveTo(px,py);g.lineTo(qx,qy);g.stroke()}
+     px=qx;py=qy}}
+   g.globalAlpha=1;
    g.globalCompositeOperation='source-in';g.drawImage(bgC,0,0);freeC(bgC);const mk=document.createElement('canvas');mk.width=w;mk.height=h;const mg=mk.getContext('2d'),mi=mg.createImageData(w,h);for(let i=0;i<N;i++)mi.data[i*4+3]=Md[i*4+3];mg.putImageData(mi,0,0);g.globalCompositeOperation='destination-in';g.drawImage(mk,0,0);freeC(mk);bleedL.push({sid:stroke,c,x:X,y:Y,t0:now,dur:150,a:1,tex:1})}}
  /* FLOW AGENT: levels out and feathers past the edge; too much and it dries with a tide line */
  if(T.level&&far){layer((i,x,y)=>{if(m[i]>.6)return null;const r=far[i];if(r<.02)return null;const fe=sm(clamp((r-.02)/.4))*(1-m[i])*.32*T.level,tide=T.level>.6&&r>.2&&r<.3?.24*(1-Math.abs(r-.25)/.05):0;return tide>fe?[ic[0]*.55,ic[1]*.55,ic[2]*.55,tide]:[ic[0],ic[1],ic[2],fe]},now+150,dry*2)}
