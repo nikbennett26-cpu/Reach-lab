@@ -246,7 +246,7 @@ function dripSettle(d,s,ex,ey,rb,hd){
  const P=dpr,pts=d.pts;
  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
  for(let i=0;i<pts.length;i+=3){const px=pts[i],py=pts[i+1],pr=pts[i+2]+2;if(px-pr<x0)x0=px-pr;if(py-pr<y0)y0=py-pr;if(px+pr>x1)x1=px+pr;if(py+pr>y1)y1=py+pr}
- if(rb){const mr=rb*(hd||1.3)*1.6+3;x0=Math.min(x0,ex-mr);y0=Math.min(y0,ey-mr);x1=Math.max(x1,ex+mr);y1=Math.max(y1,ey+mr)}
+ if(rb){const mr=rb*(hd||1.15)*1.6+3;x0=Math.min(x0,ex-mr);y0=Math.min(y0,ey-mr);x1=Math.max(x1,ex+mr);y1=Math.max(y1,ey+mr)}
  const X=Math.max(0,Math.floor(x0*P)),Y=Math.max(0,Math.floor(y0*P)),w=Math.min(baked.c.width-X,Math.ceil((x1-x0)*P)),h=Math.min(baked.c.height-Y,Math.ceil((y1-y0)*P));
  if(w<3||h<4)return;
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');
@@ -258,7 +258,7 @@ function dripSettle(d,s,ex,ey,rb,hd){
  }
  if(rb){
   const an=Math.atan2(d.gy||1,d.gx||0),bxC=ex+(d.gx||0)*rb*.28,byC=ey+(d.gy||1)*rb*.28;
-  x.beginPath();x.ellipse(bxC,byC,rb*(hd||1.3),rb*(hd||1.3)*1.28,an-Math.PI/2,0,TAU);x.fill();
+  x.beginPath();x.ellipse(bxC,byC,rb*(hd||1.15),rb*(hd||1.15)*1.38,an-Math.PI/2,0,TAU);x.fill();
  }
  x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='source-in';
  const O=Math.min(1,(d.ov||0)+(s.wet?.4:0)),dark=lum(hex(col))<.3,str=(1-s.absorb)*dripLife();
