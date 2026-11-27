@@ -3112,37 +3112,42 @@ function drawLiveDrips(x){
 }
 
 /* ---------- 3D GLASS REFLECTION & SHADOW (opaque dark shadow + alcohol colour-tinted shadow + back-surface reflection) ---------- */
+/* Each ink is different on glass. A thick, opaque film blocks the light, so it casts a darker shadow on whatever is behind the glass.
+   A thin dye only tints the light passing through it. How strongly the tag shows in the reflection depends on how glossy the dried
+   film is: enamel and high-gloss inks are mirror-like, satin paint less so, and matte water-based paint and plain dye least. */
+const G3SHADOW={oil:1,fluid:.95,alcpaint:.9,chrome:.88,water:.74},G3TINT={stain:1.2,bleed:1.1,flow:1.05,alcohol:.9,future:.85},
+ G3REFL={flow:1.25,chrome:1.35,oil:1.15,alcpaint:.85,fluid:.7,future:.75,stain:.6,bleed:.55,alcohol:.5,water:.4};
 function rebuildGlass3D(){
  const BW=baked.c.width,BH=baked.c.height;if(!BW||!BH)return;
  const hw=Math.max(1,Math.ceil(BW/2)),hh=Math.max(1,Math.ceil(BH/2));
  const mkC=(c,w,h)=>{if(!c)c=document.createElement('canvas');if(c.width!==w||c.height!==h){c.width=w;c.height=h}return c};
- g3All=mkC(g3All,BW,BH);g3Opq=mkC(g3Opq,hw,hh);g3Dye=mkC(g3Dye,hw,hh);g3Tmp=mkC(g3Tmp,hw,hh);
- const ax=g3All.getContext('2d');ax.setTransform(1,0,0,1,0,0);ax.globalCompositeOperation='copy';ax.drawImage(baked.c,0,0);
- ax.globalCompositeOperation='destination-in';ax.drawImage(idm.c,0,0);
+ g3All=mkC(g3All,hw,hh);g3Opq=mkC(g3Opq,hw,hh);g3Dye=mkC(g3Dye,hw,hh);g3Tmp=mkC(g3Tmp,hw,hh);
+ const ax=g3All.getContext('2d');ax.setTransform(1,0,0,1,0,0);
  const ox=g3Opq.getContext('2d',{willReadFrequently:true}),dx=g3Dye.getContext('2d',{willReadFrequently:true}),tx=g3Tmp.getContext('2d',{willReadFrequently:true});
  ox.setTransform(1,0,0,1,0,0);ox.clearRect(0,0,hw,hh);
  dx.setTransform(1,0,0,1,0,0);dx.globalCompositeOperation='copy';dx.drawImage(baked.c,0,0,BW,BH,0,0,hw,hh);
  tx.setTransform(1,0,0,1,0,0);tx.globalCompositeOperation='copy';tx.drawImage(idm.c,0,0,BW,BH,0,0,hw,hh);
  try{
   const idD=tx.getImageData(0,0,hw,hh).data,bkI=dx.getImageData(0,0,hw,hh),bkD=bkI.data;
-  const opI=ox.createImageData(hw,hh),opD=opI.data;
+  const opI=ox.createImageData(hw,hh),opD=opI.data,rfI=ax.createImageData(hw,hh),rfD=rfI.data;
   const keys=Object.keys(INK);
   for(let i=0;i<idD.length;i+=4){
    const a=idD[i+3];if(a<10){bkD[i+3]=0;continue}
    const idx=Math.round(idD[i]/20)-1,ty=keys[idx];
    if(!ty||ty==='etch'){bkD[i+3]=0;continue}
+   rfD[i]=bkD[i];rfD[i+1]=bkD[i+1];rfD[i+2]=bkD[i+2];rfD[i+3]=Math.min(255,a*(G3REFL[ty]??.7));
    if(DYEINK[ty]){
     const r=bkD[i],g=bkD[i+1],b=bkD[i+2],m=(r+g+b)/3;
     bkD[i]=clamp(Math.round(m+(r-m)*1.35),0,255);
     bkD[i+1]=clamp(Math.round(m+(g-m)*1.35),0,255);
     bkD[i+2]=clamp(Math.round(m+(b-m)*1.35),0,255);
-    bkD[i+3]=a;
+    bkD[i+3]=Math.min(255,a*(G3TINT[ty]??1));
    }else{
     bkD[i+3]=0;
-    opD[i]=4;opD[i+1]=5;opD[i+2]=8;opD[i+3]=a;
+    opD[i]=4;opD[i+1]=5;opD[i+2]=8;opD[i+3]=a*(G3SHADOW[ty]??.85);
    }
   }
-  ox.putImageData(opI,0,0);dx.putImageData(bkI,0,0);
+  ox.putImageData(opI,0,0);dx.putImageData(bkI,0,0);ax.putImageData(rfI,0,0);
  }catch(_){}
  g3Dirty=false;g3At=performance.now();
 }
@@ -3167,22 +3172,22 @@ function drawGlass3D(x){
  mx.imageSmoothingEnabled=true;
  mx.globalCompositeOperation='source-over';mx.globalAlpha=0.58;
  mx.drawImage(g3Dye,0,0,g3Dye.width,g3Dye.height,sx,sy,BW,BH);
- if(liveDye){mx.globalAlpha=0.52;mx.drawImage(stk.c,sx,sy)}
+ if(liveDye){mx.globalAlpha=0.52*(G3TINT[pen.ink]??1);mx.drawImage(stk.c,sx,sy)}
  mx.globalCompositeOperation='destination-out';mx.globalAlpha=1;
  mx.drawImage(idm.c,0,0);if(hasLive)mx.drawImage(stk.c,0,0);
  mx.restore();
  ox.setTransform(1,0,0,1,0,0);ox.clearRect(0,0,BW,BH);
  ox.save();ox.beginPath();ox.rect(0,0,BW,clipY);ox.clip();
  ox.imageSmoothingEnabled=true;
- ox.globalCompositeOperation='source-over';ox.globalAlpha=0.68;
+ ox.globalCompositeOperation='source-over';ox.globalAlpha=0.84;
  ox.drawImage(g3Opq,0,0,g3Opq.width,g3Opq.height,sx,sy,BW,BH);
  if(hasLive&&!liveDye){
   const lx=g3Tmp.getContext('2d');lx.setTransform(1,0,0,1,0,0);lx.globalCompositeOperation='copy';lx.drawImage(stk.c,0,0,BW,BH,0,0,g3Tmp.width,g3Tmp.height);
   lx.globalCompositeOperation='source-in';lx.fillStyle='#040508';lx.fillRect(0,0,g3Tmp.width,g3Tmp.height);
-  ox.globalAlpha=0.62;ox.drawImage(g3Tmp,0,0,g3Tmp.width,g3Tmp.height,sx,sy,BW,BH);
+  ox.globalAlpha=0.84*(G3SHADOW[pen.ink]??.85);ox.drawImage(g3Tmp,0,0,g3Tmp.width,g3Tmp.height,sx,sy,BW,BH);
  }
- ox.globalAlpha=0.14;ox.drawImage(g3All,rx,ry);
- if(hasLive){ox.globalAlpha=0.13;ox.drawImage(stk.c,rx,ry)}
+ ox.globalAlpha=0.16;ox.drawImage(g3All,0,0,g3All.width,g3All.height,rx,ry,BW,BH);
+ if(hasLive){ox.globalAlpha=0.15*(G3REFL[pen.ink]??.7);ox.drawImage(stk.c,rx,ry)}
  ox.globalCompositeOperation='destination-out';ox.globalAlpha=1;
  ox.drawImage(idm.c,0,0);if(hasLive)ox.drawImage(stk.c,0,0);
  ox.restore();
