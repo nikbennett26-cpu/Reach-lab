@@ -12,7 +12,7 @@ function drawLiveDrips(x){
   const d=drips[i];
   if(!d.lvis||d.dead||d.soft||d.et||d.wash||d.vol<=0||!d.lre)continue;
   const col=d.lcol||d.col;if(typeof col!=='string'||col[0]!=='#')continue;
-  const vr=clamp(d.vol/(d.v0||1)),hd=d.thick?1.42:1.26;
+  const vr=clamp(d.vol/(d.v0||1)),hd=d.thick?1.22:1.12;
   const rb=Math.max(1.05,d.lre*(.95+.28*(1-vr))*hd);
   const gx=d.gx||0,gy=d.gy||1,an=Math.atan2(gy,gx);
   const bx=d.lx+gx*rb*.34,by=d.ly+gy*rb*.34;
