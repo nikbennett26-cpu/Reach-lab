@@ -6,8 +6,8 @@ android {
     applicationId 'com.rsm.reachlab'
     minSdk 24
     targetSdk 36
-    versionCode 64
-    versionName '7.6'
+    versionCode 119
+    versionName '7.98.55'
   }
   signingConfigs {
     release {
@@ -19,7 +19,7 @@ android {
   lint { checkReleaseBuilds false; abortOnError false }
   compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
-dependencies { implementation 'androidx.webkit:webkit:1.12.1' }
+dependencies { implementation 'androidx.webkit:webkit:1.12.1'; implementation 'androidx.core:core:1.13.1' }
 // the app is the same single page as the website: copy it in at build time
 tasks.register('copyWeb', Copy) { from('../../index.html', '../../manifest.webmanifest'); from('../../brand') { into 'brand' }; into 'src/main/assets' }
 preBuild.dependsOn copyWeb

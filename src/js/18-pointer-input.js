@@ -1,0 +1,49 @@
+/* ---------- pointer: draw, two-finger twist ---------- */
+let down=false,downId=null,twist=null;const ptrs=new Map();
+/* finger calibration: Android reports the centre of the contact patch, not the fingertip you see; a saved offset fixes it */
+let touchOff={x:0,y:0};try{const o=JSON.parse(localStorage.getItem('rlTouchOff')||'null');if(o&&isFinite(o.x)&&isFinite(o.y))touchOff=o}catch(_){}
+let cvR=null;const cvRect=()=>cvR||(cvR=cv.getBoundingClientRect());addEventListener('resize',()=>{cvR=null});addEventListener('scroll',()=>{cvR=null},true);
+const pt=e=>{const r=cvRect(),t=e.pointerType==='touch';return{x:e.clientX-r.left+(t?touchOff.x:0),y:e.clientY-r.top+(t?touchOff.y:0),t:e.timeStamp}};
+let hudT=0;function hudFade(on){clearTimeout(hudT);if(on){document.body.classList.add('drawing')}else{hudT=setTimeout(()=>{if(!down)document.body.classList.remove('drawing')},360)}}
+function resetPointerState(){clearTimeout(hudT);try{if(stroke)abortStroke()}catch(_){}down=false;downId=null;twist=null;ptrs.clear();livePt=predPt=null;document.body.classList.remove('drawing')}
+function abortStroke(){recCur=null;hudFade(false);clearSM();friction(false,0,cur);stk.x.save();stk.x.setTransform(1,0,0,1,0,0);stk.x.clearRect(0,0,stk.c.width,stk.c.height);stk.x.restore();stroke=null;hist.pop();dirty=true}
+/* the chisel angle and lean are shown as pictures, not degrees: the nib's footprint turning on the wall, and the
+   pen leaning onto the wall with the edge that drags lit up */
+function angleArt(a){const r=a*Math.PI/180,c=Math.cos(r),s2=Math.sin(r),w=13,t=4.2,P=(x,y)=>`${(20+x*c-y*s2).toFixed(1)},${(17+x*s2+y*c).toFixed(1)}`,word=a<20||a>160?'flat — thin downstrokes, fat across':a>70&&a<110?'upright — fat downstrokes, thin across':'on the diagonal — thick and thin swap through curves';
+ /* sample marks: a downstroke and a crossbar made with this nib */const dw=Math.max(1.6,Math.abs(w*c)+Math.abs(t*s2)),cw=Math.max(1.6,Math.abs(w*s2)+Math.abs(t*c));
+ return `<svg class="art" viewBox="0 0 84 34" aria-hidden="true"><circle cx="20" cy="17" r="15" fill="none" stroke="currentColor" stroke-opacity=".25"/><polygon points="${P(-w/2,-t/2)} ${P(w/2,-t/2)} ${P(w/2,t/2)} ${P(-w/2,t/2)}" fill="currentColor"/><rect x="${(48-dw/2).toFixed(1)}" y="4" width="${dw.toFixed(1)}" height="26" rx="1" fill="currentColor" opacity=".8"/><rect x="56" y="${(17-cw/2).toFixed(1)}" width="24" height="${cw.toFixed(1)}" rx="1" fill="currentColor" opacity=".8"/></svg><span class="artw">${word}</span>`}
+function leanArt(l){/* l 0..1 → 0..60° off upright */const d=l*60,r=d*Math.PI/180,bx=30,by=31,L=26,tx=bx+Math.sin(r)*L,ty=by-Math.cos(r)*L,nx=Math.cos(r)*3.2,ny=Math.sin(r)*3.2,word=l<.05?'upright — clean full edge':l<.45?'slight lean — the trailing edge drags':'heavy lean — dragged, thin, scratchy edge';
+ return `<svg class="art" viewBox="0 0 84 34" aria-hidden="true"><line x1="6" y1="32" x2="78" y2="32" stroke="currentColor" stroke-opacity=".35" stroke-width="2"/><polygon points="${(bx-nx).toFixed(1)},${(by-ny).toFixed(1)} ${(bx+nx).toFixed(1)},${(by+ny).toFixed(1)} ${(tx+nx).toFixed(1)},${(ty+ny).toFixed(1)} ${(tx-nx).toFixed(1)},${(ty-ny).toFixed(1)}" fill="currentColor" opacity=".85"/><path d="M${bx} ${by} L${bx} ${by-L}" stroke="currentColor" stroke-opacity=".25" stroke-dasharray="2 2"/>${l>.05?`<path d="M${bx+3} ${by-12} A12 12 0 0 1 ${(bx+Math.sin(r)*12+1).toFixed(1)} ${(by-Math.cos(r)*12).toFixed(1)}" fill="none" stroke="var(--accent,#ff4b2b)" stroke-width="1.6"/>`:''}<rect x="${(bx-4-l*10).toFixed(1)}" y="30.5" width="${(8+l*20).toFixed(1)}" height="2.6" rx="1.2" fill="var(--accent,#ff4b2b)"/><path d="M50 22 h${(26-l*12).toFixed(1)}" stroke="currentColor" stroke-width="${(6-l*3.5).toFixed(1)}" stroke-linecap="round" opacity=".8" ${l>.3?'stroke-dasharray="5 1.5 3 1"':''}/></svg><span class="artw">${word}</span>`}
+function setAngle(v){angle=Math.round(((v%180)+180)%180);$('#angle').value=angle;$('#angleV').innerHTML=angleArt(angle)}
+cv.addEventListener('pointerdown',e=>{try{e.preventDefault();setTimeout(audio,0);try{cv.setPointerCapture(e.pointerId)}catch(_){}/* the browser says this is the only finger down (isPrimary): any other entry is a ghost from a lost pointerup (rotation, a layout change) and would turn this touch into a 'two-finger twist' for ever */if(e.isPrimary&&ptrs.size){ptrs.clear();twist=null;if(down&&e.pointerId!==downId){down=false;if(stroke)abortStroke()}}ptrs.set(e.pointerId,pt(e));readPress(e);
+ if(ptrs.size===2){if(stroke)abortStroke();down=false;
+  if(pen.tip==='chisel'){const [p,q]=[...ptrs.values()];twist={base:angle,a0:Math.atan2(q.y-p.y,q.x-p.x),mid:{x:(p.x+q.x)/2,y:(p.y+q.y)/2}};dirty=true}
+  else toast('Two-finger twist turns chisel tips');return}
+ if(ptrs.size>2){ptrs.clear();twist=null;down=false;if(stroke)abortStroke();ptrs.set(e.pointerId,pt(e))}/* stale touches left by a rotation must never block a new tag */
+ if(playOn){stopPlayback(true);return}if(tool==='draw'&&(pen.empty||pen.fillReq)&&(!pen.fill||pen.life<=0)){showRefills(pen.fill?'Out of ink — refill it':'This marker is empty — pick an ink to fill it');return}hudFade(true);down=true;downId=e.pointerId;saidDry=0;saidSpray=0;push();last=pt(e);recStart(last);if(tool==='draw'){begin(last,e);feed(last,e);if(stroke&&!(pen.valve&&pen.flow<.35)){stamp(last.x,last.y,0,e);compose();dirty=false}}else if(tool==='buff'){ageDrop();pad.load=0;pad.col=null;pad.stk=null;pad.sb=null;pad.pool=0;pad.ptT=0;pad.runX=null;pad.holdT=0;pad.holdSq=0;pad.sqAcc=0;buffAt(last,last)}}catch(err){try{resetPointerState()}catch(_){}toast('Touch problem: '+(err&&err.message||err))}});
+const RAW='onpointerrawupdate' in window;let livePt=null,predPt=null,lastC=0;
+const mv=e=>{if(e.type==='pointermove'&&RAW&&down&&e.pointerId===downId&&tool==='draw'&&!twist){if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,pt(e));return}if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,pt(e));
+ if(twist&&ptrs.size===2){const [p,q]=[...ptrs.values()],d=Math.atan2(q.y-p.y,q.x-p.x)-twist.a0;setAngle(twist.base+d*180/Math.PI);twist.mid={x:(p.x+q.x)/2,y:(p.y+q.y)/2};dirty=true;return}
+ if(!down||e.pointerId!==downId)return;const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
+ const EV=evs.length?evs:[e],t0=last&&last.t<e.timeStamp?last.t:e.timeStamp-16,nE=EV.length;let kE=0;
+ for(const ev of EV){const p=pt(ev);kE++;p.t=Math.max(ev.timeStamp,t0+(e.timeStamp-t0)*kE/nE);readPress(ev);recPt(p);if(tool==='draw'&&stroke){feed(p,ev);if(!stroke.anc||Math.hypot(p.x-stroke.anc.x,p.y-stroke.anc.y)>5){stroke.anc={x:p.x,y:p.y};lastMove=performance.now();stroke.dwell=0;stroke.primeAcc=0;stroke.priming=0}}else if(tool!=='draw')toolMove(last,p);last=p}
+ if(tool==='draw'&&stroke){livePt=last;predPt=null;try{const pe=e.getPredictedEvents&&e.getPredictedEvents();if(pe&&pe.length){const q=pt(pe[pe.length-1]);if(Math.hypot(q.x-last.x,q.y-last.y)<36)predPt=q}}catch(_){}uiDirty=true;const tn=performance.now();if(!LOWGPU&&tn-lastC>6){lastC=tn;compose();dirty=false}else dirty=true}};
+cv.addEventListener('pointermove',mv);if(RAW)cv.addEventListener('pointerrawupdate',mv);
+const up=e=>{livePt=predPt=null;ptrs.delete(e.pointerId);if(twist&&ptrs.size<2){twist=null;dirty=true;return}
+ if(!down||e.pointerId!==downId)return;down=false;hudFade(false);friction(false,0,cur);if(tool==='draw'){if(stroke&&!demo)feedEnd();if(stroke&&last&&!demo&&INK[pen.ink].fluid){tapPrime();const tap=stroke.x1-stroke.x0<4&&stroke.y1-stroke.y0<4;tipScale=tap?1.45:1.15;stamp(last.x,last.y,0,null);tipScale=1}
+ else if(stroke&&last&&!demo){tapPrime();if(performance.now()-lastMove>450&&!pen.metal&&!INK[pen.ink].solid&&flowNow(null)>.45){tipScale=1.05;stamp(last.x,last.y,0,null);tipScale=1}flick()}end();save()}else if(tool==='buff'){lForce=true;g3Dirty=true;slForce=true;dirty=true}recEnd();prepSnap()};
+function flick(){const v=stroke.v;if(v<.45||performance.now()-lastMove>70)return;
+ /* lifting off while moving: a short, blunt, dry tail — the nib leaves the wall fast, it doesn't draw a needle */
+ const len=Math.min(R()*1.6+6,v*9),ux=stroke.vx/v,uy=stroke.vy/v,n=Math.ceil(len/1.2);
+ for(let i=1;i<=n;i++){const k=i/n,k0=(i-1)/n;tipScale=Math.max(.55,1-k*.45);stamp(last.x+ux*len*k,last.y+uy*len*k,v,null)}
+ tipScale=1;flickStarve=0;
+ if(v>.9&&!pen.metal&&!INK[pen.ink].solid){const sp=Math.min(9,Math.round((v-.75)*7)),px2=-uy,py2=ux;stk.x.fillStyle=inkPat(stroke.s,curCol(),0);stk.x.beginPath();for(let i=0;i<sp;i++){const dd=len*(1.02+Math.random()*.55),j=(Math.random()-.5)*R()*1.6,r=.5+Math.random()*Math.max(.6,R()*.16),cx=last.x+ux*dd+px2*j,cy=last.y+uy*dd+py2*j;stk.x.moveTo(cx+r,cy);stk.x.arc(cx,cy,r,0,TAU);const r2=r*.5;stk.x.moveTo(cx+ux*r*2.2+r2,cy+uy*r*2.2);stk.x.arc(cx+ux*r*2.2,cy+uy*r*2.2,r2,0,TAU)}stk.x.fill();stroke.x1=Math.max(stroke.x1,last.x+ux*len*1.6+20);stroke.x0=Math.min(stroke.x0,last.x+ux*len*1.6-20);stroke.y1=Math.max(stroke.y1,last.y+uy*len*1.6+20);stroke.y0=Math.min(stroke.y0,last.y+uy*len*1.6-20)}
+ dirty=true}
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+/* a finger that lifts after the canvas lost it (it resized under the finger) still has to end the stroke */
+addEventListener('pointerup',e=>{if(e.target!==cv)up(e)},true);addEventListener('pointercancel',e=>{if(e.target!==cv)up(e)},true);
+cv.addEventListener('lostpointercapture',e=>{if(down&&e.pointerId===downId&&e.pointerType==='touch')setTimeout(()=>{if(down&&e.pointerId===downId&&!ptrs.has(e.pointerId))up(e)},60)});
+addEventListener('pointercancel',()=>{if(down)resetPointerState()});addEventListener('blur',()=>{if(down)resetPointerState()});
+addEventListener('orientationchange',()=>{resetPointerState();cv.style.height='';cv.style.bottom='';cvR=null;clearTimeout(layT);layT=setTimeout(()=>{doLayout();layT=setTimeout(doLayout,300)},180)});
+cv.addEventListener('wheel',e=>{if(pen.tip!=='chisel')return;e.preventDefault();setAngle(angle+(e.deltaY>0?5:-5))},{passive:false});
+
