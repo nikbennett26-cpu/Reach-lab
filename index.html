@@ -212,7 +212,7 @@ body.fs #status{opacity:.85;pointer-events:none;transform:none}body.fs #status .
   </div>
   <span class="lbl">Additives</span><span class="small" style="margin-left:8px;opacity:.7;text-transform:none">✦ = leaves a visible texture · red = clashes with your mix</span><div id="mxAdd"><span class="lbl sg2">Flow</span><div class="row" style="margin:4px 0 8px"><button class="btn" data-v="hum">Glycerin</button><button class="btn tx" data-v="surf">Flow agent</button><button class="btn" data-v="ret">Retarder</button><button class="btn tx" data-v="methl">Methanol</button><button class="btn" data-v="pen">Penetrant</button></div><span class="lbl sg2">Bite &amp; stain</span><div class="row" style="margin:4px 0 8px"><button class="btn" data-v="vio">Violet booster</button><button class="btn" data-v="oil">Oil stain</button><button class="btn" data-v="dot3">Brake fluid</button><button class="btn" data-v="meth">Blue booster</button><button class="btn tx" data-v="xylene">Xylene</button><button class="btn tx" data-v="mek">Acetone</button><button class="btn" data-v="acid">Acid bite</button><button class="btn" data-v="fecl">Rust etch</button><button class="btn" data-v="agno3">Silver darkener</button><button class="btn" data-v="garvey">Garvey ink</button></div><span class="lbl sg2">Body &amp; finish</span><div class="row" style="margin:4px 0 8px"><button class="btn tx" data-v="bitu">Tar</button><button class="btn tx" data-v="rosin">Rosin</button><button class="btn" data-v="fish">Penetrol</button><button class="btn" data-v="silica">Gel thickener</button><button class="btn" data-v="wax">Beeswax</button><button class="btn" data-v="silic">Silicone</button></div><span class="lbl sg2">Special</span><div class="row" style="margin:4px 0 8px"><button class="btn" data-v="uv">UV brightener</button><button class="btn" data-v="shift">Colour shift</button><button class="btn" data-v="etch">Glass etch</button></div></div>
   <p class="small" id="mxAddTxt" style="margin:-4px 0 10px;opacity:.8"></p>
-  <span class="lbl">Colourants &amp; Pigments (tap to mix)</span><div class="row" id="mxSw" style="flex-wrap:wrap"></div><p class="small" id="mxPigTxt" style="margin:-4px 0 10px;opacity:.8"></p><div id="mxAmt"></div>
+  <span class="lbl">Colours — tap to mix</span><div class="row" id="mxSw" style="flex-wrap:wrap"></div><p class="small" id="mxPigTxt" style="margin:-4px 0 10px;opacity:.8"></p><div id="mxAmt"></div>
   <div class="row"><label class="small" style="flex:1">Name<input id="mxName" maxlength="24" placeholder="My mix" style="width:100%;margin-top:4px;padding:10px;border-radius:10px;border:1px solid #333;background:#111;color:#eee"></label></div>
   <div id="mxOut" class="small" style="background:#151517;border-radius:12px;padding:12px 14px;margin:6px 0 12px;line-height:1.55"></div>
   <div id="mxMine"></div>
@@ -272,13 +272,13 @@ body.fs #status{opacity:.85;pointer-events:none;transform:none}body.fs #status .
  <div class="coach" id="coach" hidden><div class="card">
   <h2>How Reach Lab works</h2>
   <ol>
-   <li><b>Brew your own ink:</b> Pick an empty marker top-left and open <b>Brew Lab</b> to build a batch from scratch — choose a base (Alcohol, Water, Oil, or Paint), blend raw pigments &amp; dyes with Kubelka-Munk tinting strength, and tune additives like DOT 3, Bitumen, or Penetrant.</li>
-   <li><b>Watch the chemistry:</b> Incompatible mixes (like oil/bitumen in water or unthinned tar) separate, sputter, or clog the nib just like real life.</li>
+   <li><b>Brew your own ink:</b> Pick an empty marker top-left and open <b>Brew Lab</b> to build a batch from scratch — choose a base (Alcohol, Water, Oil, or Paint), mix your own colour from dyes and paints, and add extras like brake fluid, tar or penetrant.</li>
+   <li><b>Watch the chemistry:</b> Mixes that don’t go together (like oil or tar in water, or tar with no thinner) separate, spit or clog the nib, like real life.</li>
    <li><b>Shake, squeeze &amp; prime:</b> Shake paint &amp; correction pens to mix the ball. Hold the tip still or press harder to juice a squeezer; low Squeeze % streaks instead of fading grey.</li>
-   <li><b>Tilt physics &amp; glare:</b> Tilt the phone to steer live meniscus drips downhill and sweep the gritty overhead glare across wet ink, glossy binders, and 3D glass shadows.</li>
-   <li><b>Surfaces &amp; weather:</b> Use <b>‹ ›</b> to switch walls. Tap <b>Dry / Wet / Rain</b> — wet walls bloom staining inks organically, and over-juiced penetrants seep even on dry walls.</li>
-   <li><b>Buff &amp; ghosting:</b> Use <b>Buff</b> (chemical rag) to test how hard your brew stains. High-stain dyes smear colour into the wall and ghost back through wipes.</li>
-   <li><b>Nib control:</b> Twist two fingers to rotate chisel nibs, adjust lean for edge drag, and cap markers when not in use.</li>
+   <li><b>Tilt physics &amp; glare:</b> Tilt the phone to steer drips and move the light across wet ink, gloss and glass.</li>
+   <li><b>Surfaces &amp; weather:</b> Use <b>‹ ›</b> to switch walls. Tap <b>Dry / Wet / Rain</b> — wet walls make staining inks bloom, and very juicy penetrant mixes seep even on dry walls.</li>
+   <li><b>Buff &amp; ghosting:</b> Use <b>Buff</b> (a solvent rag) to test how hard your brew stains. Strong stains smear into the wall and ghost back through wipes.</li>
+   <li><b>Nib control:</b> Twist two fingers to turn chisel nibs, change the lean for edge drag, and cap markers when you’re not using them.</li>
   </ol>
   <button class="btn pri" id="coachOk">Got it</button>
  </div><div id="coachBar" hidden><i></i></div></div>
@@ -3437,37 +3437,37 @@ function showRefills(msg){renderFill();openSheet('penSheet');const fb=$('#fillBo
 /* ---------- INK BENCH: build a custom ink from ingredient types, mapped onto the app's ink physics ---------- */
 const MX={base:'alcohol',pot:65,bind:25,thin:35,pigs:new Set(['nig']),add:new Set(),amt:{}};
 const PIGS={
- nig:{n:'Jet black dye',c:'#121216',k:'dye',s:.85,ts:7.5,d:'Alcohol-soluble black dye — deep jet black, strong stain.'},
- gv:{n:'Deep violet dye',c:'#4b1498',k:'dye',s:.95,ts:7.0,g:'#6b58c9',d:'Extreme staining violet dye — bites into plastic & ghosts purple.'},
- rhod:{n:'Hot pink dye',c:'#d41472',k:'dye',s:.9,ts:5.5,d:'Fluorescent magenta-red dye — intense pink/crimson, stains hard.'},
- sred:{n:'Red dye',c:'#c21818',k:'dye',s:.85,ts:4.5,d:'Rich translucent crimson dye — classic red marker ink.'},
- pblu:{n:'Blue dye',c:'#163aa8',k:'dye',s:.62,ts:6.5,d:'Solvent-soluble phthalocyanine blue dye — mix with yellow for green; moderate stain.'},
- syel:{n:'Yellow dye',c:'#eab808',k:'dye',s:.5,ts:1.6,d:'Bright golden dye — mix with blue for green, or red for orange.'},
- tio2:{n:'White',c:'#f4f3ee',k:'paint',s:.05,ts:1.0,d:'Opaque mineral white pigment — makes opaque paints, greys & pastels.'},
- cblk:{n:'Black',c:'#111111',k:'paint',s:.25,ts:8.5,d:'Opaque jet-black pigment — high tinting strength; a little goes far.'},
- iron:{n:'Brick red',c:'#9e2c20',k:'paint',s:.15,ts:3.0,d:'Earthy opaque rust/brick red mineral pigment.'},
- pgrn:{n:'Emerald green',c:'#187538',k:'paint',s:.3,ts:6.0,d:'Rich opaque emerald-forest green pigment.'},
- hansa:{n:'Yellow',c:'#f2c80f',k:'paint',s:.1,ts:1.8,d:'Bright opaque yellow pigment — mix with blue for opaque green.'},
- alu:{n:'Silver flake',c:'#bcc2c8',k:'metal',s:.05,ts:1.2,d:'Mirror chrome metallic flake — shake well.'},
- bronze:{n:'Gold flake',c:'#c28538',k:'metal',s:.05,ts:1.3,d:'Metallic bronze-gold flake pigment.'},
- pruss:{n:'Prussian blue',c:'#0d265c',k:'dye',s:.2,ts:7.2,d:'Deep inky iron-blue — really a transparent insoluble pigment: darkens brews a lot but barely stains on its own.'},
- malg:{n:'Green dye',c:'#0d6e4e',k:'dye',s:.92,ts:6.8,d:'Intense emerald-teal basic dye — extreme stain, ghosts green.'},
- indg:{n:'Indigo dye',c:'#1c1866',k:'dye',s:.55,ts:6.5,d:'Aniline (acid) blue dye — dissolves best in water, weaker in alcohol; deep blue-purple undertone.'},
- ochre:{n:'Ochre',c:'#c48e2a',k:'paint',s:.15,ts:2.4,d:'Earthy opaque mineral gold/mustard pigment.'},
- ultrab:{n:'Ultramarine',c:'#1b34b0',k:'paint',s:.2,ts:3.2,d:'Rich opaque mineral cobalt-blue paint pigment.'},
- cadred:{n:'Scarlet',c:'#dc2618',k:'paint',s:.15,ts:3.8,d:'Punchy opaque scarlet-red mineral paint pigment.'},
- umbe:{n:'Earth brown',c:'#4a3420',k:'paint',s:.25,ts:3.5,d:'Dark earthy brown mineral pigment.'},
- graphite:{n:'Graphite',c:'#2e3136',k:'metal',s:.2,ts:2.2,d:'Slick gunmetal metallic flake pigment.'},
- bism:{n:'Brown dye',c:'#5c2810',k:'dye',s:.88,ts:6.2,g:'#8f4a1c',d:'Classic aniline leather/wood dye — deep tobacco-mahogany, ghosts warm amber-rust.'},
- sorng:{n:'Orange dye',c:'#e85a0c',k:'dye',s:.78,ts:4.8,d:'Punchy translucent safety-orange dye — cleaner and brighter than mixing red + yellow.'},
- fluor:{n:'Neon green dye',c:'#9ef01a',k:'dye',s:.35,ts:3.6,g:'#76c814',d:'Water-soluble acid neon dye — vivid and weeps chartreuse on wet walls, but only stains plastic weakly.'},
- qmag:{n:'Magenta',c:'#c91c6e',k:'paint',s:.28,ts:5.2,d:'Punchy opaque hot-pink/magenta paint pigment — unlocks opaque pinks, purples & pastels.'},
- diox:{n:'Purple',c:'#36146b',k:'paint',s:.32,ts:7.4,d:'Deep, high-tinting opaque violet paint pigment.'},
- crox:{n:'Olive green',c:'#4a6440',k:'paint',s:.15,ts:3.4,d:'Flat, heavy industrial olive-drab mineral paint pigment.'},
- dayglo:{n:'Neon orange',c:'#ff5a14',k:'paint',s:.12,ts:2.8,d:'Bright, chalky fluorescent construction-orange opaque paint pigment.'},
- pearl:{n:'Pearl flake',c:'#e4e8f0',k:'metal',s:.05,ts:.45,d:'Translucent satin-iridescent flake — adds metallic tilt shimmer to any colour without greying it out.'}
+ nig:{n:'Jet black dye',c:'#121216',k:'dye',s:.85,ts:7.5,d:'See-through black dye. Goes jet black and stains hard.'},
+ gv:{n:'Deep violet dye',c:'#4b1498',k:'dye',s:.95,ts:7.0,g:'#6b58c9',d:'The strongest stain there is. Soaks into plastic and leaves a purple ghost.'},
+ rhod:{n:'Hot pink dye',c:'#d41472',k:'dye',s:.9,ts:5.5,d:'Bright see-through pink. Stains hard.'},
+ sred:{n:'Red dye',c:'#c21818',k:'dye',s:.85,ts:4.5,d:'See-through crimson. The classic red marker colour.'},
+ pblu:{n:'Blue dye',c:'#163aa8',k:'dye',s:.62,ts:6.5,d:'See-through blue. Mix with yellow for green. Medium stain.'},
+ syel:{n:'Yellow dye',c:'#eab808',k:'dye',s:.5,ts:1.6,d:'See-through golden yellow. Add blue for green or red for orange.'},
+ tio2:{n:'White',c:'#f4f3ee',k:'paint',s:.05,ts:1.0,d:'Solid white. Makes paint cover, and lightens colours to pastels.'},
+ cblk:{n:'Black',c:'#111111',k:'paint',s:.25,ts:8.5,d:'Solid black. Very strong, a little goes a long way.'},
+ iron:{n:'Brick red',c:'#9e2c20',k:'paint',s:.15,ts:3.0,d:'Solid rusty brick red.'},
+ pgrn:{n:'Emerald green',c:'#187538',k:'paint',s:.3,ts:6.0,d:'Solid deep emerald green.'},
+ hansa:{n:'Yellow',c:'#f2c80f',k:'paint',s:.1,ts:1.8,d:'Solid bright yellow. Add blue for a solid green.'},
+ alu:{n:'Silver flake',c:'#bcc2c8',k:'metal',s:.05,ts:1.2,d:'Mirror chrome flake. Shake it well.'},
+ bronze:{n:'Gold flake',c:'#c28538',k:'metal',s:.05,ts:1.3,d:'Gold-bronze metal flake.'},
+ pruss:{n:'Prussian blue',c:'#0d265c',k:'dye',s:.2,ts:7.2,d:'Inky dark blue. Darkens a mix a lot but hardly stains on its own.'},
+ malg:{n:'Green dye',c:'#0d6e4e',k:'dye',s:.92,ts:6.8,d:'Teal-green. Stains very hard and leaves a green ghost.'},
+ indg:{n:'Indigo dye',c:'#1c1866',k:'dye',s:.55,ts:6.5,d:'Deep blue-purple. Stains best in a water mix, weaker in alcohol.'},
+ ochre:{n:'Ochre',c:'#c48e2a',k:'paint',s:.15,ts:2.4,d:'Solid earthy mustard gold.'},
+ ultrab:{n:'Ultramarine',c:'#1b34b0',k:'paint',s:.2,ts:3.2,d:'Solid rich blue.'},
+ cadred:{n:'Scarlet',c:'#dc2618',k:'paint',s:.15,ts:3.8,d:'Solid punchy red.'},
+ umbe:{n:'Earth brown',c:'#4a3420',k:'paint',s:.25,ts:3.5,d:'Solid dark brown.'},
+ graphite:{n:'Graphite',c:'#2e3136',k:'metal',s:.2,ts:2.2,d:'Dark gunmetal shimmer.'},
+ bism:{n:'Brown dye',c:'#5c2810',k:'dye',s:.88,ts:6.2,g:'#8f4a1c',d:'Deep tobacco brown. Leaves a warm rusty ghost.'},
+ sorng:{n:'Orange dye',c:'#e85a0c',k:'dye',s:.78,ts:4.8,d:'See-through bright orange, cleaner than mixing red and yellow.'},
+ fluor:{n:'Neon green dye',c:'#9ef01a',k:'dye',s:.35,ts:3.6,g:'#76c814',d:'Neon yellow-green. Bleeds on wet walls but barely stains plastic.'},
+ qmag:{n:'Magenta',c:'#c91c6e',k:'paint',s:.28,ts:5.2,d:'Solid hot pink. Good for pinks, purples and pastels.'},
+ diox:{n:'Purple',c:'#36146b',k:'paint',s:.32,ts:7.4,d:'Solid deep purple. Very strong.'},
+ crox:{n:'Olive green',c:'#4a6440',k:'paint',s:.15,ts:3.4,d:'Solid flat army olive.'},
+ dayglo:{n:'Neon orange',c:'#ff5a14',k:'paint',s:.12,ts:2.8,d:'Chalky neon orange, like site paint.'},
+ pearl:{n:'Pearl flake',c:'#e4e8f0',k:'metal',s:.05,ts:.45,d:'Pearly shimmer that shifts as you tilt. Doesn’t dull the colour.'}
 };
-const ADD={hum:'Glycerin: nib stays wet uncapped, dries out far slower.',surf:'Flow agent: juicier flow and more spread — overdo it and it floods.',ret:'Retarder: stays wet longer, so more runs on non-porous walls.',vio:'Violet booster: bites in hard, dries violet, ghosts strongly.',oil:'Oil stain: leaves a greasy stain that ghosts back after buffing.',dot3:'Brake fluid: stays wet longer and bites straight through paint & plastic — heavy buff-proof ghosting.',meth:'Blue booster: ultra-concentrated deep dye that stains permanently and bleeds back through buff coats.',bitu:'Tar: heavy oil-soluble dark stain that thickens the mix and burns a stubborn brown-black ghost.',pen:'Penetrant: drives dye deep into plastic, paint and stone so buffing only smears the surface.',shift:'Colour shift: the whole tag swings blue-violet when you tilt.',xylene:'Xylene: softens plastic & painted walls, drives deep bleed and stubborn buff ghosting.',fecl:'Rust etch: acidic rust-brown bite that eats into painted surfaces and leaves a permanent amber-brown ghost.',acid:'Acid bite: bites into smooth plastic & glass with a permanent matte ghost that resists buffing.',mek:'Acetone: melts straight into plastic & PVC, flashes dry fast with tight permanent edge-bite.',silic:'Silicone: extreme anti-buff slip — makes rags smear wildly and resists overpainting.',rosin:'Rosin: heavy sticky tackifier — syrupy slow drips, high-gloss clearcoat, skins over mid-cure.',uv:'UV brightener: punches up chroma and makes the dried tag pop louder on dark walls.',fish:'Penetrol: slows drying, drops surface tension for glassy levelling, and boosts buff resistance.',garvey:'Garvey ink: low-viscosity pricing-gun ink base — aggressive violet-magenta bleed and heavy buff-proof ghosting.',silica:'Gel thickener: holds a proud, drip-free line at rest while shearing smooth under fast nib movement.',wax:'Beeswax: dries matte and hydrophobic — cuts drips, kills wet gloss, and makes buff rags skip.',methl:'Methanol: ultralight solvent thinner — fast skinny runs that flash-dry halfway down the wall.',agno3:'Silver darkener: goes down pale and gradually darkens over several seconds into a permanent brownish-black stain.',etch:'Glass etch: turns the mix into an etch — frosts glass for good and can’t be buffed. Does nothing to plastic.'};
+const ADD={hum:'Glycerin: the nib stays wet with the cap off and dries much slower.',surf:'Flow agent: juicier flow that spreads more. Too much and it floods.',ret:'Retarder: stays wet longer, so more drips on shiny walls.',vio:'Violet booster: bites in hard, dries violet and ghosts back strongly.',oil:'Oil stain: leaves a greasy stain that comes back after buffing.',dot3:'Brake fluid: stays wet and eats through paint and plastic. Very hard to buff.',meth:'Blue booster: very strong blue stain that bleeds back through a buff.',bitu:'Tar: thick and dark. Leaves a stubborn brown-black stain.',pen:'Penetrant: drives the ink deep into the wall, so buffing only smears the top.',shift:'Colour shift: the whole tag flips blue-violet when you tilt.',xylene:'Xylene: softens plastic and painted walls. Bleeds deep and ghosts hard.',fecl:'Rust etch: eats into painted walls and leaves a permanent rusty ghost.',acid:'Acid bite: bites into plastic and glass and leaves a dull ghost that won’t buff.',mek:'Acetone: melts into plastic and dries fast, leaving bitten edges.',silic:'Silicone: super slippery. Rags just smear it, and paint won’t cover it.',rosin:'Rosin: sticky and glossy. Slow thick drips that skin over.',uv:'UV brightener: louder colour that pops on dark walls.',fish:'Penetrol: slower drying, smooth glassy finish, harder to buff.',garvey:'Garvey ink: thin, bleeds violet-pink and is very hard to buff.',silica:'Gel thickener: holds a raised line that doesn’t drip, but still flows when you move fast.',wax:'Beeswax: dries matte, cuts drips, and makes rags skip.',methl:'Methanol: thins it right down. Fast skinny drips that dry halfway down, and streaky lines.',agno3:'Silver darkener: goes on pale and slowly turns a permanent brown-black.',etch:'Glass etch: frosts glass for good and can’t be buffed. Does nothing to plastic.'};
 /* BREW CHEMISTRY — one stain model used by the Brew Lab card, the ink type AND the buff tool.
    Each colourant: how it dissolves (basic/cationic dye, solvent dye, acid dye, or insoluble pigment/flake) and how hard
    it binds to a surface once dissolved (affinity). A dye only stains if the base can dissolve it; the base + thinner
@@ -3515,7 +3515,7 @@ ${pr.corrosive>0?` Bite&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${bar(pr.corrosive)} &nbsp
 function renderMix(){for(const b of document.querySelectorAll('#mxBase .btn'))b.setAttribute('aria-pressed',b.dataset.v===MX.base);for(const b of document.querySelectorAll('#mxAdd .btn')){b.setAttribute('aria-pressed',MX.add.has(b.dataset.v));let cl=false;if(!MX.add.has(b.dataset.v)){try{const n0=mixCompat(MX).warns.length,a2=new Set(MX.add);a2.add(b.dataset.v);cl=mixCompat(Object.assign({},MX,{add:a2})).warns.length>n0}catch(_){}}b.classList.toggle('clash',cl)}$('#mxAddTxt').innerHTML=[...MX.add].map(k=>ADD[k]).join('<br>')||'Tap to add. Each one changes how the ink behaves.';
  $('#mxPotV').textContent=MX.pot+'%';$('#mxBindV').textContent=MX.bind+'%';$('#mxThinV').textContent=MX.thin+'%';
  $('#mxSw').innerHTML=Object.entries(PIGS).map(([id,g])=>`<button class="btn" data-p="${id}" aria-pressed="${MX.pigs.has(id)}" style="display:inline-flex;align-items:center;gap:6px"><i style="width:12px;height:12px;border-radius:50%;background:${g.c};border:1px solid #666;flex:none"></i>${g.n}</button>`).join('');
- const pt=$('#mxPigTxt');if(pt)pt.innerHTML=[...MX.pigs].map(id=>PIGS[id]?.d).filter(Boolean).join('<br>')||'Tap one or more raw colourants/pigments to mix your colour from scratch.';
+ const pt=$('#mxPigTxt');if(pt)pt.innerHTML=[...MX.pigs].filter(id=>PIGS[id]).map(id=>'<b>'+PIGS[id].n+':</b> '+PIGS[id].d).join('<br>')||'Tap one or more raw colourants/pigments to mix your colour from scratch.';
  renderAmt();$('#mxOut').innerHTML=mixRead(MX).html}
 function renderMine(){const mine=BOTTLES.filter(b=>b.brand==='Brew Lab'||b.brand==='Ink bench'),el=$('#mxMine');if(!el)return;
  el.innerHTML=mine.length?'<span class="lbl">Your inks</span>'+mine.map(b=>`<div class="row" style="align-items:center;justify-content:space-between;gap:10px;margin:0 0 6px"><span style="display:flex;align-items:center;gap:10px;min-width:0"><i style="width:22px;height:22px;border-radius:50%;flex:none;background:${b.colors[0]};border:1px solid #444"></i><span class="small" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.name.replace(/</g,'&lt;')}</span></span><span style="display:flex;gap:6px">${b.recipe?`<button class="btn" data-edit="${b.id}">Edit</button>`:''}<button class="btn" data-del="${b.id}" aria-label="Delete ${b.name.replace(/"/g,'')}">Delete</button></span></div>`).join(''):''}
