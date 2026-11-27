@@ -86,10 +86,10 @@ function flowStep(dt){if(!flowOn||!fh)return;dt=Math.min(dt,.05);const G=gDir(),
  /* Navier-Stokes thin-film lubrication solver: flux Q ~ (rho*g*h^3)/(3*mu_eff) + lateral pressure-gradient spreading */
  const ys=ddy>0?[GH_-1,-1,-1]:[0,GH_,1],xs=ddx>0?[GW-1,-1,-1]:[0,GW,1];
  for(let gy=ys[0];gy!==ys[1];gy+=ys[2])for(let gx=xs[0];gx!==xs[1];gx+=xs[2]){const i=gy*GW+gx;if(fh[i]<=0)continue;any=true;
-  fw[i]*=Math.exp(-dt/ft[i]);if(fw[i]<.04){fh[i]=0;fid[i]=0;fcol[i]=null;fRad[i]=0;fk[i]=0;frt[i]=0;continue}
+  fw[i]*=Math.exp(-dt/(ft[i]*(fpl[i]>0?4:1)));/* a swelling bead is thick enough to hold its solvent, so it doesn't dry out while it waits to drop */if(fw[i]<.04){fh[i]=0;fid[i]=0;fcol[i]=null;fRad[i]=0;fk[i]=0;frt[i]=0;continue}
   const ty=keys[fid[i]-1]||pen.ink,fl=fluidOf(ty),pin=FPIN*(.68+.32*fl.gamma);
   const ex=fh[i]-pin;if(ex<=0)continue;
-  const s=surfAt(gx*C+C/2,gy*C+C/2),muEff=fl.mu/Math.max(.08,Math.pow(fw[i],1.65));
+  const s=surfAt(gx*C+C/2,gy*C+C/2),muEff=fl.mu/Math.max(.08,Math.pow(fpl[i]>0?Math.max(fw[i],.6):fw[i],1.65));
   /* Phone laid flat: no downhill pull — excess wet ink pools & melts isotropically into the tag */
   if(G.flat||G.m<.14){
    if(ex>.08){
@@ -120,7 +120,7 @@ function flowStep(dt){if(!flowOn||!fh)return;dt=Math.min(dt,.05);const G=gDir(),
    let tooClose=false;for(let q=drips.length-1;q>=0;q--){const dq=drips[q];if(!dq.soft&&!dq.wash&&Math.hypot(dq.x-ox,dq.y-oy)<rtMin){tooClose=true;break}}
    if(tooClose){fcd[i]=now+220;continue}
    const _J=fk[i]||DYEINK[ty]||ty===pen.ink?juiceK():0,_rf=refRun(fRad[i],Math.min(4.4,rr*1.32*(.72+.3*muK)),_J);
-   drip(ox,oy,vol*(.78+.26*muK)*(1+.18*pooled)*(_rf.volK||1),{ty,col:fcol[i]||curCol(),r:_rf.r,rMax:_rf.rMax,maxT:_rf.maxT,thick:!!fk[i],visc:.35+.65*fw[i],src:1,srcCell:i,w:fRad[i]});fh[i]-=Math.min(ex,vol*(fk[i]?.8:.55));fcd[i]=now+(fk[i]?820:360)+Math.random()*540}}
+   drip(ox,oy,vol*(.78+.26*muK)*(1+.18*pooled)*(_rf.volK||1),{ty,col:fcol[i]||curCol(),r:_rf.r*(1+.22*clamp(pooled-.6,0,1)),rMax:_rf.rMax,maxT:_rf.maxT,thick:!!fk[i],visc:.35+.65*fw[i],src:1,pool:1,srcCell:i,w:fRad[i]});fh[i]-=Math.min(ex,vol*(fk[i]?.8:.55));fcd[i]=now+(fk[i]?820:360)+Math.random()*540}}
  flowOn=any}
 let LM=new Uint16Array(1),LMW=1,LMH=1,lmSeq=1;
 function lmAlloc(){LMW=Math.ceil(W/2)+1;LMH=Math.ceil(H/2)+1;LM=new Uint16Array(LMW*LMH);SM=new Uint8Array(LMW*LMH)}
