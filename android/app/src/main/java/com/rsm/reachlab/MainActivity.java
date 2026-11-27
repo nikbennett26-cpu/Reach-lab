@@ -25,6 +25,9 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        // phones stay portrait (rotating a full wall mid-drip was the main source of glitches); tablets (600dp+) can still rotate
+        if (getResources().getConfiguration().smallestScreenWidthDp < 600)
+            setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         final WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
