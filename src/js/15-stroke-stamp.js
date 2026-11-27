@@ -262,7 +262,7 @@ function dripSettle(d,s,ex,ey,rb,hd){
  }
  x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='source-in';
  const O=Math.min(1,(d.ov||0)+(s.wet?.4:0)),dark=lum(hex(col))<.3,str=(1-s.absorb)*dripLife();
- /* the run is where the ink pooled: it dries with more pigment per area than the letter, so darker - dyes a lot, paints less, chrome goes to a dark gunmetal */const deepCol=dye?mixHex(col,'#000000',(dark?.72:.55)+.25*O):chr?mixHex(col,'#2b2f35',.68+.15*O):mixHex(col,'#000000',(dark?.4:.3)+.15*O);
+ /* the run is where the ink pooled: it dries with more pigment per area than the letter, so darker - dyes a lot, paints less, chrome goes to a dark gunmetal */const deepCol=dye?mixHex(col,'#000000',(dark?.72:.55)+.25*O):chr?mixHex(col,'#2b2f35',.68+.15*O):mixHex(col,'#000000',((dark?.4:.3)+.15*O)*Math.pow(1-lum(hex(col)),1.5));/* extra pigment makes a paint run richer, not greyer: a white or pale run dries as solid as the letter (reference photos) */
  const wy0=(wetSpan&&wetSpan.y1>wetSpan.y0+8)?wetSpan.y0*P:Y,wy1=(wetSpan&&wetSpan.y1>wetSpan.y0+8)?Math.max(wy0+90*P,wetSpan.y1*P):Y+Math.max(h,90*P);
  const g=x.createLinearGradient(0,wy0-Y,0,wy1-Y);
  g.addColorStop(Math.max(0,.4-.15*O),'rgba(0,0,0,0)');
@@ -337,9 +337,9 @@ function fullDrips(ink,s){const L=stroke.lv||0,thr=(s.wet||SLICK[s.id])?.70:.86,
    t=Math.max(0,t-sl);continue}
   const segPr=pr*clamp((horiz-.35)/.45,0,1);
   for(;t<=sl&&n<cap;t+=gap){if(Math.random()>segPr)continue;n++;const k=t/sl,x=ax+dx*k,y=ay+dy*k,e=tipEdge(x,y,x,y,pen.tip==='chisel'?((Math.random()<.55?1:-1)*r*(.35+Math.random()*.45)):((Math.random()-.5)*r*1.1));
-   drip(e[0],e[1],(.55+Math.random()*Math.random()*1.65)*(1+over*1.5),{ty:pen.ink,col:curCol(),r:Math.max(1.15,Math.min(3.8,r*(.082+Math.random()*.14))),delay:(420+Math.random()*1300)*(.75+.35*clamp(fluidOf(pen.ink).mu,.4,2.2)),src:1,w:r,st0:stroke.dryT0||performance.now()})}t-=sl}
+   const _rf=refRun(r,Math.max(1.15,Math.min(3.8,r*(.082+Math.random()*.14))),juiceK());drip(e[0],e[1],(.55+Math.random()*Math.random()*1.65)*(1+over*1.5)*(_rf.volK||1),{ty:pen.ink,col:curCol(),r:_rf.r,rMax:_rf.rMax,maxT:_rf.maxT,delay:(420+Math.random()*1300)*(.75+.35*clamp(fluidOf(pen.ink).mu,.4,2.2)),src:1,w:r,st0:stroke.dryT0||performance.now()})}t-=sl}
  /* release pooled vertical-stem ink cleanly from the bottom tip/vertex */
- if(hasV&&vPool>r*1.4&&n<cap&&Math.random()<clamp(pr*1.15,0,1)){const e=tipEdge(vBestX,vBestY,vBestX,vBestY,(Math.random()-.5)*r*.45);drip(e[0],e[1],Math.min(2.6,(.75+vPool/140)*(1+over*1.4)),{ty:pen.ink,col:curCol(),r:Math.max(1.3,Math.min(4.0,r*(.095+Math.random()*.13))),delay:(520+Math.random()*900)*(.75+.35*clamp(fluidOf(pen.ink).mu,.4,2.2)),src:1,w:r,st0:stroke.dryT0||performance.now()})}}
+ if(hasV&&vPool>r*1.4&&n<cap&&Math.random()<clamp(pr*1.15,0,1)){const e=tipEdge(vBestX,vBestY,vBestX,vBestY,(Math.random()-.5)*r*.45);const _rv=refRun(r,Math.max(1.3,Math.min(4.0,r*(.095+Math.random()*.13))),juiceK());drip(e[0],e[1],Math.min(2.6,(.75+vPool/140)*(1+over*1.4))*(1+.5*juiceK()),{ty:pen.ink,col:curCol(),r:_rv.r*1.1,rMax:_rv.rMax&&_rv.rMax*1.15,delay:(520+Math.random()*900)*(.75+.35*clamp(fluidOf(pen.ink).mu,.4,2.2)),src:1,w:r,st0:stroke.dryT0||performance.now()})}}
 /* OVERLAP: paint that isn't fully opaque lets the layer underneath count — where a new stroke crosses paint already
    on the wall the two films stack, so the crossing comes out a little darker (more so the more see-through the paint) */
 function overlapDark(){const ink=INK[pen.ink];if(demo||!stroke||!DYEINK[pen.ink]||ink.chrome||ink.solid||ink.etch||ink.comp==='multiply')return null;const op=inkAlpha(ink,stroke.s),k=Math.max(.14,Math.min(.45,(1-op)*3.2));/* see-through inks read darker where they double up; an opaque paint going over itself just blends in — no line shows */

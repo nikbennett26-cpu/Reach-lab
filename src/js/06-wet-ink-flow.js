@@ -119,7 +119,8 @@ function flowStep(dt){if(!flowOn||!fh)return;dt=Math.min(dt,.05);const G=gDir(),
    const muK=clamp(fl.mu,.4,2.2),rtMin=Math.max(5.5,Math.min(24,7.5*Math.sqrt(Math.max(.35,fl.gamma)/Math.max(.5,fl.rho))*(.72+.3*muK)));/* thick paints hang in fewer, wider-spaced lobes; thin dyes in many close ones */
    let tooClose=false;for(let q=drips.length-1;q>=0;q--){const dq=drips[q];if(!dq.soft&&!dq.wash&&Math.hypot(dq.x-ox,dq.y-oy)<rtMin){tooClose=true;break}}
    if(tooClose){fcd[i]=now+220;continue}
-   drip(ox,oy,vol*(.78+.26*muK)*(1+.18*pooled),{ty,col:fcol[i]||curCol(),r:Math.min(4.4,rr*1.32*(.72+.3*muK)),thick:!!fk[i],visc:.35+.65*fw[i],src:1,srcCell:i,w:fRad[i]});fh[i]-=Math.min(ex,vol*(fk[i]?.8:.55));fcd[i]=now+(fk[i]?820:360)+Math.random()*540}}
+   const _J=fk[i]||DYEINK[ty]||ty===pen.ink?juiceK():0,_rf=refRun(fRad[i],Math.min(4.4,rr*1.32*(.72+.3*muK)),_J);
+   drip(ox,oy,vol*(.78+.26*muK)*(1+.18*pooled)*(_rf.volK||1),{ty,col:fcol[i]||curCol(),r:_rf.r,rMax:_rf.rMax,maxT:_rf.maxT,thick:!!fk[i],visc:.35+.65*fw[i],src:1,srcCell:i,w:fRad[i]});fh[i]-=Math.min(ex,vol*(fk[i]?.8:.55));fcd[i]=now+(fk[i]?820:360)+Math.random()*540}}
  flowOn=any}
 let LM=new Uint16Array(1),LMW=1,LMH=1,lmSeq=1;
 function lmAlloc(){LMW=Math.ceil(W/2)+1;LMH=Math.ceil(H/2)+1;LM=new Uint16Array(LMW*LMH);SM=new Uint8Array(LMW*LMH)}
