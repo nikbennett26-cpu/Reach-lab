@@ -1,0 +1,10 @@
+</script>
+<script>/* inside the Android app: no install prompt, no service worker (the app already holds every file) */const _isApp=/androidplatform/.test(location.host)||location.protocol==='file:'||/;\s*wv\)/i.test(navigator.userAgent)||window.navigator.standalone||matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches;if(_isApp){document.documentElement.classList.add('inapp');try{document.getElementById('getApp').hidden=true;document.getElementById('getAppBtn').hidden=true;document.getElementById('dlApp').hidden=true}catch(_){}}
+else if('serviceWorker' in navigator&&location.protocol==='https:'&&!/githack|claude/.test(location.host))navigator.serviceWorker.register('sw.js').catch(()=>{})</script>
+<script>/* Apple Pencil / finger double-taps must never select the page (iPad turns it blue) or zoom it */
+(()=>{const ok=e=>e.target&&e.target.closest&&e.target.closest('input,textarea,[contenteditable]');document.addEventListener('selectstart',e=>{if(!ok(e))e.preventDefault()},{capture:true});document.addEventListener('dblclick',e=>{if(!ok(e))e.preventDefault()},{capture:true,passive:false});document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});let lt=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-lt<350&&!ok(e)&&e.cancelable&&!(e.target.closest&&e.target.closest('button,a,label,select')))e.preventDefault();lt=n},{passive:false});document.addEventListener('selectionchange',()=>{const sel=document.getSelection&&document.getSelection();if(sel&&sel.rangeCount&&!ok({target:document.activeElement}))sel.removeAllRanges()})})();</script>
+<script>document.querySelectorAll('#moreSheet .btn.pri').forEach(b=>b.addEventListener('click',()=>{b.classList.add('go');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('go'),1400)}));
+
+</script>
+</body>
+</html>

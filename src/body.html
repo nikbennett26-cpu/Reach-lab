@@ -1,0 +1,133 @@
+</style>
+</head>
+<body>
+<div id="intro" role="dialog" aria-label="Reach Lab"><div class="in">
+ <img id="introPen" alt="Reach Lab marker" src="@@DATAURI:image/jpeg:intro-pen.jpg@@">
+ 
+ <p class="tg">Handstyle practice with real ink and paint physics.</p>
+ <ol class="steps"><li><b>Pick a pen &amp; Brew Lab.</b> Grab a marker or squeezer and mix your own ink from raw pigments, bases and additives in <b>Brew Lab</b>.</li><li><b>Shake, prime, write.</b> Flow, runs, blooms and stains follow the exact chemistry you brewed.</li><li><b>Switch walls, tilt, buff.</b> See how it sits, runs, catches light and ghosts back.</li></ol>
+ <button class="btn pri" id="introGo">Start writing</button>
+</div></div>
+<div class="app">
+ <canvas id="cv" aria-label="Wall"></canvas><div id="labels"></div>
+ <header class="bar top pn">
+  <button class="penbtn" id="penBtn" aria-label="Choose pen"><span id="penMini"></span><span class="pt"><b id="penName"></b><small id="penTip"></small></span></button>
+  <div class="chips" id="colors" role="group" aria-label="Colour"></div>
+  <button class="ib" id="shakeBtn" aria-label="Shake pen"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="18" rx="2"/><path d="M5 8l-2 2 2 2M19 8l2 2-2 2M5 13l-2 2 2 2M19 13l2 2-2 2"/></svg></button>
+  <button class="ib" id="capBtn" aria-pressed="true" aria-label="Cap on or off"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v5l1.5 2v11h-11V10L8 8z"/><path d="M8 8h8"/></svg></button>
+  <button class="ib" id="fsTop" aria-label="Full screen"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+  <button class="ib" id="infoBtn" aria-label="How this pen reacts"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></button>
+ </header>
+ <div class="status pn min" id="status" role="region" aria-label="Pen status — interactive bars">
+  <span class="g">
+  <span class="sbar" data-bar="mix"><span class="lbl" id="mixLbl">Mixed</span><span class="meter"><i id="mixI"></i></span></span>
+  <span class="sbar" data-bar="flow"><span class="lbl" id="flowLbl">Ink flow</span><span class="meter"><i id="flowI"></i></span></span>
+  <span class="sbar" data-bar="life"><span class="lbl" id="lifeLbl">Ink left</span><span class="meter"><i id="lifeI"></i></span></span>
+  <span class="sbar" data-bar="fray"><span class="lbl" id="frayLbl">Tip</span><span class="meter"><i id="frayI"></i></span></span>
+  </span>
+ </div>
+ <div class="dock">
+  <nav class="surfbar pn" aria-label="Surface" hidden>
+   <button class="ib" id="prevS" aria-label="Previous surface" tabindex="-1"></button><button class="ib" id="nextS" aria-label="Next surface" tabindex="-1"></button>
+  </nav>
+  <footer class="tools pn" role="group" aria-label="Tools">
+   <button class="tb" data-tool="draw" aria-pressed="true"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l3.5-1 10-10-2.5-2.5-10 10L4 20z"/><path d="M13.5 5.5l2.5 2.5M16 3l5 5-2 2-5-5z"/></svg>Marker</button>
+   <button class="tb" id="brewBtn" aria-label="Brew Lab"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v5.5L5.2 17.6A2 2 0 0 0 7 20.5h10a2 2 0 0 0 1.8-2.9L14 8.5V3"/><path d="M7.5 14.5h9"/></svg>Brew</button>
+   <button class="tb" data-tool="buff" aria-pressed="false"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="16" height="11" rx="3"/><circle cx="9" cy="11" r="1"/><circle cx="14.5" cy="13" r="1.3"/><circle cx="10.5" cy="15" r=".8"/><path d="M7 4.5c1-1 2 1 3 0s2 1 3 0"/></svg><span class="bfl">Buff</span></button>
+   <button class="tb" id="wipeT" aria-label="Wipe wall clean"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M6 16l8-11 5 4-7 9H8z"/></svg>Wipe</button>
+   <button class="tb" id="sName" aria-label="Choose surface"></button>
+   <button class="tb" id="wetBtn" aria-pressed="false" aria-label="Wet surface"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z"/></svg><span id="wetTxt">Dry</span></button>
+   <button class="tb" id="moreBtn" aria-label="More"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>More</button>
+  </footer>
+ </div>
+ <div id="playHud" role="region" aria-label="Playback"><i class="pdot"></i><span id="playLbl">Replaying</span><button id="playVidBtn" type="button" hidden>Rec video</button><button id="playStop" type="button">Stop</button></div>
+ <div id="gRing" hidden></div><div id="guide" hidden role="dialog" aria-live="polite"><b id="gT"></b><span id="gB"></span><div class="gr"><span class="gn" id="gN"></span><span><button class="gs" id="gSkip" type="button">Skip guide</button><button id="gNext" type="button">Next</button></span></div></div>
+<div id="toast" role="status"></div>
+ <noscript><div style="position:fixed;inset:0;z-index:99;display:flex;align-items:center;justify-content:center;padding:24px;background:#0b0b0b;color:#eee;font:16px/1.5 -apple-system,Helvetica,Arial,sans-serif;text-align:center"><div style="max-width:440px"><h1 style="font:700 30px/1.1 -apple-system,Helvetica,Arial,sans-serif;margin:0 0 12px;letter-spacing:.02em">REACH LAB <span style="opacity:.6">by RSM</span></h1><p>This preview can’t run apps — it has JavaScript switched off.</p><p><b>On a Mac:</b> double-click the file, or right-click → Open With → Safari or Chrome.</p><p><b>On iPhone / iPad:</b> the Files preview can’t run it. Open the Reach Lab link in Claude, or open this file from a browser.</p></div></div></noscript>
+<div id="scrim"></div>
+
+ <section class="sheet" id="mixSheet" aria-label="Brew Lab"><div class="grab"></div>
+  <h2>Brew Lab</h2>
+  <p class="small" style="margin:0 0 10px">Mix a bottle from the ingredient types writers use, see how it'll behave, then fill an empty with it. A simulation — not a recipe.</p>
+  <span class="lbl">Base</span><div class="row" id="mxBase"><button class="btn" data-v="alcohol">Alcohol</button><button class="btn" data-v="water">Water</button><button class="btn" data-v="oil">Oil</button><button class="btn" data-v="paint">Paint</button></div>
+  
+  <div class="row" style="flex-direction:column;align-items:stretch;gap:10px">
+   <label class="small">Dye / pigment load <b id="mxPotV"></b><input type="range" id="mxPot" min="0" max="100" value="60" style="width:100%"></label>
+   <label class="small">Binder (shellac / resin) <b id="mxBindV"></b><input type="range" id="mxBind" min="0" max="100" value="25" style="width:100%"></label>
+   <label class="small">Thinner <b id="mxThinV"></b><input type="range" id="mxThin" min="0" max="100" value="35" style="width:100%"></label>
+  </div>
+  <span class="lbl">Additives</span><span class="small" style="margin-left:8px;opacity:.7;text-transform:none">✦ = leaves a visible texture · red = clashes with your mix</span><div id="mxAdd"><span class="lbl sg2">Flow</span><div class="row" style="margin:4px 0 8px"><button class="btn" data-v="hum">Humectant</button><button class="btn tx" data-v="surf">Flow agent</button><button class="btn" data-v="ret">Retarder</button><button class="btn tx" data-v="methl">Methanol (flash cut)</button><button class="btn" data-v="pen">Solvent penetrant</button></div><span class="lbl sg2">Bite &amp; stain</span><div class="row" style="margin:4px 0 8px"><button class="btn" data-v="vio">Violet booster</button><button class="btn" data-v="oil">Oil stain</button><button class="btn" data-v="dot3">Brake fluid (DOT 3)</button><button class="btn" data-v="meth">Methylene blue</button><button class="btn tx" data-v="xylene">Xylene / naphtha</button><button class="btn tx" data-v="mek">MEK / acetone bite</button><button class="btn" data-v="acid">Phosphoric acid bite</button><button class="btn" data-v="fecl">Ferric chloride (corrosive)</button><button class="btn" data-v="agno3">Silver nitrate (photo)</button><button class="btn" data-v="garvey">Garvey concentrate</button></div><span class="lbl sg2">Body &amp; finish</span><div class="row" style="margin:4px 0 8px"><button class="btn tx" data-v="bitu">Bitumen / tar</button><button class="btn tx" data-v="rosin">Pine rosin / resin</button><button class="btn" data-v="fish">Fish oil / Penetrol</button><button class="btn" data-v="silica">Fumed silica (gel)</button><button class="btn" data-v="wax">Beeswax / matte</button><button class="btn" data-v="silic">Silicone oil</button></div><span class="lbl sg2">Special</span><div class="row" style="margin:4px 0 8px"><button class="btn" data-v="uv">UV brightener</button><button class="btn" data-v="shift">Colour shift</button><button class="btn" data-v="etch">Etching agent</button></div></div>
+  <p class="small" id="mxAddTxt" style="margin:-4px 0 10px;opacity:.8"></p>
+  <span class="lbl">Colourants &amp; Pigments (tap to mix)</span><div class="row" id="mxSw" style="flex-wrap:wrap"></div><p class="small" id="mxPigTxt" style="margin:-4px 0 10px;opacity:.8"></p><div id="mxAmt"></div>
+  <div class="row"><label class="small" style="flex:1">Name<input id="mxName" maxlength="24" placeholder="My mix" style="width:100%;margin-top:4px;padding:10px;border-radius:10px;border:1px solid #333;background:#111;color:#eee"></label></div>
+  <div id="mxOut" class="small" style="background:#151517;border-radius:12px;padding:12px 14px;margin:6px 0 12px;line-height:1.55"></div>
+  <div id="mxMine"></div>
+  <div class="row" style="justify-content:flex-end"><button class="btn" id="mxCancel">Cancel</button><button class="btn pri" id="mxBottle">Bottle it</button></div>
+ </section>
+ <section class="sheet" id="penSheet" aria-label="Pens"><div class="grab"></div>
+  <h2>Pens</h2>
+  <div class="chips" id="ptypes" role="group" aria-label="Type" style="margin:0 -4px 6px;padding:2px 4px"></div><div class="chips" id="brands" role="group" aria-label="Brand" style="margin:0 -4px 10px;padding:2px 4px"></div>
+  <div class="rack" id="rack" role="group" aria-label="Markers"></div>
+  <p class="hint" id="hint"></p>
+  <div class="row"><div id="angleBox"><label class="lbl" for="angle">Chisel angle — or twist two fingers on the wall</label><span id="angleV" class="artbox"></span><br><input id="angle" type="range" min="0" max="180" value="40"></div></div>
+  <div class="row" id="leanBox"><div><label class="lbl" for="lean">Lean — a tilting stylus adds to this</label><span id="leanV" class="artbox"></span><br><input id="lean" type="range" min="0" max="60" step="5" value="0"></div></div>
+  <div class="row" id="fillBox" hidden><div style="width:100%"><div class="row" style="justify-content:space-between;align-items:center;margin:0 0 6px"><span class="lbl">Fill with ink</span><button class="btn pri" id="mixOpen">Brew a batch</button></div><div class="bottles" id="bottles"></div></div></div>
+  <div class="row" id="vsBox" hidden><div><label class="lbl" for="vs">Flow valve: <span id="vsV"></span></label><br><input id="vs" type="range" min="1" max="5" step="1" value="3"></div></div>
+  <div class="row"><button class="btn" id="flip" hidden>Flip end</button><button class="btn pri" id="newnib">New nib</button><button class="btn" id="newpen">New pen</button></div>
+ </section>
+
+ <section class="sheet" id="surfSheet" aria-label="Surfaces"><div class="grab"></div>
+  <h2>Surfaces</h2><p class="hint">Each surface keeps its own work while you switch.</p>
+  <div class="surf" id="surfs" role="group"></div>
+ </section>
+
+ <section class="sheet" id="colorSheet" aria-label="Colours"><div class="grab"></div>
+  <h2 id="colTitle">Colours</h2><p class="hint" id="colHint"></p>
+  <div class="cgrid" id="cgrid"></div>
+ </section>
+
+ <section class="sheet" id="moreSheet" aria-label="Settings"><div class="grab"></div>
+  <h2>Settings</h2>
+  <span class="lbl sg">Wall</span><div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="ledgeBtn" aria-pressed="true">Ledge: on</button><button class="btn" id="lightBtn" aria-pressed="true">Light &amp; reflections: on</button></div>
+  <div style="margin:-4px 0 10px"><div style="width:100%"><label class="lbl" for="ageR">Age the wall — <span id="ageV">fresh</span></label><input type="range" id="ageR" min="0" max="100" value="0" style="width:100%"></div></div>
+  <span class="lbl sg">Physics</span><div class="row"><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="gravBtn">Drips: auto (sensor)</button><button class="btn" id="calBtn">Calibrate finger</button><button class="btn" id="perfBtn" aria-pressed="false">Frame time: off</button></div>
+  <span class="lbl sg">Share &amp; app</span><div class="row"><button class="btn pri" id="playBtn">Replay tag</button><button class="btn pri" id="playRecShareBtn">Record video</button><button class="btn" id="wallShare">Share wall</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button></div>
+  <div id="tipsBox"><div class="row" style="justify-content:space-between;align-items:center"><span class="lbl">Tips <span style="opacity:.6;text-transform:none">· red dot = new</span></span><button class="btn" id="tipsClear">Clear</button></div><ol id="tipsList" class="small" style="margin:0 0 12px;padding-left:20px;max-height:180px;overflow:auto;line-height:1.45"><li style="opacity:.6">Tips from your drawing show up here.</li></ol></div>
+  <div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Version 7.98 · 26 Nov · responsive modal buttons, smooth playback, no in-app saved playbacks</div>
+  <p class="small">A simulation: pens modelled on real ones, dry times sped up, surface physics modelled rather than measured.</p>
+ </section>
+
+ <section class="sheet" id="infoSheet" aria-label="Pen info"><div class="grab"></div>
+  <div class="panel" id="spec"></div>
+  <div class="panel" id="react"></div>
+ </section>
+
+ <button class="fst" id="fsTools" type="button" aria-expanded="false" aria-label="Show tools">Tools ▲</button>
+ <button class="fsx" id="fsExit" aria-label="Exit full screen"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button>
+ <div class="shv" id="shareView" hidden><div class="shc"><img id="shareImg" alt="Your wall, ready to save"><p>Save to phone or share directly with friends.</p><div class="row" style="justify-content:center"><button class="btn pri" id="shareSend">Share</button><button class="btn" id="shareDl">Save to phone</button><button class="btn" id="shareClose">Done</button></div></div></div>
+ <div class="shv" id="vidView" hidden><div class="shc"><video id="vidPrev" controls playsinline loop style="max-width:100%;max-height:66dvh;border-radius:10px;background:#000"></video><p id="vidNote">Replay video ready — share with friends or save to phone storage.</p><div class="row" style="justify-content:center"><button class="btn pri" id="vidShareBtn">Share video</button><button class="btn" id="vidSaveBtn">Save to phone</button><button class="btn" id="vidClose">Done</button></div></div></div>
+ <div id="cal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(10,10,12,.88);touch-action:none"><div id="calTxt" style="position:absolute;left:0;right:0;top:18%;text-align:center;color:#eee;font:600 17px/1.4 Barlow,system-ui,sans-serif;padding:0 24px"></div><div id="calDot" style="position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:2px solid #ff3d1f;pointer-events:none"><div style="position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px;border-radius:50%;background:#ff3d1f"></div></div><button class="btn" id="calReset" style="position:absolute;left:50%;bottom:8%;transform:translateX(-50%)">Reset to none</button></div>
+ <div class="coach" id="getApp" hidden role="dialog" aria-labelledby="gaT"><div class="card">
+  <div style="display:flex;gap:14px;align-items:center;margin:0 0 12px"><img src="@@DATAURI:image/png:get-app-icon.png@@" width="56" height="56" alt="Reach Lab" style="display:block;border-radius:16px"><div><h2 id="gaT" style="margin:0">Get the app</h2><div class="small" style="margin-top:4px">Full screen, no browser bars, your icon on the Home Screen.</div></div></div>
+  <div id="gaInstall" hidden><p style="margin:0 0 14px">Install Reach Lab on this device — it opens like any other app.</p></div>
+  <ol id="gaIOS" hidden><li>Tap <b>Share</b> <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg> in the browser bar.</li><li>Scroll and tap <b>Add to Home Screen</b>.</li><li>Tap <b>Add</b>. Reach Lab is now on your Home Screen.</li></ol>
+  <ol id="gaOther" hidden><li>Open the browser menu <b>⋮</b>.</li><li>Tap <b>Install app</b> or <b>Add to Home screen</b>.</li></ol>
+  <div id="gaClaude" hidden><p style="margin:0 0 10px">To put it on a Home Screen, open the public link in Safari or Chrome, then add it from there. Send the same link to your friends.</p><p class="small" style="margin:0 0 12px;word-break:break-all"><a id="gaLink" target="_blank" rel="noopener" style="color:#ddd"></a></p></div>
+  <div class="row" style="justify-content:flex-end;gap:8px;flex-wrap:wrap"><button class="btn" id="gaLater">Not now</button><button class="btn" id="gaCopy" hidden>Copy link</button><button class="btn" id="gaDl" hidden>Download file</button><button class="btn pri" id="gaGo" hidden>Install</button><button class="btn pri" id="gaOk" hidden>Done</button></div>
+ </div></div>
+ <div class="coach" id="coach" hidden><div class="card">
+  <h2>How Reach Lab works</h2>
+  <ol>
+   <li><b>Brew your own ink:</b> Pick an empty marker top-left and open <b>Brew Lab</b> to build a batch from scratch — choose a base (Alcohol, Water, Oil, or Paint), blend raw pigments &amp; dyes with Kubelka-Munk tinting strength, and tune additives like DOT 3, Bitumen, or Penetrant.</li>
+   <li><b>Watch the chemistry:</b> Incompatible mixes (like oil/bitumen in water or unthinned tar) separate, sputter, or clog the nib just like real life.</li>
+   <li><b>Shake, squeeze &amp; prime:</b> Shake paint &amp; correction pens to mix the ball. Hold the tip still or press harder to juice a squeezer; low Squeeze % streaks instead of fading grey.</li>
+   <li><b>Tilt physics &amp; glare:</b> Tilt the phone to steer live meniscus drips downhill and sweep the gritty overhead glare across wet ink, glossy binders, and 3D glass shadows.</li>
+   <li><b>Surfaces &amp; weather:</b> Use <b>‹ ›</b> to switch walls. Tap <b>Dry / Wet / Rain</b> — wet walls bloom staining inks organically, and over-juiced penetrants seep even on dry walls.</li>
+   <li><b>Buff &amp; ghosting:</b> Use <b>Buff</b> (chemical rag) to test how hard your brew stains. High-stain dyes smear colour into the wall and ghost back through wipes.</li>
+   <li><b>Nib control:</b> Twist two fingers to rotate chisel nibs, adjust lean for edge drag, and cap markers when not in use.</li>
+  </ol>
+  <button class="btn pri" id="coachOk">Got it</button>
+ </div><div id="coachBar" hidden><i></i></div></div>
+</div>
+
+<script>
