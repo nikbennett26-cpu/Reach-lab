@@ -717,7 +717,7 @@ function ledgeHit(d,xw,col,re){const L0=LDG();if(L0.stone)return cillHit(d,xw,co
  }
  bx.restore();
  markInk(xw,L.y,rx,d.id,col);{const ix=idm.x;ix.save();ix.fillStyle=`rgb(${d.id*20},0,0)`;ix.fillRect(xw-rx,L.y-ry,rx*2,L.h+ry);ix.restore()}
- const ovf=L0.stone?2.4:.55;/* the stone cill is deep and flat: it fills up and spreads before it spills over the edge */if(p>ovf&&Math.random()<.7+Math.min(.25,(p-ovf)*.3)){/* the pool overflows and drips off the front of the ledge */ledgeLetGo(xw,L.y+L.h*.95,Math.min(Math.max(d.v0*.9,.6),.5+(p-ovf)*.7+Math.random()*.6),d.r,col,ovf);ledP[k]=p*.55;return true}
+ const ovf=L0.stone?2.4:.9;/* the stone cill is deep and flat: it fills up and spreads before it spills over the edge */if(p>ovf&&Math.random()<.4+Math.min(.25,(p-ovf)*.25)){/* the pool overflows and drips off the front of the ledge */ledgeLetGo(xw,L.y+L.h*.95,Math.min(Math.max(d.v0*.9,.6),.5+(p-ovf)*.7+Math.random()*.6),d.r,col,ovf);ledP[k]=p*.55;return true}
  return true}
 const C=8;let GW=1,GH_=1,water=new Float32Array(1),waterOn=false;const waterCv=document.createElement('canvas'),wctx=waterCv.getContext('2d');const mist=[];
 let wg=new Float32Array(1),wt=new Float32Array(1),wgOn=false;
@@ -1277,6 +1277,8 @@ function wetDyeCurtain(s,ink,col,dcol){
   }
   t-=sl;
  }
+ /* the dye curtain runs in the wall's water film and stops at the ledge: cut each tendril where it meets it */
+ if(ledgeLive()&&!LDG().sl){for(let k=strands.length-1;k>=0;k--){const p=strands[k].pts;let j=0;for(;j<p.length;j+=2)if(p[j+1]>ledgeY(p[j])-1)break;if(j<p.length){if(j<4){strands.splice(k,1);continue}strands[k].pts=p.slice(0,j)}}}
  if(!strands.length)return;
  /* Compute tight bounding box for the curtain canvas */
  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
@@ -1937,18 +1939,20 @@ function mergeRuns(dt){const G=gDir(),gm=Math.hypot(G.x,G.y)||1,ux=G.x/gm,uy=G.y
 function endSize(d){if(d.endK)return d.endK;const vr=clamp((d.vol||0)/(d.v0||1)),stub=d.maxT&&(d.tr||0)<=d.maxT*1.2;let k=vr<.08?.55+Math.random()*.2:.78+.5*clamp(vr*1.6);if(stub)k*=.82;if(Math.random()<.08)k*=1.3;return d.endK=clamp(k*(.9+Math.random()*.2),.5,1.45)}
 function runHaze(xa,ya,xb,yb,r,a,col){const P=dpr,pad=Math.ceil(16+r*2),X=Math.max(0,Math.floor((Math.min(xa,xb)-pad)*P)),Y=Math.max(0,Math.floor((Math.min(ya,yb)-pad)*P)),w=Math.ceil((Math.abs(xb-xa)+pad*2)*P),h=Math.ceil((Math.abs(yb-ya)+pad*2)*P);if(w<2||h<2)return;
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${(4.2+r*.55)*P}px)`}catch(_){}x.strokeStyle=col||'#5a3aa8';x.lineCap='round';x.lineWidth=(r*2.4+3.5)*P;x.beginPath();x.moveTo(xa*P-X,ya*P-Y);x.lineTo(xb*P-X,yb*P-Y);x.stroke();x.filter='none';
+ /* the haze is dye carried in the wall's water film: it stops at the ledge like the runs do, it doesn't carry on behind it */
+ if(ledgeLive()&&!LDG().sl){const xl=X/P,xr=(X+w)/P;x.globalCompositeOperation='destination-out';x.beginPath();x.moveTo(0,ledgeY(xl)*P-Y);x.lineTo(w,ledgeY(xr)*P-Y);x.lineTo(w,h);x.lineTo(0,h);x.closePath();x.fill();x.globalCompositeOperation='source-over'}
  bleedL.push({c,x:X,y:Y,t0:performance.now()+140,dur:1700,a,comp:'multiply'})}
 /* smooth 1-D value noise for drip wander */
 function vnz(t,sd){const i=Math.floor(t),f=t-i,u=f*f*(3-2*f),h=k=>{let v=Math.imul((k+sd*7919)|0,374761393)>>>0;v=Math.imul(v^(v>>>13),1274126177)>>>0;return((v^(v>>>16))>>>0)/4294967296};return h(i)+(h(i+1)-h(i))*u}
 /* DROPS THAT LET GO: a bead hanging off an overhang (a ledge or cill edge) swells until its weight beats surface tension,
    pinches off and falls clear of the wall — you see it drop, it doesn't paint the wall on the way down */
 const falls=[];
-function dropFall(x,y,r,col){if(falls.length>40||!col||col[0]!=='#')return;falls.push({x,y,r:Math.max(1,r),col,vy:20,vx:0,t:0,hang:.18+Math.random()*.35})}
+function dropFall(x,y,r,col){if(falls.length>40||!col||col[0]!=='#')return;falls.push({x,y,r:Math.max(1,r),col,vy:10,vx:0,t:0,hang:.45+Math.random()*.7})}
 /* A FULL LEDGE LETS GO IN DROPLETS: paint that spills off the lip hangs as a bead and falls clear as round drops (one to three,
    staggered) — it doesn't start a new run down the wall below the ledge */
-function ledgeLetGo(x,y,vol,r,col){const n=vol>1.3?3:vol>.7?2:1;for(let k=0;k<n;k++){const rr=Math.min(4.2,Math.max(1.5,(r||1)*1.25+vol*(k?.5:.7))),b=falls.length;
+function ledgeLetGo(x,y,vol,r,col){const n=vol>1.3?2:1;for(let k=0;k<n;k++){const rr=Math.min(4.2,Math.max(1.5,(r||1)*1.25+vol*(k?.5:.7))),b=falls.length;
   dropFall(x+(k?(Math.random()-.5)*7:0),y,rr,col);if(falls.length>b)falls[falls.length-1].hang+=k*(.25+Math.random()*.35)}}
-function runFalls(dt){for(let i=falls.length-1;i>=0;i--){const f=falls[i];f.t+=dt;if(f.t<f.hang)continue;const G=gDir(),gm=Math.hypot(G.x,G.y)||1;f.vy+=980*dt*(G.y/gm);f.vx+=980*dt*(G.x/gm);f.x+=f.vx*dt;f.y+=f.vy*dt;if(f.y>H+30||f.x<-30||f.x>W+30)falls.splice(i,1)}if(falls.length)dirty=true}
+function runFalls(dt){for(let i=falls.length-1;i>=0;i--){const f=falls[i];f.t+=dt;if(f.t<f.hang)continue;const G=gDir(),gm=Math.hypot(G.x,G.y)||1;f.vy+=520*dt*(G.y/gm);f.vx+=520*dt*(G.x/gm);f.vy=Math.min(f.vy,900);/* a heavy drop peels off slowly and falls slower than free-fall at this scale */f.x+=f.vx*dt;f.y+=f.vy*dt;if(f.y>H+30||f.x<-30||f.x>W+30)falls.splice(i,1)}if(falls.length)dirty=true}
 function drawFalls(x){if(!falls.length)return;x.save();x.setTransform(dpr,0,0,dpr,0,0);for(const f of falls){const hang=f.t<f.hang,k=hang?f.t/f.hang:1,sp=Math.hypot(f.vx,f.vy),st=Math.min(5,sp*.012),r=f.r*(hang?.7+.45*k:1);
   x.fillStyle=f.col;x.globalAlpha=.95;x.beginPath();x.ellipse(f.x,f.y+(hang?r*.6*k:0),r*(hang?1:.85),r*(hang?1+.4*k:1+st*.35),0,0,TAU);x.fill();
   if(!hang&&st>.3){x.globalAlpha=.35;x.beginPath();x.ellipse(f.x,f.y-r*st*.8,r*.5,r*st,0,0,TAU);x.fill()}
@@ -2074,7 +2078,7 @@ function runDrips(dt){runFalls(dt);runLedFeed();if(!drips.length)return;mergeRun
   if(!under&&!skip&&d.ink.chrome&&(CHQ[s.id]??.3)>.7){const bx=baked.x;bx.save();bx.fillStyle='rgba(255,255,255,.8)';if(Math.abs(d.gy)>.97){bx.fillRect(xw-d.r*.55,y0,Math.max(.6,d.r*.45),d.y-y0+.3);bx.fillStyle='rgba(40,44,50,.45)';bx.fillRect(xw+d.r*.35,y0,Math.max(.5,d.r*.4),d.y-y0+.3)}bx.restore()}
   if(!under&&doAux){/* a run dries from the top down: each stretch goes wet as the head passes, and a fat, full stretch holds its liquid longer than the thin tail of a spent run */const _cw=(typeof CARRY_WET!=='undefined'&&d.props&&CARRY_WET[d.props.base])||1;markWet(xw,yw,d.r+2,.9,TAUS[d.wk]*(d.wet?2.5:1)*1.3*_cw*(.6+.7*clamp(vr*1.2)+.15*Math.min(2,d.r)));if(d.col&&d.col[0]==='#')markInk(xw,yw,d.r+1,d.id,d.col);stampDripBuff(d,px0,py0,xw,yw,re,s);/* Wet surface: dye blooms organically at random spots along the drip as it crosses wet beads */
 if((s.wet||d.wet)&&d.em&&!d.soft&&!d.et&&!d.pigRun&&(DYEINK[d.ty]||(d.bp&&d.bp.ghost>=.42))&&blooms.length<850){ const wfB=typeof wetF==='function'?wetF(xw,yw):.55; d.blmD=(d.blmD||0)+Math.hypot(xw-px0,yw-py0); if(d.blmD>(14+Math.random()*28)&&Math.random()<(.16+wfB*.34)){  d.blmD=0;  const dTint=(d.bp&&d.bp.tint)||((d.ty==='stain'||d.ty==='bleed')&&typeof d.col==='string'&&d.col[0]==='#'&&lum(hex(d.col))<.24?'#5e24c4':d.col);  if(typeof dTint==='string'&&dTint[0]==='#'){   const bCol=washTint(dTint),bRad=Math.max(2.6,re*(2.2+Math.random()*4.2)*(0.7+wfB*.7));   blooms.push({x:xw+(Math.random()-.5)*re*1.8,y:yw,r:bRad,t0:performance.now(),life:1100+Math.random()*1300,col:bCol,ty:d.ty||'stain',next:0,dripped:1,drip:1,al:.036+Math.random()*.028,sx:.65+Math.random()*.55});  } }}}
-  const w=WET[d.wk];w.active=true;w.until=Math.max(w.until,performance.now()+TAUS[d.wk]*4500);if(done){if(d.et)etchRunDry(d);if(d.led&&!d.stp&&!d.et&&d.v0>.35&&d.vol<=0&&Math.random()<.8)dropFall(xw,yw+d.r,d.r*(1.1+Math.min(1,d.v0*.4)),typeof d.col==='string'?d.col:null);if(!d.settled){d.settled=1;dripSettle(d,s,xw,yw,Math.max(reD,d.r*(d.pin?.8:.62))*endSize(d),d.thick?1.2:1.12)}if(!d.et&&!d.wash){/* the bulb at the end is the last of the liquid: it stays wet well after the run above has skinned over */const _cw=(typeof CARRY_WET!=='undefined'&&d.props&&CARRY_WET[d.props.base])||1;markWet(xw,yw+d.r*.4,Math.max(3,d.r*2.2),1,TAUS[d.wk]*(d.wet?2.5:1)*3.2*_cw)}drips.splice(i,1)}}
+  const w=WET[d.wk];w.active=true;w.until=Math.max(w.until,performance.now()+TAUS[d.wk]*4500);if(done){if(d.et)etchRunDry(d);if(d.led&&!d.stp&&!d.et&&d.v0>.35&&d.vol<=0&&Math.random()<.45)dropFall(xw,yw+d.r,d.r*(1.1+Math.min(1,d.v0*.4)),typeof d.col==='string'?d.col:null);if(!d.settled){d.settled=1;dripSettle(d,s,xw,yw,Math.max(reD,d.r*(d.pin?.8:.62))*endSize(d),d.thick?1.2:1.12)}if(!d.et&&!d.wash){/* the bulb at the end is the last of the liquid: it stays wet well after the run above has skinned over */const _cw=(typeof CARRY_WET!=='undefined'&&d.props&&CARRY_WET[d.props.base])||1;markWet(xw,yw+d.r*.4,Math.max(3,d.r*2.2),1,TAUS[d.wk]*(d.wet?2.5:1)*3.2*_cw)}drips.splice(i,1)}}
  dirty=true}
 const SMOOTH=s=>s.absorb<.05&&s.rough<.05;
 /* HAND MIXED: colours lie side by side across the stick face at a fixed angle (how you hold it), drifting a little as the stick twists */
@@ -2455,7 +2459,7 @@ function settle(col,s){if(demo||!upright||s.absorb>.5)return;const ink=INK[pen.i
  const P=dpr,x0=Math.max(0,Math.floor(stroke.x0*P)),y0=Math.max(0,Math.floor(stroke.y0*P)),w=Math.min(stk.c.width-x0,Math.ceil((stroke.x1-stroke.x0)*P)),h=Math.min(stk.c.height-y0,Math.ceil((stroke.y1-stroke.y0)*P));if(w<3||h<6)return;
  const span=Math.max(h,90*P),top0=y0+h-span,now=(stroke.dryT0=stroke.dryT0||performance.now()),dark=lum(hex(col))<.3,str=(DYEINK[pen.ink]?1:.7)*(1-s.absorb)*dripLife()*(s.wet?1:.3);if(str<.03)return;/* on a wet wall the dye has water to sink through, so it settles a long way down the letter; on a dry wall it mostly sets where it lands */
  /* OVER-PRIMED: a flooded nib lays a much heavier wet film, so gravity drags far more of the dye down — the top thins right out and the bottom goes near-black */
- const ov=pen.valve?clamp((pen.flow-.95)/.35):pen.squeeze?clamp(((pen.sat??0)-.98)/.25):clamp((flowNow(null)-.95)/.4),wv=s.wet?.4:0,O=Math.min(1,ov+wv);
+ const ov=pen.valve?clamp((pen.flow-.95)/.35):pen.squeeze?clamp(((pen.sat??0)-.98)/.25):clamp((flowNow(null)-.95)/.4),wv=s.wet?.7:0,O=Math.min(1,ov+wv);
  /* light end / dark end follow gravity, and span every stroke that's still wet together, so a crossbar added
    to fresh letters takes the tone of where it sits in the tag */
  {const t=now;if(t-wetSpan.t>(TAUS[pen.ink]||1.5)*3500){wetSpan={x0:stroke.x0,y0:stroke.y0,x1:stroke.x1,y1:stroke.y1,t}}else{wetSpan.x0=Math.min(wetSpan.x0,stroke.x0);wetSpan.y0=Math.min(wetSpan.y0,stroke.y0);wetSpan.x1=Math.max(wetSpan.x1,stroke.x1);wetSpan.y1=Math.max(wetSpan.y1,stroke.y1);wetSpan.t=t}}

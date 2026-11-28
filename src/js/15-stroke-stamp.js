@@ -290,7 +290,7 @@ function settle(col,s){if(demo||!upright||s.absorb>.5)return;const ink=INK[pen.i
  const P=dpr,x0=Math.max(0,Math.floor(stroke.x0*P)),y0=Math.max(0,Math.floor(stroke.y0*P)),w=Math.min(stk.c.width-x0,Math.ceil((stroke.x1-stroke.x0)*P)),h=Math.min(stk.c.height-y0,Math.ceil((stroke.y1-stroke.y0)*P));if(w<3||h<6)return;
  const span=Math.max(h,90*P),top0=y0+h-span,now=(stroke.dryT0=stroke.dryT0||performance.now()),dark=lum(hex(col))<.3,str=(DYEINK[pen.ink]?1:.7)*(1-s.absorb)*dripLife()*(s.wet?1:.3);if(str<.03)return;/* on a wet wall the dye has water to sink through, so it settles a long way down the letter; on a dry wall it mostly sets where it lands */
  /* OVER-PRIMED: a flooded nib lays a much heavier wet film, so gravity drags far more of the dye down — the top thins right out and the bottom goes near-black */
- const ov=pen.valve?clamp((pen.flow-.95)/.35):pen.squeeze?clamp(((pen.sat??0)-.98)/.25):clamp((flowNow(null)-.95)/.4),wv=s.wet?.4:0,O=Math.min(1,ov+wv);
+ const ov=pen.valve?clamp((pen.flow-.95)/.35):pen.squeeze?clamp(((pen.sat??0)-.98)/.25):clamp((flowNow(null)-.95)/.4),wv=s.wet?.7:0,O=Math.min(1,ov+wv);
  /* light end / dark end follow gravity, and span every stroke that's still wet together, so a crossbar added
    to fresh letters takes the tone of where it sits in the tag */
  {const t=now;if(t-wetSpan.t>(TAUS[pen.ink]||1.5)*3500){wetSpan={x0:stroke.x0,y0:stroke.y0,x1:stroke.x1,y1:stroke.y1,t}}else{wetSpan.x0=Math.min(wetSpan.x0,stroke.x0);wetSpan.y0=Math.min(wetSpan.y0,stroke.y0);wetSpan.x1=Math.max(wetSpan.x1,stroke.x1);wetSpan.y1=Math.max(wetSpan.y1,stroke.y1);wetSpan.t=t}}

@@ -111,6 +111,8 @@ function wetDyeCurtain(s,ink,col,dcol){
   }
   t-=sl;
  }
+ /* the dye curtain runs in the wall's water film and stops at the ledge: cut each tendril where it meets it */
+ if(ledgeLive()&&!LDG().sl){for(let k=strands.length-1;k>=0;k--){const p=strands[k].pts;let j=0;for(;j<p.length;j+=2)if(p[j+1]>ledgeY(p[j])-1)break;if(j<p.length){if(j<4){strands.splice(k,1);continue}strands[k].pts=p.slice(0,j)}}}
  if(!strands.length)return;
  /* Compute tight bounding box for the curtain canvas */
  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
