@@ -2165,7 +2165,7 @@ function burp(x,y,s){const pr=clamp(pressNow||.5),r=R()*(.75+pr*.6),X=stk.x;/* s
 function sputterCut(){if(!stroke||!pen.squeeze||pen.dauber||pen.life>=.22||demo)return;const P=stroke.pts||[];if(P.length<8)return;const k=clamp((.22-pen.life)/.17),r=R()*1.1,x=stk.x;x.save();x.setTransform(dpr,0,0,dpr,0,0);x.globalCompositeOperation='destination-out';x.lineCap='round';x.lineWidth=r*2.3;x.strokeStyle='rgba(0,0,0,.7)';x.filter='blur(1.5px)';let off=0,bx=[];
  for(let i=2;i<P.length;i+=2){const dx=P[i]-P[i-2],dy=P[i+1]-P[i-1],dd=Math.hypot(dx,dy);if(off>0){const t=Math.min(1,off/Math.max(.01,dd));x.beginPath();x.moveTo(P[i-2],P[i-1]);x.lineTo(P[i-2]+dx*t,P[i-1]+dy*t);x.stroke();off-=dd;if(off<=0&&Math.random()<.12)bx.push(P[i],P[i+1])}else if(Math.random()<dd*.016*k){off=2+Math.random()*12*k;const t=Math.random();x.beginPath();x.moveTo(P[i-2]+dx*t,P[i-1]+dy*t);x.lineTo(P[i],P[i+1]);x.stroke();off-=dd*(1-t)}}
  x.restore();for(let i=0;i<bx.length;i+=2)burp(bx[i],bx[i+1],stroke.s)}
-function begin(p,e){if(tool==='draw'&&pad.dampT&&performance.now()-pad.dampT<30000&&waterAt(p.x,p.y)>.15)buffSay('damp','Still damp from the buff — fresh ink feathers and runs');ageDrop();/* SITTING NIB: between strokes the ink keeps feeding the felt; after a long pause the first touch blots */{const idle=(performance.now()-(lastUpT||performance.now()))/1000;if(lastUpT&&idle>7&&!pen.squeeze&&!pen.metal&&!pen.capped&&!INK[pen.ink].solid&&!INK[pen.ink].etch&&(pen.valve?pen.flow>.8:true)&&tiltFeed()>.9)setTimeout(()=>{if(stroke)blob(p.x,p.y,R()*(1.15+Math.min(.9,(idle-7)/25)),stroke.s)},0)}leanSen=0;leanNow=leanSet;lmSeq=(lmSeq>=65000?1:lmSeq+1);stroke={sid:lmSeq,p0:{x:p.x,y:p.y},x0:1e9,y0:1e9,x1:-1e9,y1:-1e9,ink:INK[pen.ink],n:0,s:surfAt(p.x,p.y),dwell:0,bead:0,low:0,gaps:[...Array.from({length:Math.max(3,Math.min(pen.dauber?18:16,Math.round(R()/(pen.dauber?5:2.2))))},()=>({o:Math.random()*2-1,w:.5+Math.random()*1.4,s:.4+Math.random()*.6}))]};downT=performance.now();lastMove=downT;
+function begin(p,e){if(tool==='draw'&&pad.dampT&&performance.now()-pad.dampT<30000&&waterAt(p.x,p.y)>.15)buffSay('damp','Still damp from the buff — fresh ink feathers and runs');ageDrop();/* SITTING NIB: between strokes the ink keeps feeding the felt; after a long pause the first touch blots */{const idle=(performance.now()-(lastUpT||performance.now()))/1000;if(lastUpT&&idle>7&&!pen.squeeze&&!pen.metal&&!pen.capped&&!INK[pen.ink].solid&&!INK[pen.ink].etch&&(pen.valve?pen.flow>.8:true)&&tiltFeed()>.9)setTimeout(()=>{if(stroke)blob(p.x,p.y,R()*(1.15+Math.min(.9,(idle-7)/25)),stroke.s)},0)}leanSen=0;leanNow=leanSet;lmSeq=(lmSeq>=65000?1:lmSeq+1);stroke={dirt0:pen.dirtAmt||0,dirtCol0:pen.dirtCol,sid:lmSeq,p0:{x:p.x,y:p.y},x0:1e9,y0:1e9,x1:-1e9,y1:-1e9,ink:INK[pen.ink],n:0,s:surfAt(p.x,p.y),dwell:0,bead:0,low:0,gaps:[...Array.from({length:Math.max(3,Math.min(pen.dauber?18:16,Math.round(R()/(pen.dauber?5:2.2))))},()=>({o:Math.random()*2-1,w:.5+Math.random()*1.4,s:.4+Math.random()*.6}))]};downT=performance.now();lastMove=downT;
  saidSolv=0;if(pen.capped){pen.capped=false;renderCap()}pen.idle=0;if(pen.tipDry>.25)toast(pen.tipDry>.7?'Left uncapped — the tip has dried out. Keep drawing to wet it again':'The tip has started to dry — the first strokes come out scratchy');
  if(pen.valve&&pen.flow>1.1){blob(p.x,p.y,R()*(1.2+(pen.flow-1.1)*5),stroke.s);toast('Over-primed — the valve dumped a blob');pen.flow=1;showFlow()}
  if(pen.squeeze&&!demo&&(pen.sat??0)<.14&&!pen._saidPrime0){pen._saidPrime0=1;toast('Squeeze is at 0% — tap the wall or drag Squeeze % to prime the nib')}
@@ -2208,7 +2208,7 @@ function seg(a,b,e,dt){const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d<.01)
   stroke.wd=(stroke.wd||0)+d;if(stroke.wd>6){stroke.wd=0;const w=wetAt(b.x,b.y);
    if(w>.25&&stroke.n>6){const sol=['alcohol','alcpaint','flow','chrome','fluid','oil'].includes(pen.ink);smear(baked,a,b,w*(sol?.5:.32),R()*1.1);if(sol){restoreBg(b,w*.05,R()*.8);if(!saidSolv++)toast('The solvent is lifting the wet ink underneath')}}
    const wc=colG[inkCell(b.x,b.y)],ownDye=!!CAST(pen.ink,color);if(w>.12&&wc&&wc[0]==='#'&&!(ownDye&&stroke&&stroke.s&&stroke.s.wet)){const d0=hex(wc),C=hex(color),dist=Math.abs(d0[0]-C[0])+Math.abs(d0[1]-C[1])+Math.abs(d0[2]-C[2]);
-    if(dist>90&&!sameHue(d0,C)){const hx='#'+[d0[0],d0[1],d0[2]].map(v=>Math.min(255,Math.round(v/24)*24).toString(16).padStart(2,'0')).join('');pen.dirtCol=pen.dirtAmt>.05?mixHex(pen.dirtCol,hx,.3):hx;const a0=pen.dirtAmt||0;pen.dirtAmt=Math.min(.55,a0+w*.08);
+    if(dist>90&&!sameHue(d0,C)){const hx='#'+[d0[0],d0[1],d0[2]].map(v=>Math.min(255,Math.round(v/24)*24).toString(16).padStart(2,'0')).join('');pen.dirtCol=pen.dirtAmt>.05?mixHex(pen.dirtCol,hx,.3):hx;const a0=pen.dirtAmt||0;pen.dirtAmt=Math.min(carrier()==='alcohol'?.25:.55,a0+w*(carrier()==='alcohol'?.04:.08));
      if(a0<.2&&pen.dirtAmt>=.2)toast('The nib picked up wet colour — it runs clean as you keep drawing')}}}
   if(pen.dirtAmt>0)pen.dirtAmt=Math.max(0,pen.dirtAmt-d*.0012);pen.idle=0;if(pen.tipDry>0)pen.tipDry=Math.max(0,pen.tipDry-d*.0035);
   if(pen.tip==='chisel'&&!pen.metal){const r0=pen.round||0;pen.round=Math.min(1,r0+d*(1+surfAt(b.x,b.y).rough*2)/(pen.ink==='oil'&&pen.valve?7000:40000));if(r0<.4&&pen.round>=.4)toast((pen.ink==='oil'&&pen.valve?'The nib is wearing — rounder and fatter now. ':'')+'The chisel corners are rounding off — thick-to-thin is fading')}}
@@ -2277,12 +2277,16 @@ function sClip(c){if(!stroke||!isFinite(stroke.x0)||!isFinite(stroke.x1))return;
    makes dried crossings darker). Its solvent opens up the wet ink and the two run together, so the crossing only darkens a
    little. The stroke is baked with its density cut back where it lies over still-wet ink, in proportion to how wet that is. */
 function sameHue(a,b){/* the same colour, just lighter or darker (your own runs and pools): picking it up doesn't change the nib's colour */const hs=c=>{const r=c[0]/255,g=c[1]/255,bb=c[2]/255,mx=Math.max(r,g,bb),mn=Math.min(r,g,bb),d=mx-mn;if(d<.06)return [0,0];let h=mx===r?((g-bb)/d)%6:mx===g?(bb-r)/d+2:(r-g)/d+4;return [(h*60+360)%360,d/(mx||1)]};const A=hs(a),B=hs(b);if(A[1]<.12&&B[1]<.12)return true;if(A[1]<.12||B[1]<.12)return false;const dh=Math.abs(A[0]-B[0]);return Math.min(dh,360-dh)<28}
+/* what the ink is carried in: decides how long it stays wet and what happens when you cross it wet.
+   Alcohol flashes off in seconds and re-dissolves; oil stays open for ages and really mixes; water paint is in between. */
+function carrier(){const p=pen.props;if(p&&p.base)return p.base;const m=/homemade: (\w+) base/.exec(pen.inkLabel||'');if(m)return m[1];return pen.ink==='oil'?'oil':pen.ink==='water'?'water':pen.ink==='fluid'?'solvent':'alcohol'}
+const CARRY_WET={oil:4,water:1.6,paint:1.6,alcohol:1,solvent:1.4};
 /* how wet the ink already on the wall is, as a soft mask over a box (device px): from the wet grid, only where there is ink */
 function wetMaskC(X,Y,w,h,k){const P=dpr,m=document.createElement('canvas');m.width=w;m.height=h;const mx=m.getContext('2d');let any=false;
  const gx0=Math.max(0,Math.floor(X/P/C)),gy0=Math.max(0,Math.floor(Y/P/C)),gx1=Math.min(GW-1,Math.ceil((X+w)/P/C)),gy1=Math.min(GH_-1,Math.ceil((Y+h)/P/C));
  for(let gy=gy0;gy<=gy1;gy++)for(let gx=gx0;gx<=gx1;gx++){const i=gy*GW+gx,wv=wg[i]||0;if(!inkG[i]||wv<.03)continue;any=true;mx.fillStyle=`rgba(0,0,0,${(k*clamp(wv/.16)).toFixed(3)})`;mx.fillRect(gx*C*P-X,gy*C*P-Y,C*P+1,C*P+1)}
  if(!any){freeC(m);return null}const o=document.createElement('canvas');o.width=w;o.height=h;const ox=o.getContext('2d');try{ox.filter=`blur(${(C*P*.6).toFixed(1)}px)`}catch(_){}ox.drawImage(m,0,0);freeC(m);return o}
-function wetSoak(){if(demo||!stroke||!DYEINK[pen.ink])return null;const b=sBox(),X=b[0],Y=b[1],w=Math.min(b[2],stk.c.width-X),h=Math.min(b[3],stk.c.height-Y);if(w<4||h<4)return null;
+function wetSoak(){if(demo||!stroke||!DYEINK[pen.ink]||carrier()==='alcohol')return null;/* alcohol dye stacks even wet: the crossing shows both dyes */const b=sBox(),X=b[0],Y=b[1],w=Math.min(b[2],stk.c.width-X),h=Math.min(b[3],stk.c.height-Y);if(w<4||h<4)return null;
  const m=wetMaskC(X,Y,w,h,.62);if(!m)return null;
  const o=document.createElement('canvas');o.width=w;o.height=h;const ox=o.getContext('2d');ox.drawImage(stk.c,X,Y,w,h,0,0,w,h);ox.globalCompositeOperation='destination-out';ox.drawImage(m,0,0);freeC(m);
  return {c:o,x:X,y:Y}}
@@ -2298,21 +2302,25 @@ function wetMerge(s){if(demo||!stroke)return;const ink=INK[pen.ink];if(!ink||ink
   const dx=P0[k+2]-P0[k-2],dy=P0[k+3]-P0[k-1],dl=Math.hypot(dx,dy)||1;hits.push({x,y,oc,w,ux:dx/dl,uy:dy/dl})}
  if(!hits.length)return;
  const P=dpr,b=sBox(),X=b[0],Y=b[1],W=Math.min(b[2],stk.c.width-X),H=Math.min(b[3],stk.c.height-Y);if(W<4||H<4)return;
- const snap=document.createElement('canvas');snap.width=W;snap.height=H;snap.getContext('2d').drawImage(stk.c,X,Y,W,H,0,0,W,H);
- const paint=!DYEINK[pen.ink],st=stroke;
+ const snap=document.createElement('canvas');snap.width=W;snap.height=H;snap.getContext('2d').drawImage(stk.c,X,Y,W,H,0,0,W,H);const snapRaw=document.createElement('canvas');snapRaw.width=W;snapRaw.height=H;snapRaw.getContext('2d').drawImage(snap,0,0);
+ const car=carrier(),paint=!DYEINK[pen.ink],oily=car==='oil',drag=paint||oily,alc=car==='alcohol'&&!paint,st=stroke;
+ /* alcohol re-dissolving wet dye pushes it aside: a slightly lighter, frilly fringe round the crossing, on the old line */
+ let idS=null;if(alc){idS=document.createElement('canvas');idS.width=W;idS.height=H;idS.getContext('2d').drawImage(idm.c,X,Y,W,H,0,0,W,H)}
+ const wall=(s.mean?'#'+s.mean.map(v=>Math.round(v).toString(16).padStart(2,'0')).join(''):'#ffffff');
  liftJob(()=>{const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');x.setTransform(P,0,0,P,-X,-Y);x.lineCap='round';
-  for(const h of hits){const mix=kmMix([{c:h.oc,ts:1},{c:newC,ts:1}]),len=r*(paint?1.6+2.4*h.w:1.1+1.2*h.w);
+  for(const h of hits){const mix=kmMix([{c:h.oc,ts:1},{c:newC,ts:1}]),len=r*(drag?(oily?2.2+3*h.w:1.6+2.4*h.w):.9+.8*h.w);
    /* the blended body of the crossing */
-   x.globalAlpha=(paint?.5:.42)*h.w;x.fillStyle=mix;x.beginPath();x.arc(h.x,h.y,r*.95,0,TAU);x.fill();
+   x.globalAlpha=(drag?.5:.22)*h.w;x.fillStyle=mix;x.beginPath();x.arc(h.x,h.y,r*.95,0,TAU);x.fill();
    /* streaks of the wet ink underneath, dragged along the direction the nib was travelling */
-   const n=paint?3+Math.round(Math.random()*3):2;
+   const n=drag?(oily?4:3)+Math.round(Math.random()*3):2;
    for(let j=0;j<n;j++){const off=(Math.random()-.5)*r*1.5,px=-h.uy*off,py=h.ux*off,l=len*(.45+Math.random()*.7);
-    x.globalAlpha=(paint?.55:.3)*h.w*(.5+Math.random()*.5);x.strokeStyle=Math.random()<.55?h.oc:mix;x.lineWidth=Math.max(.6,r*(paint?.12+Math.random()*.22:.35));
+    x.globalAlpha=(drag?.55:.22)*h.w*(.5+Math.random()*.5);x.strokeStyle=Math.random()<.55?h.oc:mix;x.lineWidth=Math.max(.6,r*(drag?.12+Math.random()*.22:.3));
     x.beginPath();x.moveTo(h.x+px-h.ux*r*.4,h.y+py-h.uy*r*.4);x.lineTo(h.x+px+h.ux*l,h.y+py+h.uy*l);x.stroke()}}
   x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;
   /* soften, then keep it inside the new stroke */
-  const o=document.createElement('canvas');o.width=W;o.height=H;const ox=o.getContext('2d');try{ox.filter=`blur(${((paint?.5:1.1)*P).toFixed(1)}px)`}catch(_){}ox.drawImage(c,0,0);ox.filter='none';ox.globalCompositeOperation='destination-in';ox.drawImage(snap,0,0);
-  freeC(c);freeC(snap);bleedL.push({sid:st,c:o,x:X,y:Y,t0:performance.now(),dur:paint?260:700,a:1})});
+  const o=document.createElement('canvas');o.width=W;o.height=H;const ox=o.getContext('2d');try{ox.filter=`blur(${((drag?.5:1.1)*P).toFixed(1)}px)`}catch(_){}ox.drawImage(c,0,0);ox.filter='none';ox.globalCompositeOperation='destination-in';ox.drawImage(snap,0,0);
+  freeC(c);freeC(snap);bleedL.push({sid:st,c:o,x:X,y:Y,t0:performance.now(),dur:drag?260:700,a:1});
+  if(idS){/* the lifted fringe: a ring just outside the new stroke, only on the old wet line */const f=document.createElement('canvas');f.width=W;f.height=H;const fx=f.getContext('2d');fx.setTransform(P,0,0,P,-X,-Y);fx.strokeStyle=wall;for(const h of hits){fx.globalAlpha=.3*h.w;fx.lineWidth=r*.45;fx.beginPath();for(let a=0;a<=TAU+.01;a+=TAU/14){const rr=r*(1.18+Math.random()*.18),px=h.x+Math.cos(a)*rr,py=h.y+Math.sin(a)*rr;a?fx.lineTo(px,py):fx.moveTo(px,py)}fx.stroke()}fx.setTransform(1,0,0,1,0,0);fx.globalAlpha=1;try{fx.filter=`blur(${(.8*P).toFixed(1)}px)`}catch(_){}fx.globalCompositeOperation='destination-in';fx.drawImage(idS,0,0);fx.filter='none';fx.globalCompositeOperation='destination-out';fx.drawImage(snapRaw,0,0);freeC(idS);freeC(snapRaw);bleedL.push({sid:st,c:f,x:X,y:Y,t0:performance.now(),dur:500,a:1})}else freeC(snapRaw)});
 }
 function rimEdge(ink,s){/* an etch tag is one even frost — and opaque paint merges seamlessly with no overlap rim */if(INK[pen.ink]&&INK[pen.ink].etch&&ETCHABLE[s.id])return;if(ink.chrome||isOpaqueInk(ink))return;if(DYEINK[pen.ink]&&stroke&&stroke.sagF)return;if(pen.ink==='solid'||pen.multi)return;if(s.absorb>.3)return;const d=Math.max(1,Math.round(1.4*dpr));
  for(const o of [rimA,rimB]){o.x.save();o.x.setTransform(1,0,0,1,0,0);sClip(o.x);o.x.globalCompositeOperation='copy';o.x.drawImage(stk.c,0,0);o.x.restore()}
@@ -2624,7 +2632,7 @@ function coffeeRing(s){if(INK[pen.ink]&&INK[pen.ink].etch&&ETCHABLE[s.id])return
  const ov=pen.valve?clamp((pen.flow-.7)/.6):pen.squeeze?clamp(((pen.sat??0)-.7)/.5):clamp((flowNow(null)-.6)/.6),sl=(SLICK[s.id]||.4),K=clamp((.35+.65*ov)*(.5+.5*sl)*(s.wet?.5:1)*(1-s.absorb*1.5));if(K<.05)return;
  const col=curCol(),rw=Math.max(1.6,Math.min(9,R()*(.16+.14*ov)))*P,mk=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
  /* Build ONE watertight silhouette combining the letter stroke AND its sag curtain so the coffee-ring rim wraps the outer edge of both with zero seam between them */
- const wetM=wetMaskC(X,Y,w,h,.85),st=stroke,src=mk(),sx=src.getContext('2d');sx.drawImage(stk.c,X,Y,w,h,0,0,w,h);const idmC=mk();idmC.getContext('2d').drawImage(idm.c,X,Y,w,h,0,0,w,h);if(sf){sx.drawImage(sf.c,sf.x-X,sf.y-Y);sx.drawImage(sf.c,sf.x-X,sf.y-Y-Math.max(1,Math.round(1.5*P)))}
+ const wetM=carrier()==='alcohol'?null:wetMaskC(X,Y,w,h,.85),st=stroke,src=mk(),sx=src.getContext('2d');sx.drawImage(stk.c,X,Y,w,h,0,0,w,h);const idmC=mk();idmC.getContext('2d').drawImage(idm.c,X,Y,w,h,0,0,w,h);if(sf){sx.drawImage(sf.c,sf.x-X,sf.y-Y);sx.drawImage(sf.c,sf.x-X,sf.y-Y-Math.max(1,Math.round(1.5*P)))}
  const erode=(x,d)=>{x.globalCompositeOperation='destination-in';const n=12;for(let i=0;i<n;i++){const a=i/n*TAU;x.drawImage(src,Math.cos(a)*d,Math.sin(a)*d)}x.globalCompositeOperation='source-over'};
  const baseT=stroke.dryT0||performance.now(),tRim=baseT+(sf?1300:500),dRim=sf?7600:8400;
  /* 1. the rim: dye carried out to the pinned outer edge of the combined letter + sag */
@@ -2645,7 +2653,10 @@ function wipeRunsUnder(){if(!RUNL.c.width)return;const bx=baked.x;if(tmp.c.width
  const ix=idm.x;ix.save();ix.setTransform(1,0,0,1,0,0);sClip(ix);ix.globalCompositeOperation='destination-out';for(const [ox,oy] of [[0,0],[1,0],[-1,0],[0,1],[0,-1]])ix.drawImage(tmp.c,ox,oy);ix.restore();
  tx.globalCompositeOperation='source-in';tx.drawImage(bg.c,0,0);tx.restore();bx.save();bx.setTransform(1,0,0,1,0,0);sClip(bx);bx.drawImage(tmp.c,0,0);bx.restore();
  const rl=RUNL.x;rl.save();rl.setTransform(1,0,0,1,0,0);sClip(rl);rl.globalCompositeOperation='destination-out';rl.drawImage(stk.c,0,0);rl.drawImage(stk.c,0,0);rl.restore()}
-function end(){if(!stroke)return;landPulse(stroke);landRun(stroke);lastUpT=performance.now();{const Pp=stroke.pts||[];let mx=0;for(let i=2;i<Pp.length;i+=2)mx=Math.max(mx,Math.hypot(Pp[i]-Pp[0],Pp[i+1]-Pp[1]));const tap=mx<10&&performance.now()-(stroke.p0t||downT)<380;if(tap&&(stroke.pk||0)>.86&&tool==='draw'&&!demo&&!INK[pen.ink].solid&&!INK[pen.ink].etch&&flowNow(null)>.3&&last)splatBurst(last.x,last.y,stroke.s,clamp((stroke.pk-.86)/.14));
+/* colour picked up from wet ink part-way through a letter shows in the marks laid down after that point; the whole-letter passes at
+   lift (settling, bevel, rims, blends) use the colour the nib had when the letter started, or they would recolour the start of it too */
+function end(){if(!stroke)return;const dA=pen.dirtAmt,dC=pen.dirtCol;if(stroke.dirt0!==undefined){pen.dirtAmt=stroke.dirt0<.05?0:(stroke.dirt0+(dA||0))/2;pen.dirtCol=stroke.dirtCol0}try{endBody()}finally{pen.dirtAmt=dA;pen.dirtCol=dC}}
+function endBody(){if(!stroke)return;landPulse(stroke);landRun(stroke);lastUpT=performance.now();{const Pp=stroke.pts||[];let mx=0;for(let i=2;i<Pp.length;i+=2)mx=Math.max(mx,Math.hypot(Pp[i]-Pp[0],Pp[i+1]-Pp[1]));const tap=mx<10&&performance.now()-(stroke.p0t||downT)<380;if(tap&&(stroke.pk||0)>.86&&tool==='draw'&&!demo&&!INK[pen.ink].solid&&!INK[pen.ink].etch&&flowNow(null)>.3&&last)splatBurst(last.x,last.y,stroke.s,clamp((stroke.pk-.86)/.14));
  /* correction-fluid pens round off every lift-off into a small teardrop blob instead of a blunt cut tip */
  else if(pen.ink==='fluid'&&!demo&&tool==='draw'&&last)blob(last.x,last.y,R()*.95,stroke.s)
  /* Nib lift-off contact spike: breaking contact leaves a small meniscus bead that feeds drips at stroke ends */
@@ -2662,7 +2673,7 @@ function end(){if(!stroke)return;landPulse(stroke);landRun(stroke);lastUpT=perfo
  const w=wetC(pen.wet||pen.ink);w.x.save();w.x.setTransform(1,0,0,1,0,0);sClip(w.x);w.x.globalAlpha=1-s.absorb*.5;w.x.drawImage(stk.c,0,0);w.x.globalAlpha=1;w.x.globalCompositeOperation='source-in';w.x.fillStyle='#fff';w.x.fillRect(0,0,w.c.width,w.c.height);w.x.restore();
  const _wt=performance.now();w.active=true;w.t0=_wt;w.until=_wt+TAUS[pen.wet||pen.ink]*4500*(s.wet?2.5:1);
  wetMerge(s);
- {const amt=1-s.absorb*.5,tau=TAUS[pen.wet||pen.ink]*(s.wet?2.5:1)*1.3,r=R()*1.05+2,ti=Object.keys(INK).indexOf(pen.ink)+1,col=curCol();const P=stroke.pts||[];for(let i=0;i<P.length;i+=2){markWet(P[i],P[i+1],r,amt,tau);markInk(P[i],P[i+1],r*.8,ti,col,1)}}
+ {const amt=1-s.absorb*.5,tau=TAUS[pen.wet||pen.ink]*(s.wet?2.5:1)*1.3*(CARRY_WET[carrier()]||1),r=R()*1.05+2,ti=Object.keys(INK).indexOf(pen.ink)+1,col=curCol();const P=stroke.pts||[];for(let i=0;i<P.length;i+=2){markWet(P[i],P[i+1],r,amt,tau);markInk(P[i],P[i+1],r*.8,ti,col,1)}}
  {const _isPearl=!!(pen.props&&pen.props.pearl),mt0=ink.chrome||ink.future||METAL[color]||_isPearl;if(mt0)need(metal);const mx=metal.x;mx.save();mx.setTransform(1,0,0,1,0,0);sClip(mx);const mt=mt0;mx.globalCompositeOperation=mt?'source-over':'destination-out';if(mt)mx.globalAlpha=ink.chrome?1:_isPearl?.62:ink.future?.2:.85;mx.drawImage(stk.c,0,0);mx.restore();if(mt)metalOn=true;shineDirty=true}
  /* Silver nitrate photo-reactive darkening: goes down pale, slowly develops into a deep brownish-black permanent stain */
  if(pen.props&&pen.props.photoDark&&!demo){const P=dpr,pad=4,x0=Math.max(0,Math.floor((stroke.x0-pad)*P)),y0=Math.max(0,Math.floor((stroke.y0-pad)*P)),w=Math.min(stk.c.width-x0,Math.ceil((stroke.x1-stroke.x0+pad*2)*P)),h=Math.min(stk.c.height-y0,Math.ceil((stroke.y1-stroke.y0+pad*2)*P));if(w>=4&&h>=4){const pc=document.createElement('canvas');pc.width=w;pc.height=h;const px=pc.getContext('2d');px.drawImage(stk.c,x0,y0,w,h,0,0,w,h);px.globalCompositeOperation='source-in';px.fillStyle='#261910';px.fillRect(0,0,w,h);bleedL.push({sid:stroke,c:pc,x:x0,y:y0,t0:performance.now()+400,dur:6500,a:.78,comp:'multiply',slow:1})}}
@@ -3678,7 +3689,7 @@ function mixProps(m){const a=m.add,cm=mixCompat(m);const tauMul=+((m.base==='oil
  let flt=null;if(kd==='paint'&&m.pigs.has('tio2')){let best=0;for(const id of m.pigs){const g=PIGS[id];if(id!=='tio2'&&g&&g.ts>=5&&g.ts>best){best=g.ts;flt=g.c}}}
  const fls=[...m.pigs].filter(id=>FLC[id]).map(id=>FLC[id]);
  const tex={bronze:kd==='dye'&&strongDye&&m.pot>=68?clamp((m.pot-60)/40):0,fish:0,wrinkle:0,gel:0,float:flt,rosin:a.has('rosin')?1:0,bitu:a.has('bitu')?1:0,chalk:kd==='paint'&&m.pot>=85?clamp((m.pot-80)/20):0,flash:a.has('methl')?1:0,level:a.has('surf')?clamp(.5+(m.thin-30)/60,.3,1):0,bite:(a.has('xylene')||a.has('mek'))?1:0,fecl:0,flake:fls.length?fls:null};
- return {tex,buff:buffFromMix(m,mixType(m),ghostCol),tauMul:clamp(tauMul,.42,3.2),viscMul:clamp(viscMul,.42,2.6),tyMul,cdMul,bleedAdd,corrosive,ghostBoost:clamp(ghostBoost,0,.85),ghostCol,curdle:cm.curdle,clog:cm.clog,warns:cm.warns,skinOver,matte,pearl,photoDark}}
+ return {tex,buff:buffFromMix(m,mixType(m),ghostCol),tauMul:clamp(tauMul,.42,3.2),viscMul:clamp(viscMul,.42,2.6),tyMul,cdMul,bleedAdd,corrosive,ghostBoost:clamp(ghostBoost,0,.85),ghostCol,curdle:cm.curdle,clog:cm.clog,warns:cm.warns,skinOver,matte,pearl,photoDark,base:m.base}}
 function mixType(m){if(m.add.has('etch'))return 'etch';const kd=mixKind(m);if(kd==='metal')return 'chrome';if(kd==='paint')return m.base==='oil'?'oil':m.base==='water'?'water':'alcpaint';
  /* the base decides first: a water brew stays a water ink however strong the dye; in solvent bases the stain model picks the dye-ink type */
  if(m.base==='water')return 'water';const sm=stainModel(m);if(sm.ghost>=.55)return (sm.P>=.85&&(m.bind??25)<40&&(m.thin??35)>=50)?'bleed':'stain';if((m.pot||0)>=60&&sm.ghost>=.35)return (m.bind??25)>=45?'stain':'bleed';return (m.bind??25)>=60?'flow':'alcohol'}
