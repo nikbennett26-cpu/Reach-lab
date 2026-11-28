@@ -305,7 +305,7 @@ function settle(col,s){if(demo||!upright||s.absorb>.5)return;const ink=INK[pen.i
  stroke.settleGS={sx:GS.sx+x0,sy:GS.sy+y0,ex:GS.ex+x0,ey:GS.ey+y0,O,LM1,LA1,LM2,a:Math.min(1,(.92+.08*O)*str)};/* the wet black-body layer (dyeSplit) is thinned with this same gradient, so the light top shows through on a wet wall */
  const mk=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
  /* light top: the thinned film lets the wall and the dye's own hue through */
- {const c=mk(),x=c.getContext('2d');x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.globalCompositeOperation='source-in';const g=x.createLinearGradient(GS.sx,GS.sy,GS.ex,GS.ey),wall='#'+s.mean.map(v=>Math.round(v).toString(16).padStart(2,'0')).join(''),lite0=dark?(CAST(pen.ink,col)?mixHex(col,CAST(pen.ink,col),.5+.35*O):mixHex(col,wall,.36+.42*O)):mixHex(col,wall,.58+.3*O),lite=wk?mixHex(lite0,wall,dark?.42:.3):lite0;
+ {const c=mk(),x=c.getContext('2d');x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.globalCompositeOperation='source-in';const g=x.createLinearGradient(GS.sx,GS.sy,GS.ex,GS.ey),wall='#'+s.mean.map(v=>Math.round(v).toString(16).padStart(2,'0')).join(''),lite0=dark?(CAST(pen.ink,col)?mixHex(col,CAST(pen.ink,col),.5+.35*O):mixHex(col,wall,.36+.42*O)):mixHex(col,wall,.58+.3*O),lite=!DYEINK[pen.ink]?mixHex(col,wall,.18+.1*O)/* opaque paint keeps covering: only a slight thinning */:wk?mixHex(lite0,wall,dark?.42:.3):lite0;
   g.addColorStop(0,lite);g.addColorStop(.55,lite);g.addColorStop(1,col);x.fillStyle=g;x.fillRect(0,0,w,h);x.globalCompositeOperation='destination-in';const m=x.createLinearGradient(GS.sx,GS.sy,GS.ex,GS.ey);m.addColorStop(0,'rgba(0,0,0,1)');m.addColorStop(LM1,`rgba(0,0,0,${LA1.toFixed(2)})`);m.addColorStop(LM2,'rgba(0,0,0,0)');x.fillStyle=m;x.fillRect(0,0,w,h);/* overlaps only ever go darker: the thinned light top never lightens ink that was already there */x.globalCompositeOperation='destination-out';x.drawImage(idm.c,x0,y0,w,h,0,0,w,h);bleedL.push({sid:stroke,c,x:x0,y:y0,t0:now+300,dur:8200,a:Math.min(1,(.92+.08*O)*str)})}
  /* dark bottom: pigment piles up */
  {const c=mk(),x=c.getContext('2d');x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.globalCompositeOperation='source-in';x.fillStyle=dyeDeep(col,1.6+((dark?.72:.55)+.25*O)*.9+.7*wk);x.fillRect(0,0,w,h);x.globalCompositeOperation='destination-in';const m=x.createLinearGradient(GS.sx,GS.sy,GS.ex,GS.ey);m.addColorStop(.4-.15*O-.1*wk,'rgba(0,0,0,0)');m.addColorStop(.75-.1*O,`rgba(0,0,0,${(.85+.15*O).toFixed(2)})`);m.addColorStop(1,'rgba(0,0,0,1)');x.fillStyle=m;x.fillRect(0,0,w,h);stroke.settleL={sid:stroke,c,x:x0,y:y0,t0:now+500,dur:8600,a:Math.min(1,(.95+.05*O)*str)}}}
@@ -333,13 +333,14 @@ function dripSettle(d,s,ex,ey,rb,hd){
   x.beginPath();x.ellipse(bxC,byC,rb*(hd||1.15),rb*(hd||1.15)*1.38,an-Math.PI/2,0,TAU);x.fill();
  }
  x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='source-in';
- const O=Math.min(1,(d.ov||0)+(s.wet?.4:0)),dark=lum(hex(col))<.3,str=(1-s.absorb)*dripLife();
+ const O=Math.min(1,(d.ov||0)+(s.wet?.4:0)),dark=lum(hex(col))<.3,str=(1-s.absorb)*dripLife()*(s.wet?1:.3)/* as much as the letter itself settles: light on a dry wall */;
  /* the run is where the ink pooled: it dries with more pigment per area than the letter, so darker - dyes a lot, paints less, chrome goes to a dark gunmetal */const deepCol=dye?dyeDeep(col,1.45+((dark?.72:.55)+.25*O)*.7):chr?mixHex(col,'#2b2f35',.68+.15*O):mixHex(col,'#000000',((dark?.4:.3)+.15*O)*Math.pow(1-lum(hex(col)),1.5));/* extra pigment makes a paint run richer, not greyer: a white or pale run dries as solid as the letter (reference photos) */
- const wy0=(wetSpan&&wetSpan.y1>wetSpan.y0+8)?wetSpan.y0*P:Y,wy1=(wetSpan&&wetSpan.y1>wetSpan.y0+8)?Math.max(wy0+90*P,wetSpan.y1*P):Y+Math.max(h,90*P);
- const g=x.createLinearGradient(0,wy0-Y,0,wy1-Y);
+ /* the gradient runs along the run itself, from where it leaves the letter (the letter's own colour) to its end, so the
+    join is invisible and it deepens smoothly instead of the whole run turning one darker colour */
+ const ry0=pts[1],ry1=rb?ey+rb:pts[pts.length-2],g=x.createLinearGradient(0,ry0*P-Y,0,Math.max(ry0+20,ry1)*P-Y);
  /* fade from the SAME colour at zero alpha: fading from transparent black makes the in-between a semi-transparent grey,
-    which is what turned light runs grey part-way down */g.addColorStop(Math.max(0,.4-.15*O),rgbaOf(deepCol,0));
- g.addColorStop(.75-.1*O,deepCol);
+    which is what turned light runs grey part-way down */g.addColorStop(0,rgbaOf(deepCol,0));
+ g.addColorStop(.35,rgbaOf(deepCol,.25));
  g.addColorStop(1,deepCol);
  x.fillStyle=g;x.fillRect(0,0,w,h);
  bleedL.push({c,x:X,y:Y,t0:(d.st0||performance.now())+500,dur:8600,a:Math.min(1,(.95+.05*O)*str)});
