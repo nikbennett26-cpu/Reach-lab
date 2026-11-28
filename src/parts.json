@@ -36,6 +36,7 @@
  "js/31-get-app-guide.js",
  "js/32-boot.js",
  "js/33-replay-video.js",
+ "js/33b-trace.js",
  "js/34-replay-library.js",
  "tail.html"
 ]

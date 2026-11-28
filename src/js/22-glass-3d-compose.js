@@ -96,5 +96,6 @@ function compose(){const x=dctx;x.save();x.setTransform(1,0,0,1,0,0);x.globalCom
  if(stroke&&stroke.priming&&down&&last&&pen.flow<.6){x.save();x.setTransform(dpr,0,0,dpr,0,0);const r=R()+10;x.lineWidth=3;x.strokeStyle='rgba(0,0,0,.35)';x.beginPath();x.arc(last.x,last.y,r,0,TAU);x.stroke();x.strokeStyle='#ff5a1f';x.beginPath();x.arc(last.x,last.y,r,-Math.PI/2,-Math.PI/2+TAU*clamp(pen.flow/.55));x.stroke();x.restore()}
  if(twist){x.save();x.setTransform(dpr,0,0,dpr,0,0);x.translate(twist.mid.x,twist.mid.y);x.rotate(angle*Math.PI/180);const w=pen.w*MM,t=pen.th*MM;x.fillStyle='rgba(255,90,31,.25)';x.strokeStyle='#ff5a1f';x.lineWidth=2;x.fillRect(-w/2,-t/2,w,t);x.strokeRect(-w/2,-t/2,w,t);x.rotate(-angle*Math.PI/180);x.fillStyle='#ff5a1f';x.font='600 14px Archivo,sans-serif';x.textAlign='center';x.fillText(angle+'°',0,-w/2-10);x.restore()}
  if(!(LOWGPU&&down)&&!lightOn)for(const k in WET){const w=WET[k];if(!w.active)continue;x.globalCompositeOperation='screen';if(!LOWGPU){x.globalAlpha=.025;x.drawImage(w.c,0,0)}x.globalAlpha=.07;x.drawImage(w.c,-dpr,-dpr)}
+ drawTrace(x);
  x.restore()}
 
