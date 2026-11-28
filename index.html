@@ -239,6 +239,9 @@ body.fs #status{opacity:.85;pointer-events:none;transform:none}body.fs #status .
   <h2 id="colTitle">Colours</h2><p class="hint" id="colHint"></p>
   <div class="cgrid" id="cgrid"></div>
   <div id="cbrewBox" hidden><span class="lbl sg">Your brews</span><div class="cgrid" id="cbrews"></div></div>
+  <span class="lbl sg">Stock colours</span><div class="cgrid sm" id="cadd"></div>
+  <div class="row" style="margin-top:8px"><button class="btn" id="cCustom">Mix any colour…</button><input type="color" id="cPick" hidden></div>
+  <div id="cmine" hidden><span class="lbl sg">Colours you added · tap to remove</span><div class="cgrid sm"></div></div>
  </section>
 
  <section class="sheet" id="moreSheet" aria-label="Settings"><div class="grab"></div>
@@ -1046,8 +1049,12 @@ const gCal={ey:[0,0,0,0],k:-1};
 const rotK=(x,y,k)=>k===0?{x,y}:k===1?{x:y,y:-x}:k===2?{x:-x,y:-y}:{x:-y,y:x};
 addEventListener('devicemotion',e=>{const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;const vx=-(a.x||0)/9.81,vy=(a.y||0)/9.81;
  if(gCal.k<0){const r=scrRot(vx,vy);let best=0,bd=-9;for(let k=0;k<4;k++){const q=rotK(vx,vy,k),d=-Math.hypot(q.x-r.x,q.y-r.y);if(d>bd){bd=d;best=k}}gCal.k=best;gCal.ey=[0,0,0,0];gCal.ey[best]=.25}
- for(let k=0;k<4;k++)gCal.ey[k]+=(rotK(vx,vy,k).y-gCal.ey[k])*.03;
- let top=gCal.k;for(let k=0;k<4;k++)if(gCal.ey[k]>gCal.ey[top]+.3)top=k;gCal.k=top;
+ /* The self-calibration assumes the screen turns itself to stay upright. In the phone app the screen is locked to portrait, so
+    when you hold the phone sideways the 'down' really is the screen's side: keep the calibration from the first second and stop,
+    or it would slowly re-learn sideways as 'down' and the runs would go straight down again. */
+ gCal.n=(gCal.n||0)+1;const locked=document.documentElement.classList.contains('inapp')&&Math.min(screen.width||9e3,screen.height||9e3)<600;
+ if(!locked||gCal.n<70){for(let k=0;k<4;k++)gCal.ey[k]+=(rotK(vx,vy,k).y-gCal.ey[k])*.03;
+ let top=gCal.k;for(let k=0;k<4;k++)if(gCal.ey[k]>gCal.ey[top]+.3)top=k;gCal.k=top}
  const r0=rotK(vx,vy,gCal.k),gx=r0.x,gy=r0.y;if(!grav.live){grav.live=true;grav.x=gx;grav.y=gy}grav.x+=(gx-grav.x)*.08;grav.y+=(gy-grav.y)*.08;grav.m=Math.min(1,Math.hypot(grav.x,grav.y))});
 window.__rlG=()=>[gDir(),gCal.k];window.__rlD=()=>({down,tool,stroke:!!stroke,ptrs:ptrs.size,upright,drips:drips.length,spreads:spreads.length,cells:rainCells.length});window.__rlP=()=>({PENS,pen,openSheet,fillPen,BOTTLES,TC});window.__rlCol=c=>{color=c};window.__rlT=()=>[tilt.x,tilt.y,tilt.tx,tilt.ty];/* manual hold: when the screen can't rotate (rotation lock, in-app browser) or there's no motion sensor, say how the phone is held */
 let gMode=(()=>{try{return localStorage.getItem('rlGrav')||'auto'}catch(e){return 'auto'}})();const GMODES={auto:'Drips: auto (sensor)',down:'Drips: portrait',left:'Drips: phone turned left',right:'Drips: phone turned right',up:'Drips: upside down'},GVEC={down:{x:0,y:1},left:{x:1,y:0},right:{x:-1,y:0},up:{x:0,y:-1}};
@@ -3564,7 +3571,7 @@ const BOTTLES=[];
 try{const mx=JSON.parse(localStorage.getItem('rlMixes')||'[]');for(const m of mx)if(m&&m.id&&!BOTTLES.find(b=>b.id===m.id))BOTTLES.unshift(m)}catch(_){}
 /* an empty squeezer stops calling itself empty once it has ink in it */
 function penNm(p){const n=p.name||'';return p.empty&&p.fill&&(p.life??1)>0?n.replace(/^Empty\s+/i,'').replace(/^./,c=>c.toUpperCase()):n}
-function fillPen(p,b,quiet){p.humect=b.humect||0;p.gloss=b.gloss||0;p.ruff=b.ruff||0;p.shift=b.shift||0;p.props=b.props?Object.assign({},b.props):null;if(p.squeeze)p.sat=0;if(b.juice&&p.valve)p.flow=Math.min(1.5,.9+b.juice*.6);p.fill=b.id;p.ink=b.ink;p.colors=b.colors.slice();p.inkLabel=b.label;p.shake=b.shake||p.ball?1:0;p.mix=p.shake?.12:1;/* the empty bullet has its own mixing ball: a fresh fill needs shaking */if(!quiet){p.life=1;p.flow=.35}if(p===pen&&!quiet){color=p.colors[0];renderRack();renderColors();renderReact();renderTop();save()}}
+function fillPen(p,b,quiet){p.humect=b.humect||0;p.gloss=b.gloss||0;p.ruff=b.ruff||0;p.shift=b.shift||0;p.props=b.props?Object.assign({},b.props):null;if(p.squeeze)p.sat=0;if(b.juice&&p.valve)p.flow=Math.min(1.5,.9+b.juice*.6);p.fill=b.id;p.ink=b.ink;p.colors=b.colors.slice();p.inkLabel=b.label;p.shake=b.shake||p.ball?1:0;p.mix=p.shake?.12:1;/* the empty bullet has its own mixing ball: a fresh fill needs shaking */penExtras(p);/* colours you added to this pen stay through a refill */if(!quiet){p.life=1;p.flow=.35}if(p===pen&&!quiet){color=p.colors[0];renderRack();renderColors();renderReact();renderTop();save()}}
 function showRefills(msg){renderFill();openSheet('penSheet');const fb=$('#fillBox');if(!fb||fb.hidden)return;requestAnimationFrame(()=>{fb.scrollIntoView({block:'start',behavior:'smooth'});fb.classList.remove('pulse');void fb.offsetWidth;fb.classList.add('pulse')});if(msg)toast(msg)}
 /* ---------- INK BENCH: build a custom ink from ingredient types, mapped onto the app's ink physics ---------- */
 const MX={base:'alcohol',pot:65,bind:25,thin:35,pigs:new Set(['nig']),add:new Set(),amt:{}};
@@ -4385,6 +4392,21 @@ function traceUI(){const t=document.getElementById('traceToggle'),r=document.get
  q('traceClear')&&q('traceClear').addEventListener('click',()=>traceClear());
  q('traceA')&&q('traceA').addEventListener('input',e=>{TRACE.a=clamp(+e.target.value/100,.05,.8);traceUI();dirty=true;try{compose()}catch(_){}});
  traceUI()})();
+/* ---------- STOCK COLOURS ON THE COLOUR CIRCLE ----------
+   Any pen can carry extra colours on top of the ones its ink came with: pick from a palette of common marker colours or mix
+   any colour with the picker. They're kept per pen (localStorage), survive refills, and can be removed again.
+   The ink's behaviour (flow, drips, stain, buff) still comes from what's in the pen; only the colour changes. */
+const PEN_PAL=['#111111','#f4f3ee','#8a8d91','#d41414','#ff5a14','#ffb000','#f2e21a','#9ef01a','#14a046','#0d6e4e','#14b4c8','#1e64d2','#163aa8','#4b1498','#a01ea8','#ff3c9c','#c91c6e','#6e3416','#c48e2a','#e8d7b0','#7fd7f0','#c8a0f0','#ffc8d8','#c0c4c8'];
+function penColStore(){try{return JSON.parse(localStorage.getItem('rlCols')||'{}')||{}}catch(_){return {}}}
+function penColSave(o){try{localStorage.setItem('rlCols',JSON.stringify(o))}catch(_){}}
+function penExtrasOf(p){const o=penColStore();return (p&&o[p.id])||[]}
+/* fold a pen's added colours into its colour list (called after every fill and at start-up) */
+function penExtras(p){if(!p||!p.colors)return;for(const c of penExtrasOf(p))if(!p.colors.includes(c))p.colors.push(c)}
+function penColAdd(c){if(!/^#[0-9a-f]{6}$/i.test(c))return;c=c.toLowerCase();const o=penColStore(),L=o[pen.id]||(o[pen.id]=[]);if(!pen.colors.includes(c)){if(!L.includes(c))L.push(c);penColSave(o);pen.colors.push(c)}color=c;renderColors();renderReact();save();toast(cname(c)+' added to this pen')}
+function penColDel(c){const o=penColStore(),L=o[pen.id]||[];const i=L.indexOf(c);if(i<0)return;L.splice(i,1);penColSave(o);const j=pen.colors.indexOf(c);if(j>=0&&pen.colors.length>1)pen.colors.splice(j,1);if(color===c)color=pen.colors[0];renderColors();renderReact();save()}
+function renderColAdd(){const g=document.getElementById('cadd'),m=document.getElementById('cmine');if(!g)return;
+ g.innerHTML=PEN_PAL.filter(c=>!pen.colors.includes(c)).map(c=>`<button class="cs" data-add="${c}" aria-label="Add ${cname(c)}"><i style="background:${c}"></i>${cname(c)}</button>`).join('');
+ const mine=penExtrasOf(pen);if(m){m.hidden=!mine.length;m.querySelector('.cgrid').innerHTML=mine.map(c=>`<button class="cs" data-del="${c}" aria-label="Remove ${cname(c)}"><i style="background:${c}"></i>✕ ${cname(c)}</button>`).join('')}}
 /* ---------- YOUR BREWS ON THE COLOUR CIRCLE ----------
    The colour sheet lists the inks you've made in Brew Lab, so you can swap the pen to one with a tap, the way you'd pick up the
    bottle and fill it. Squeeze level and how much ink is left stay as they were, so switching mid-tag doesn't empty the pen. */
@@ -4395,9 +4417,15 @@ function pickBrew(id){const b=BOTTLES.find(q=>q.id===id);if(!b)return;
  const sat=pen.sat,life=pen.life,mix=pen.mix;fillPen(pen,b,false);if(pen.squeeze&&sat!=null)pen.sat=sat;if(life!=null)pen.life=Math.max(.05,life);if(pen.shake&&mix!=null)pen.mix=Math.max(pen.mix,mix*.9);
  showFlow();renderColors();renderReact();save();closeSheets();toast(b.name||'Brew loaded')}
 (()=>{const q=id=>document.getElementById(id);
- const _r=renderCSheet;renderCSheet=function(){_r.apply(this,arguments);renderBrewPick()};
+ /* the colour sheet is rebuilt by renderCSheet(); keep the brew and stock sections in step with it */
+ const _r=renderCSheet;renderCSheet=function(){penExtras(pen);_r.apply(this,arguments);renderBrewPick();renderColAdd()};
+ for(const p of PENS)penExtras(p);
  q('cbrews')&&q('cbrews').addEventListener('click',e=>{const b=e.target.closest('[data-brew]');if(b)pickBrew(b.dataset.brew)});
- try{renderBrewPick()}catch(_){}})();
+ q('cadd')&&q('cadd').addEventListener('click',e=>{const b=e.target.closest('[data-add]');if(b)penColAdd(b.dataset.add)});
+ q('cmine')&&q('cmine').addEventListener('click',e=>{const b=e.target.closest('[data-del]');if(b)penColDel(b.dataset.del)});
+ const pk=q('cPick');q('cCustom')&&q('cCustom').addEventListener('click',()=>{if(!pk)return;pk.value=/^#[0-9a-f]{6}$/i.test(color)?color:'#ff5a14';pk.click()});
+ pk&&pk.addEventListener('change',()=>penColAdd(pk.value));
+ try{renderBrewPick();renderColAdd()}catch(_){}})();
 /* ---------- SAVED PLAYBACKS LIBRARY (localStorage) ---------- */
 
 
