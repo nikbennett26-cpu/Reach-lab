@@ -56,7 +56,10 @@ function dyeSplit(s,col){const cast=CAST(pen.ink,col);if(!cast||demo||!upright)r
  /* patchy curtain of crisp violet/blue runs */
  wetWash(s,INK[pen.ink],col,{dye});
  /* crisp black letter body stays on top */
- {const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.globalCompositeOperation='source-in';x.fillStyle=col;x.fillRect(0,0,w,h);bleedL.push({c,x:x0,y:y0,t0:now,dur:1,a:1,top:1})}
+ {const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.globalCompositeOperation='source-in';x.fillStyle=col;x.fillRect(0,0,w,h);
+  /* but on a wet wall the dye still sinks: thin the body where settle() lightened the top, so the light top isn't buried */
+  const G=stroke.settleGS;if(G&&G.a>.03){x.globalCompositeOperation='destination-out';const m=x.createLinearGradient(G.sx-x0,G.sy-y0,G.ex-x0,G.ey-y0),O=G.O;m.addColorStop(0,`rgba(0,0,0,${G.a.toFixed(2)})`);m.addColorStop(.6-.12*O,`rgba(0,0,0,${(G.a*(.35-.1*O)).toFixed(2)})`);m.addColorStop(.75-.1*O,'rgba(0,0,0,0)');x.fillStyle=m;x.fillRect(0,0,w,h)}
+  bleedL.push({c,x:x0,y:y0,t0:now,dur:1,a:1,top:1})}
  {const tops=bleedL.filter(q=>q.top),rest=bleedL.filter(q=>!q.top);bleedL.length=0;bleedL.push(...rest,...tops)}
  stroke.split=1;return true}
 function wetDyeCurtain(s,ink,col,dcol){
