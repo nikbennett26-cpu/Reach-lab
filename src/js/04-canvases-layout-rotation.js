@@ -101,6 +101,9 @@ function doLayout(){
    const l=dx0+minX*sc,ri=dx0+maxX*sc,t=dy0+minY*sc,bt=dy0+maxY*sc;
    if(l<pad)dx0+=(pad-l);else if(ri>W-pad)dx0-=(ri-(W-pad));
    if(bt>botY)dy0-=(bt-botY);if(dy0+minY*sc<topY)dy0+=(topY-(dy0+minY*sc));
+   /* a tag whose runs reach the ledge stays sitting on the ledge: keep the same (scaled) gap between its lowest point and the ledge,
+      so the runs still meet their pools after a turn, and a round trip puts it back where it was */
+   if(ldBand){const gapOld=ldBand.oy0-maxY;if(gapOld>=0&&gapOld<70){const want=ldNewY0-gapOld*sc;dy0+=want-(dy0+maxY*sc);if(dy0+minY*sc<topY)dy0+=(topY-(dy0+minY*sc))}}
   }else{
    const maxSc=Math.min(W/oldW,H/oldH);
    if(sc>maxSc){sc=maxSc;dx0=(W-oldW*sc)/2;dy0=(H-oldH*sc)/2}

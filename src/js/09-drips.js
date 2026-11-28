@@ -58,7 +58,7 @@ function runBlooms(now){if(!blooms.length)return;const bx=baked.x;let k=0;
   if(!b.dripped&&p>.25&&Math.random()<.075*ink.run*(1-s.absorb)){b.dripped=1;drip(b.x+(Math.random()-.5)*rad,cy+rad*.6,.4+Math.random()*.7,{ty:b.ty,col:b.col,r:Math.min(1.5,Math.max(.6,b.r*.04+Math.random()*.6)),al:.6+Math.random()*.3})}}
  dirty=true}
 const bleedQ=[],ghostSeen=new Set(),qh=(r,g,b)=>'#'+[r,g,b].map(v=>Math.min(255,Math.round(v/16)*16).toString(16).padStart(2,'0')).join('');
-const bleedL=[];
+const bleedL=[],_bleedL=bleedL;
 function queueBleed(){if(INK[pen.ink].comp==='multiply'||INK[pen.ink].etch)return;/* etch doesn't bleed — no extra overlay layers on it */const light=lum(hex(color))>=.68,x0=Math.max(0,Math.floor(stroke.x0*dpr)),y0=Math.max(0,Math.floor(stroke.y0*dpr)),w=Math.min(stk.c.width-x0,Math.ceil((stroke.x1-stroke.x0)*dpr)),h=Math.min(stk.c.height-y0,Math.ceil((stroke.y1-stroke.y0)*dpr));if(w<2||h<2)return;
  let a,id,bk;try{a=stk.x.getImageData(x0,y0,w,h).data;id=idm.x.getImageData(x0,y0,w,h).data;bk=baked.x.getImageData(x0,y0,w,h).data}catch(_){return}
  const keys=Object.keys(INK),out=new ImageData(w,h),o=out.data;let nh=0,nd=0,nb=0;

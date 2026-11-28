@@ -152,18 +152,21 @@ function stampGhost(s,ink){
  /* how much colourant soaks in: the ink's chemistry x the surface's porosity — a chemical bite gets into glass & plastic too */
  const por=Math.max(surfPorosity(s),bp.bite||0);
  const op=clamp(.25*bp.ghost*por,0,.25);if(op<.008)return;
+ /* the faint stain is blurred and tinted a frame later (from a snapshot of the letter), so lifting the pen stays smooth */
+ const snap=document.createElement('canvas');snap.width=w;snap.height=h;snap.getContext('2d').drawImage(stk.c,x0,y0,w,h,0,0,w,h);
+ const col=curCol(),inkNow=pen.ink;liftJob(()=>{
  const c=document.createElement('canvas');c.width=w;c.height=h;const tx=c.getContext('2d');
  try{tx.filter=`blur(${(2*P).toFixed(1)}px)`}catch(_){}
- tx.drawImage(stk.c,x0,y0,w,h,0,0,w,h);tx.filter='none';
- const col=curCol(),isDk=typeof col==='string'&&col[0]==='#'&&lum(hex(col))<.22;
- const gTint=bp.tint||(isDk&&(pen.ink==='stain'||pen.ink==='bleed')?'#5e24c4':isDk&&(pen.ink==='alcohol'||pen.ink==='flow')?'#2044a8':col);
+ tx.drawImage(snap,0,0);tx.filter='none';freeC(snap);
+ const isDk=typeof col==='string'&&col[0]==='#'&&lum(hex(col))<.22;
+ const gTint=bp.tint||(isDk&&(inkNow==='stain'||inkNow==='bleed')?'#5e24c4':isDk&&(inkNow==='alcohol'||inkNow==='flow')?'#2044a8':col);
  if(typeof gTint==='string'&&gTint[0]==='#'){
   tx.globalCompositeOperation='source-in';tx.fillStyle=gTint;tx.fillRect(0,0,w,h);
  }
  grainLock(tx,x0,y0,w,h);
  const gx=ghostC.x;gx.save();gx.setTransform(1,0,0,1,0,0);
  gx.globalCompositeOperation='source-over';gx.globalAlpha=op;
- gx.drawImage(c,x0,y0);gx.restore();freeC(c);
+ gx.drawImage(c,x0,y0);gx.restore();freeC(c);})
 }
 function stripSheen(b,r){if(satOn&&SAT){erase({x:SAT.getContext('2d')},b,1,r)}if(wgOn2&&GLW){erase({x:GLW.getContext('2d')},b,1,r)}for(const k in WET)if(WET[k].active)erase(WET[k],b,1,r);if(glL.c.width){erase(glL,b,1,r);glDirty=true}if(shL.c.width){erase(shL,b,1,r);shDirty=true}if(metal.c.width){erase(metal,b,1,r);shineDirty=true}if(fjL.c.width)erase(fjL,b,1,r);lForce=true;slForce=true;g3Dirty=true}
 let _bfT=0;
