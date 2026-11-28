@@ -282,6 +282,7 @@ function thickLook(col){if(!THICK()||demo)return;if(pen.ink==='solid'||pen.multi
 /* SETTLING: runny ink on an upright wall — the dense dye sinks while it's wet, so each mark dries thin and lighter
    at the top and deep and dark at the bottom (pigment piles up low) */
 let wetSpan={x0:0,y0:0,x1:0,y1:0,t:0};
+function rgbaOf(hx,a){const c=hex(hx);return `rgba(${c[0]},${c[1]},${c[2]},${a})`}
 /* a dye film made more concentrated: each colour channel's transmission raised to a power (Beer's law), so yellow deepens to amber
    and blue to navy, keeping its hue, instead of greying toward black (mixing with black turned yellow olive) */
 function dyeDeep(col,k){const L=hex(col).map(v=>Math.pow(clamp(v/255,.002,1),2.2));return '#'+L.map(v=>Math.round(Math.pow(Math.pow(v,k),1/2.2)*255).toString(16).padStart(2,'0')).join('')}
@@ -329,7 +330,8 @@ function dripSettle(d,s,ex,ey,rb,hd){
  /* the run is where the ink pooled: it dries with more pigment per area than the letter, so darker - dyes a lot, paints less, chrome goes to a dark gunmetal */const deepCol=dye?mixHex(col,'#000000',(dark?.72:.55)+.25*O):chr?mixHex(col,'#2b2f35',.68+.15*O):mixHex(col,'#000000',((dark?.4:.3)+.15*O)*Math.pow(1-lum(hex(col)),1.5));/* extra pigment makes a paint run richer, not greyer: a white or pale run dries as solid as the letter (reference photos) */
  const wy0=(wetSpan&&wetSpan.y1>wetSpan.y0+8)?wetSpan.y0*P:Y,wy1=(wetSpan&&wetSpan.y1>wetSpan.y0+8)?Math.max(wy0+90*P,wetSpan.y1*P):Y+Math.max(h,90*P);
  const g=x.createLinearGradient(0,wy0-Y,0,wy1-Y);
- g.addColorStop(Math.max(0,.4-.15*O),'rgba(0,0,0,0)');
+ /* fade from the SAME colour at zero alpha: fading from transparent black makes the in-between a semi-transparent grey,
+    which is what turned light runs grey part-way down */g.addColorStop(Math.max(0,.4-.15*O),rgbaOf(deepCol,0));
  g.addColorStop(.75-.1*O,deepCol);
  g.addColorStop(1,deepCol);
  x.fillStyle=g;x.fillRect(0,0,w,h);
