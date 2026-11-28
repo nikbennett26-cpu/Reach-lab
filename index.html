@@ -238,6 +238,9 @@ body.fs #status{opacity:.85;pointer-events:none;transform:none}body.fs #status .
  <section class="sheet" id="colorSheet" aria-label="Colours"><div class="grab"></div>
   <h2 id="colTitle">Colours</h2><p class="hint" id="colHint"></p>
   <div class="cgrid" id="cgrid"></div>
+  <span class="lbl sg">Add a colour</span><div class="cgrid sm" id="cadd"></div>
+  <div class="row" style="margin-top:8px"><button class="btn pri" id="cCustom">Mix any colour…</button><input type="color" id="cPick" hidden></div>
+  <div id="cmine" hidden><span class="lbl sg">Colours you added · tap to remove</span><div class="cgrid sm"></div></div>
  </section>
 
  <section class="sheet" id="moreSheet" aria-label="Settings"><div class="grab"></div>
@@ -245,7 +248,7 @@ body.fs #status{opacity:.85;pointer-events:none;transform:none}body.fs #status .
   <span class="lbl sg">Wall</span><div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="ledgeBtn" aria-pressed="true">Ledge: on</button><button class="btn" id="lightBtn" aria-pressed="true">Light &amp; reflections: on</button></div>
   <div style="margin:-4px 0 10px"><div style="width:100%"><label class="lbl" for="ageR">Age the wall — <span id="ageV">fresh</span></label><input type="range" id="ageR" min="0" max="100" value="0" style="width:100%"></div></div>
   <span class="lbl sg">Physics</span><div class="row"><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="gravBtn">Drips: auto (sensor)</button><button class="btn" id="calBtn">Calibrate finger</button><button class="btn" id="perfBtn" aria-pressed="false">Frame time: off</button></div>
-  <span class="lbl sg">Practice</span><div class="row"><button class="btn pri" id="traceWall">Trace this tag</button><button class="btn pri" id="tracePhoto">Trace a photo</button><button class="btn" id="traceToggle" aria-pressed="false" disabled>Guide: none</button><button class="btn" id="traceClear" disabled>Remove guide</button></div><input type="file" id="traceFile" accept="image/*" hidden>
+  <span class="lbl sg">Practice</span><div class="row"><button class="btn pri" id="traceWall">Trace this tag</button><button class="btn" id="traceToggle" aria-pressed="false" disabled>Guide: none</button><button class="btn" id="traceClear" disabled>Remove guide</button></div>
   <div style="margin:-4px 0 10px"><label class="lbl" for="traceA">Guide strength — <span id="traceAV">35%</span></label><input type="range" id="traceA" min="5" max="80" value="35" style="width:100%" disabled></div>
   <span class="lbl sg">Share &amp; app</span><div class="row"><button class="btn pri" id="playBtn">Replay tag</button><button class="btn pri" id="playRecShareBtn">Record video</button><button class="btn" id="wallShare">Share wall</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button></div>
   <div id="tipsBox"><div class="row" style="justify-content:space-between;align-items:center"><span class="lbl">Tips <span style="opacity:.6;text-transform:none">· red dot = new</span></span><button class="btn" id="tipsClear">Clear</button></div><ol id="tipsList" class="small" style="margin:0 0 12px;padding-left:20px;max-height:180px;overflow:auto;line-height:1.45"><li style="opacity:.6">Tips from your drawing show up here.</li></ol></div>
@@ -3563,7 +3566,7 @@ const BOTTLES=[];
 try{const mx=JSON.parse(localStorage.getItem('rlMixes')||'[]');for(const m of mx)if(m&&m.id&&!BOTTLES.find(b=>b.id===m.id))BOTTLES.unshift(m)}catch(_){}
 /* an empty squeezer stops calling itself empty once it has ink in it */
 function penNm(p){const n=p.name||'';return p.empty&&p.fill&&(p.life??1)>0?n.replace(/^Empty\s+/i,'').replace(/^./,c=>c.toUpperCase()):n}
-function fillPen(p,b,quiet){p.humect=b.humect||0;p.gloss=b.gloss||0;p.ruff=b.ruff||0;p.shift=b.shift||0;p.props=b.props?Object.assign({},b.props):null;if(p.squeeze)p.sat=0;if(b.juice&&p.valve)p.flow=Math.min(1.5,.9+b.juice*.6);p.fill=b.id;p.ink=b.ink;p.colors=b.colors.slice();p.inkLabel=b.label;p.shake=b.shake||p.ball?1:0;p.mix=p.shake?.12:1;/* the empty bullet has its own mixing ball: a fresh fill needs shaking */if(!quiet){p.life=1;p.flow=.35}if(p===pen&&!quiet){color=p.colors[0];renderRack();renderColors();renderReact();renderTop();save()}}
+function fillPen(p,b,quiet){p.humect=b.humect||0;p.gloss=b.gloss||0;p.ruff=b.ruff||0;p.shift=b.shift||0;p.props=b.props?Object.assign({},b.props):null;if(p.squeeze)p.sat=0;if(b.juice&&p.valve)p.flow=Math.min(1.5,.9+b.juice*.6);p.fill=b.id;p.ink=b.ink;p.colors=b.colors.slice();p.inkLabel=b.label;p.shake=b.shake||p.ball?1:0;p.mix=p.shake?.12:1;/* the empty bullet has its own mixing ball: a fresh fill needs shaking */penExtras(p);/* colours you added to this pen stay through a refill */if(!quiet){p.life=1;p.flow=.35}if(p===pen&&!quiet){color=p.colors[0];renderRack();renderColors();renderReact();renderTop();save()}}
 function showRefills(msg){renderFill();openSheet('penSheet');const fb=$('#fillBox');if(!fb||fb.hidden)return;requestAnimationFrame(()=>{fb.scrollIntoView({block:'start',behavior:'smooth'});fb.classList.remove('pulse');void fb.offsetWidth;fb.classList.add('pulse')});if(msg)toast(msg)}
 /* ---------- INK BENCH: build a custom ink from ingredient types, mapped onto the app's ink physics ---------- */
 const MX={base:'alcohol',pot:65,bind:25,thin:35,pigs:new Set(['nig']),add:new Set(),amt:{}};
@@ -4360,8 +4363,7 @@ function runPlaybackSeq(seq,extraBrews){
 function startPlayback(){runPlaybackSeq(recList().slice(),null)}
 /* ---------- TRACE: a faint guide on the wall to practise a handstyle over ----------
    The guide is drawn over the wall on screen only. It is not ink: it never dries, drips, buffs or shows in a saved picture.
-   Two sources: the tag already on the wall (it's lifted off as a guide and the wall wiped, so you write it again over it),
-   or a photo of a handstyle from the phone (the dark marks of a light photo, or the light marks of a dark one, become the guide). */
+   The tag already on the wall is lifted off as a guide and the wall wiped, so you write it again over it. */
 var TRACE={c:null,w:0,h:0,on:false,a:.35,col:'#2f8cff'};
 function traceMk(w,h){const c=document.createElement('canvas');c.width=Math.max(1,w|0);c.height=Math.max(1,h|0);return c}
 /* tint a mask (alpha only) in the guide colour */
@@ -4372,18 +4374,6 @@ function traceClear(){if(TRACE.c)freeC(TRACE.c);TRACE.c=null;TRACE.on=false;trac
 function traceFromWall(){if(!idm.c.width)return false;const c=traceMk(idm.c.width,idm.c.height),x=c.getContext('2d');x.drawImage(idm.c,0,0);
  let any=false;try{const d=x.getImageData(0,0,c.width,c.height).data;for(let i=3;i<d.length;i+=64)if(d[i]>20){any=true;break}}catch(_){any=true}
  if(!any){freeC(c);return false}traceSet(traceTint(c));return true}
-/* a photo: fit it between the top bar and the ledge, then keep its marks */
-function traceFromImage(img){const P=dpr,cw=Math.round(W*P),ch=Math.round(H*P);let top=0,bot=H;
- try{const tb=document.querySelector('.bar.top'),cr=cv.getBoundingClientRect();if(tb){const r=tb.getBoundingClientRect();if(r.bottom-cr.top<H*.4)top=r.bottom-cr.top+8}}catch(_){}
- try{if(typeof ledgeOn!=='undefined'&&ledgeOn&&!ledgeSlope()&&!isGlassPhoto())bot=ledgeSpan().y0-8}catch(_){}
- if(bot-top<H*.3){top=0;bot=H}
- const aw=W-24,ah=bot-top,sc=Math.min(aw/img.width,ah/img.height),dw=img.width*sc,dh=img.height*sc,dx=(W-dw)/2,dy=top+(ah-dh)/2;
- const c=traceMk(cw,ch),x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,dx*P,dy*P,dw*P,dh*P);
- const X=Math.max(0,Math.floor(dx*P)),Y=Math.max(0,Math.floor(dy*P)),w=Math.min(cw-X,Math.ceil(dw*P)),h=Math.min(ch-Y,Math.ceil(dh*P));if(w<4||h<4)return false;
- const im=x.getImageData(X,Y,w,h),d=im.data;let sum=0,n=0;for(let i=0;i<d.length;i+=16){sum+=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2];n++}
- const mean=sum/Math.max(1,n),dark=mean<110;/* a dark photo (chalk or paint on a dark wall): the light marks are the tag */
- const ed=Math.round(3*P);for(let i=0;i<d.length;i+=4){const px=(i>>2)%w,py=((i>>2)/w)|0;if(px<ed||py<ed||px>=w-ed||py>=h-ed){d[i+3]=0;continue}const L=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2],v=dark?(L-mean)/(255-mean):(mean-L)/mean;d[i+3]=Math.round(255*clamp((v-.18)/.32));d[i]=d[i+1]=d[i+2]=0}
- x.clearRect(0,0,cw,ch);x.putImageData(im,X,Y);traceSet(traceTint(c));return true}
 /* drawn by compose(), last, over everything on the wall */
 function drawTrace(x){if(!TRACE||!TRACE.on||!TRACE.c)return;const P=dpr,cw=Math.round(W*P),ch=Math.round(H*P);x.save();x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='source-over';x.globalAlpha=TRACE.a;
  if(TRACE.w===W&&TRACE.h===H)x.drawImage(TRACE.c,0,0);else{/* the screen has turned since the guide was made: fit it, don't stretch it */const s=Math.min(cw/TRACE.c.width,ch/TRACE.c.height),dw=TRACE.c.width*s,dh=TRACE.c.height*s;x.drawImage(TRACE.c,(cw-dw)/2,(ch-dh)/2,dw,dh)}
@@ -4393,14 +4383,34 @@ function traceUI(){const t=document.getElementById('traceToggle'),r=document.get
  if(r)r.disabled=!TRACE.c;if(v)v.textContent=Math.round(TRACE.a*100)+'%';const cl=document.getElementById('traceClear');if(cl)cl.disabled=!TRACE.c}
 (()=>{const q=id=>document.getElementById(id);
  q('traceWall')&&q('traceWall').addEventListener('click',()=>{if(!traceFromWall()){toast('Write a tag first, then trace it');return}closeSheets();q('wipeT').click();toast('Your tag is the guide now — write it again over the top')});
- const fi=q('traceFile');q('tracePhoto')&&q('tracePhoto').addEventListener('click',()=>fi&&fi.click());
- fi&&fi.addEventListener('change',()=>{const f=fi.files&&fi.files[0];fi.value='';if(!f)return;const url=URL.createObjectURL(f),img=new Image();
-  img.onload=()=>{const ok=traceFromImage(img);URL.revokeObjectURL(url);if(ok){closeSheets();toast('Photo guide on — trace over it')}else toast('Couldn\'t read that photo')};
-  img.onerror=()=>{URL.revokeObjectURL(url);toast('Couldn\'t open that photo')};img.src=url});
  q('traceToggle')&&q('traceToggle').addEventListener('click',()=>{if(!TRACE.c)return;TRACE.on=!TRACE.on;traceUI();dirty=true;try{compose()}catch(_){}});
  q('traceClear')&&q('traceClear').addEventListener('click',()=>traceClear());
  q('traceA')&&q('traceA').addEventListener('input',e=>{TRACE.a=clamp(+e.target.value/100,.05,.8);traceUI();dirty=true;try{compose()}catch(_){}});
  traceUI()})();
+/* ---------- ADD COLOURS TO A PEN ----------
+   Any pen can carry extra colours on top of the ones its ink came with: pick from a palette of common marker colours or mix
+   any colour with the picker. They're kept per pen (localStorage), survive refills, and can be removed again.
+   The ink's behaviour (flow, drips, stain, buff) still comes from what's in the pen; only the colour changes. */
+const PEN_PAL=['#111111','#f4f3ee','#8a8d91','#d41414','#ff5a14','#ffb000','#f2e21a','#9ef01a','#14a046','#0d6e4e','#14b4c8','#1e64d2','#163aa8','#4b1498','#a01ea8','#ff3c9c','#c91c6e','#6e3416','#c48e2a','#e8d7b0','#7fd7f0','#c8a0f0','#ffc8d8','#c0c4c8'];
+function penColStore(){try{return JSON.parse(localStorage.getItem('rlCols')||'{}')||{}}catch(_){return {}}}
+function penColSave(o){try{localStorage.setItem('rlCols',JSON.stringify(o))}catch(_){}}
+function penExtrasOf(p){const o=penColStore();return (p&&o[p.id])||[]}
+/* fold a pen's added colours into its colour list (called after every fill and at start-up) */
+function penExtras(p){if(!p||!p.colors)return;for(const c of penExtrasOf(p))if(!p.colors.includes(c))p.colors.push(c)}
+function penColAdd(c){if(!/^#[0-9a-f]{6}$/i.test(c))return;c=c.toLowerCase();const o=penColStore(),L=o[pen.id]||(o[pen.id]=[]);if(!pen.colors.includes(c)){if(!L.includes(c))L.push(c);penColSave(o);pen.colors.push(c)}color=c;renderColors();renderReact();save();toast(cname(c)+' added to this pen')}
+function penColDel(c){const o=penColStore(),L=o[pen.id]||[];const i=L.indexOf(c);if(i<0)return;L.splice(i,1);penColSave(o);const j=pen.colors.indexOf(c);if(j>=0&&pen.colors.length>1)pen.colors.splice(j,1);if(color===c)color=pen.colors[0];renderColors();renderReact();save()}
+function renderColAdd(){const g=document.getElementById('cadd'),m=document.getElementById('cmine');if(!g)return;
+ g.innerHTML=PEN_PAL.filter(c=>!pen.colors.includes(c)).map(c=>`<button class="cs" data-add="${c}" aria-label="Add ${cname(c)}"><i style="background:${c}"></i>${cname(c)}</button>`).join('');
+ const mine=penExtrasOf(pen);if(m){m.hidden=!mine.length;m.querySelector('.cgrid').innerHTML=mine.map(c=>`<button class="cs" data-del="${c}" aria-label="Remove ${cname(c)}"><i style="background:${c}"></i>✕ ${cname(c)}</button>`).join('')}}
+(()=>{const q=id=>document.getElementById(id);
+ /* the colour sheet is rebuilt by renderCSheet(); keep the add section in step with it */
+ const _r=renderCSheet;renderCSheet=function(){penExtras(pen);_r.apply(this,arguments);renderColAdd()};
+ for(const p of PENS)penExtras(p);
+ q('cadd')&&q('cadd').addEventListener('click',e=>{const b=e.target.closest('[data-add]');if(b)penColAdd(b.dataset.add)});
+ q('cmine')&&q('cmine').addEventListener('click',e=>{const b=e.target.closest('[data-del]');if(b)penColDel(b.dataset.del)});
+ const pk=q('cPick');q('cCustom')&&q('cCustom').addEventListener('click',()=>{if(!pk)return;pk.value=/^#[0-9a-f]{6}$/i.test(color)?color:'#ff5a14';pk.click()});
+ pk&&pk.addEventListener('change',()=>penColAdd(pk.value));
+ try{renderColAdd()}catch(_){}})();
 /* ---------- SAVED PLAYBACKS LIBRARY (localStorage) ---------- */
 
 

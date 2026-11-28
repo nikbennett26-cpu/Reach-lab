@@ -84,6 +84,9 @@
  <section class="sheet" id="colorSheet" aria-label="Colours"><div class="grab"></div>
   <h2 id="colTitle">Colours</h2><p class="hint" id="colHint"></p>
   <div class="cgrid" id="cgrid"></div>
+  <span class="lbl sg">Add a colour</span><div class="cgrid sm" id="cadd"></div>
+  <div class="row" style="margin-top:8px"><button class="btn pri" id="cCustom">Mix any colour…</button><input type="color" id="cPick" hidden></div>
+  <div id="cmine" hidden><span class="lbl sg">Colours you added · tap to remove</span><div class="cgrid sm"></div></div>
  </section>
 
  <section class="sheet" id="moreSheet" aria-label="Settings"><div class="grab"></div>
@@ -91,7 +94,7 @@
   <span class="lbl sg">Wall</span><div class="row"><button class="btn pri" id="dryNow">Dry it now</button><button class="btn" id="ledgeBtn" aria-pressed="true">Ledge: on</button><button class="btn" id="lightBtn" aria-pressed="true">Light &amp; reflections: on</button></div>
   <div style="margin:-4px 0 10px"><div style="width:100%"><label class="lbl" for="ageR">Age the wall — <span id="ageV">fresh</span></label><input type="range" id="ageR" min="0" max="100" value="0" style="width:100%"></div></div>
   <span class="lbl sg">Physics</span><div class="row"><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="gravBtn">Drips: auto (sensor)</button><button class="btn" id="calBtn">Calibrate finger</button><button class="btn" id="perfBtn" aria-pressed="false">Frame time: off</button></div>
-  <span class="lbl sg">Practice</span><div class="row"><button class="btn pri" id="traceWall">Trace this tag</button><button class="btn pri" id="tracePhoto">Trace a photo</button><button class="btn" id="traceToggle" aria-pressed="false" disabled>Guide: none</button><button class="btn" id="traceClear" disabled>Remove guide</button></div><input type="file" id="traceFile" accept="image/*" hidden>
+  <span class="lbl sg">Practice</span><div class="row"><button class="btn pri" id="traceWall">Trace this tag</button><button class="btn" id="traceToggle" aria-pressed="false" disabled>Guide: none</button><button class="btn" id="traceClear" disabled>Remove guide</button></div>
   <div style="margin:-4px 0 10px"><label class="lbl" for="traceA">Guide strength — <span id="traceAV">35%</span></label><input type="range" id="traceA" min="5" max="80" value="35" style="width:100%" disabled></div>
   <span class="lbl sg">Share &amp; app</span><div class="row"><button class="btn pri" id="playBtn">Replay tag</button><button class="btn pri" id="playRecShareBtn">Record video</button><button class="btn" id="wallShare">Share wall</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button></div>
   <div id="tipsBox"><div class="row" style="justify-content:space-between;align-items:center"><span class="lbl">Tips <span style="opacity:.6;text-transform:none">· red dot = new</span></span><button class="btn" id="tipsClear">Clear</button></div><ol id="tipsList" class="small" style="margin:0 0 12px;padding-left:20px;max-height:180px;overflow:auto;line-height:1.45"><li style="opacity:.6">Tips from your drawing show up here.</li></ol></div>
