@@ -90,7 +90,7 @@ function runDrips(dt){runFalls(dt);runLedFeed();if(!drips.length)return;mergeRun
   /* Navier-Stokes creeping-bead balance: terminal speed v ~ (rho*g*r^2)/(3*mu_app), with shear-thinning & drying viscosity */
   const dryMu=1/(0.28+0.72*Math.pow(clamp(d.visc||1,.15,1),1.4)),shearThin=1/(1+(d.spd||0)*(fl.ty>.1?.0065:.0015)),muApp=fl.mu*dryMu*shearThin*(d.thick?1.35:1),
    headDrive=(18+d.vol*28)*(fl.rho/Math.max(.35,muApp))*(.65+.35*clamp(d.r/1.5,.5,2.1)),
-   vTerm=clamp(headDrive,6,115)*.58*/* runs creep: about half a centimetre a second at this scale for a juiced dye, slower for paint */(1-s.absorb*.58)*(1-s.rough*.48)*(d.wet?(.95+wf*.95):1)*(gr?.18:1)*gEff*easeIn*easeOut,y0=d.y,x0=d.x;
+   vTerm=clamp(headDrive,6,115)*.58*/* runs creep: about half a centimetre a second at this scale for a juiced dye, slower for paint */(1-s.absorb*.58)*(1-s.rough*.48)*(d.wet?(.62+wf*.2):1)/* a wet wall carries the run along, but it still creeps: slower than before so it reads as a heavy drip, not a trickle */*(gr?.18:1)*gEff*easeIn*easeOut,y0=d.y,x0=d.x;
   if(!d.gx){d.gx=G.x;d.gy=G.y;d.spd=vTerm*.35}if(ledgeLive()&&!d.led&&!d.et&&d.y<ledgeY(d.x))d.preL=1;const nowT=performance.now();
   const pz=d.pz&&nowT<d.pz;if(d.pz&&!pz){d.pz=0;d.bd=0}if(d.visc<1)d.visc=Math.max(.22,d.visc-dt*.028);
   /* PINCH-OFF LURCH: once a heavy head has swollen enough it breaks away from the run and surges ahead on a thin thread *//* SKINNING: the run's surface dries as it goes — fast for alcohol dyes, slow for paint, faster on a thirsty wall, slower
