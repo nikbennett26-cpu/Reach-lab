@@ -1,6 +1,6 @@
 /* ---------- PLAYBACK RECORDING, TILT REPLAY, SAVED LIBRARY & VIDEO EXPORT ---------- */
 const recLogs={};
-let recCur=null,recLastT=0,playOn=false,playRaf=0,playSaved=null,playRecMR=null,playRecChunks=[];
+let playTail=false,recCur=null,recLastT=0,playOn=false,playRaf=0,playSaved=null,playRecMR=null,playRecChunks=[];
 const playSpd=1;
 function recKey(){return typeof bkey==='function'?bkey():(cur&&cur.id||'wall')}
 function recList(){const k=recKey();if(!recLogs[k])recLogs[k]=[];return recLogs[k]}
@@ -8,8 +8,9 @@ function recClear(){recLogs[recKey()]=[];recCur=null;recLastT=0}
 function recStart(p){
  if(playOn||demo||(tool!=='draw'&&tool!=='buff')||!W||!H)return;
  const now=performance.now(),G=gDir();
- const gap=recLastT?Math.min(750,Math.max(60,now-recLastT)):0;
+ const gap=recLastT?Math.min(750,Math.max(60,now-recLastT)):0,gapReal=recLastT?Math.min(600000,Math.max(0,now-recLastT)):0,seed=rngFresh();rngSeed(seed);
  recCur={
+  seed,gapReal,wet:wetSet.has(cur.id),bm:typeof buffMode!=='undefined'?buffMode:null,rc:typeof rollCol!=='undefined'?rollCol:null,
   tool,penId:pen.id,fill:pen.fill||null,col:color,angle,leanSet,
   sat:pen.sat??0,flow:pen.flow??1,mix:pen.mix??1,vs:pen.vs??3,life:pen.life??1,
   gap,t0:now,
@@ -36,6 +37,7 @@ function recEnd(){
 function updatePlaySpdBtn(){const l=$('#playLbl');if(l)l.textContent='Replaying'}
 function snapshotPlayState(){
  return {
+  wet:wetSet.has(cur.id),rain:rainSet.has(cur.id),bm:typeof buffMode!=='undefined'?buffMode:null,rc:typeof rollCol!=='undefined'?rollCol:null,
   tool,pen,color,angle,leanSet,
   sat:pen.sat,flow:pen.flow,mix:pen.mix,vs:pen.vs,life:pen.life
  };
@@ -43,6 +45,8 @@ function snapshotPlayState(){
 function restorePlayState(st){
  if(!st)return;
  tool=st.tool;pen=st.pen;color=st.color;angle=st.angle;leanSet=st.leanSet;
+ if(st.bm){buffMode=st.bm;rollCol=st.rc}
+ if(st.wet!==undefined&&st.wet!==wetSet.has(cur.id)){if(st.wet){wetSet.add(cur.id);if(st.rain)rainSet.add(cur.id)}else{wetSet.delete(cur.id);rainSet.delete(cur.id)}try{bands[0].s=V(cur);renderSurfs();renderReact()}catch(_){}}
  if(st.sat!==undefined)pen.sat=st.sat;
  if(st.flow!==undefined)pen.flow=st.flow;
  if(st.mix!==undefined)pen.mix=st.mix;
@@ -96,6 +100,7 @@ function startPlayVideo(){
  }catch(_){toast('Could not start video capture on this device');return false}
 }
 function stopPlayback(showMsg){
+ if(playTail&&!playOn){const sv=playTail;playTail=false;if(sv&&sv!==true)restorePlayState(sv);prepSnap();dirty=true;const h=$('#playHud');if(h)h.classList.remove('on');hudFade(false);return}
  if(!playOn)return;
  playOn=false;playGrav=null;
  if(playRaf){cancelAnimationFrame(playRaf);playRaf=0}
@@ -110,7 +115,7 @@ function stopPlayback(showMsg){
 }
 function runPlaybackSeq(seq,extraBrews){
  if(!seq||!seq.length){toast('Nothing recorded on this wall yet — draw a tag first');return}
- if(playOn)stopPlayback(false);
+ if(playOn||playTail)stopPlayback(false);
  closeSheets();
  playSaved=snapshotPlayState();
  resetBoard();compose();dirty=false;
@@ -126,6 +131,8 @@ function runPlaybackSeq(seq,extraBrews){
   pen=targetPen;
   if(s.fill&&pen.fill!==s.fill){const b=findBottle(s.fill);if(b)fillPen(pen,b,true)}
   tool=s.tool;color=s.col;angle=s.angle;leanSet=s.leanSet;
+  if(s.bm){buffMode=s.bm;rollCol=s.rc||null}
+  /* the wall was wet or dry when this stroke was written */if(s.wet!==undefined&&s.wet!==wetSet.has(cur.id)){if(s.wet)wetSet.add(cur.id);else{wetSet.delete(cur.id);rainSet.delete(cur.id)}try{bands[0].s=V(cur);renderSurfs();renderReact()}catch(_){}}
   if(pen.squeeze)pen.sat=s.sat;
   pen.flow=s.flow;pen.mix=s.mix;if(s.vs!==undefined)pen.vs=s.vs;pen.life=s.life;
  };
@@ -148,8 +155,12 @@ function runPlaybackSeq(seq,extraBrews){
      const tn=performance.now();if(tn<holdEnd||(tn<maxEnd&&fresh()))requestAnimationFrame(keep);else{stopPlayVideo();setTimeout(restore,350)}};
     requestAnimationFrame(keep);
    }else{
-    stopPlayVideo();
-    restorePlayState(playSaved);playSaved=null;prepSnap();dirty=true;
+    /* keep the replay going until the drips, runs and blooms have played out too, the same as the video does */
+    const saved=playSaved,maxEnd=performance.now()+REC_MAX_MS;playSaved=null;playTail=saved||true;
+    const fresh=()=>{try{const t=performance.now();return drips.some(d=>!d.dead&&d.vol>.02)||bleedL.some(b=>b.dur&&t<b.t0+b.dur)||(typeof falls!=='undefined'&&falls.length>0)}catch(_){return false}};
+    const tail=()=>{if(!playTail)return;dirty=true;if(performance.now()<maxEnd&&fresh()){requestAnimationFrame(tail);return}
+     playTail=false;restorePlayState(saved);prepSnap();dirty=true;if(hud)hud.classList.remove('on');hudFade(false);toast('Replay finished')};
+    requestAnimationFrame(tail);return;
    }
    if(hud)hud.classList.remove('on');
    hudFade(false);
@@ -158,8 +169,10 @@ function runPlaybackSeq(seq,extraBrews){
   }
   curS=seq[si];
   if(phase==='gap'){
-   if(now-tPhase>=Math.min(curS.gap/playSpd,260)){
-    applyStrokeMeta(curS);
+   const gR=curS.gapReal??curS.gap??0;if(gR>2500&&!curS._ff){curS._ff=1;fastDry=true}
+   const wait=Math.min(gR,2500)/playSpd,ffWait=gR>2500?Math.min(5000,(gR-2500)/6):0;
+   if(now-tPhase>=wait&&(!fastDry||now-tPhase>=wait+ffWait||!curS._ff)){if(curS._ff){fastDry=false;curS._ff=0}
+    applyStrokeMeta(curS);if(curS.seed)rngSeed(curS.seed);
     const pt0=curS.pts[0];
     setGravFromPt(pt0);
     const p={x:pt0[0]*W,y:pt0[1]*H,t:now};
@@ -169,7 +182,7 @@ function runPlaybackSeq(seq,extraBrews){
      begin(p,null);feed(p,null);
      if(stroke&&!(pen.valve&&pen.flow<.35))stamp(p.x,p.y,0,null);
     }else if(curS.tool==='buff'){
-     ageDrop();pad.load=0;pad.col=null;pad.stk=null;pad.sb=null;pad.pool=0;pad.ptT=0;pad.runX=null;pad.holdT=0;pad.holdSq=0;pad.sqAcc=0;buffAt(p,p);
+     ageDrop();pad.load=0;pad.col=null;pad.stk=null;pad.sb=null;pad.passId=(pad.passId||0)+1;pad.pool=0;pad.ptT=0;pad.runX=null;pad.holdT=0;pad.holdSq=0;pad.sqAcc=0;buffAt(p,p);
     }
     pi=1;phase='draw';tPhase=now;dirty=true;
    }

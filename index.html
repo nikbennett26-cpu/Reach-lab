@@ -287,7 +287,10 @@ body.fs #status{opacity:.85;pointer-events:none;transform:none}body.fs #status .
  </div><div id="coachBar" hidden><i></i></div></div>
 </div>
 
-<script>
+<script>/* seedable randomness: every stroke reseeds it with a number saved in its recording, so a replay rolls the same splats, drips and wobbles */
+const _rngNative=Math.random;let _rngS=(_rngNative()*4294967296)>>>0;Math.random=function(){_rngS=(_rngS+0x6D2B79F5)>>>0;let t=_rngS;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296};
+function rngSeed(s){_rngS=(s>>>0)||1}function rngFresh(){return((_rngNative()*4294967296)>>>0)||1}
+
 /* safety net: some embedded viewers (in-app previews, hidden tabs) hand the page a 0-size canvas; drawing from one throws
    on every frame. An empty canvas has nothing to draw, so just skip it. */
 {const P=CanvasRenderingContext2D.prototype,d0=P.drawImage;P.drawImage=function(im){if(im&&(im instanceof HTMLCanvasElement||(typeof OffscreenCanvas!=='undefined'&&im instanceof OffscreenCanvas))&&(!im.width||!im.height))return;return d0.apply(this,arguments)};
@@ -2816,7 +2819,7 @@ cv.addEventListener('pointerdown',e=>{try{e.preventDefault();setTimeout(audio,0)
   if(pen.tip==='chisel'){const [p,q]=[...ptrs.values()];twist={base:angle,a0:Math.atan2(q.y-p.y,q.x-p.x),mid:{x:(p.x+q.x)/2,y:(p.y+q.y)/2}};dirty=true}
   else toast('Two-finger twist turns chisel tips');return}
  if(ptrs.size>2){ptrs.clear();twist=null;down=false;if(stroke)abortStroke();ptrs.set(e.pointerId,pt(e))}/* stale touches left by a rotation must never block a new tag */
- if(playOn){stopPlayback(true);return}if(tool==='draw'&&(pen.empty||pen.fillReq)&&(!pen.fill||pen.life<=0)){showRefills(pen.fill?'Out of ink — refill it':'This marker is empty — pick an ink to fill it');return}hudFade(true);down=true;downId=e.pointerId;saidDry=0;saidSpray=0;push();last=pt(e);recStart(last);if(tool==='draw'){begin(last,e);feed(last,e);if(stroke&&!(pen.valve&&pen.flow<.35)){stamp(last.x,last.y,0,e);compose();dirty=false}}else if(tool==='buff'){ageDrop();pad.load=0;pad.col=null;pad.stk=null;pad.sb=null;pad.passId=(pad.passId||0)+1;pad.pool=0;pad.ptT=0;pad.runX=null;pad.holdT=0;pad.holdSq=0;pad.sqAcc=0;buffAt(last,last)}}catch(err){try{resetPointerState()}catch(_){}toast('Touch problem: '+(err&&err.message||err))}});
+ if(playOn||playTail){stopPlayback(true);return}if(tool==='draw'&&(pen.empty||pen.fillReq)&&(!pen.fill||pen.life<=0)){showRefills(pen.fill?'Out of ink — refill it':'This marker is empty — pick an ink to fill it');return}hudFade(true);down=true;downId=e.pointerId;saidDry=0;saidSpray=0;push();last=pt(e);recStart(last);if(tool==='draw'){begin(last,e);feed(last,e);if(stroke&&!(pen.valve&&pen.flow<.35)){stamp(last.x,last.y,0,e);compose();dirty=false}}else if(tool==='buff'){ageDrop();pad.load=0;pad.col=null;pad.stk=null;pad.sb=null;pad.passId=(pad.passId||0)+1;pad.pool=0;pad.ptT=0;pad.runX=null;pad.holdT=0;pad.holdSq=0;pad.sqAcc=0;buffAt(last,last)}}catch(err){try{resetPointerState()}catch(_){}toast('Touch problem: '+(err&&err.message||err))}});
 const RAW='onpointerrawupdate' in window;let livePt=null,predPt=null,lastC=0;
 const mv=e=>{if(e.type==='pointermove'&&RAW&&down&&e.pointerId===downId&&tool==='draw'&&!twist){if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,pt(e));return}if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,pt(e));
  if(twist&&ptrs.size===2){const [p,q]=[...ptrs.values()],d=Math.atan2(q.y-p.y,q.x-p.x)-twist.a0;setAngle(twist.base+d*180/Math.PI);twist.mid={x:(p.x+q.x)/2,y:(p.y+q.y)/2};dirty=true;return}
@@ -4194,7 +4197,7 @@ try{$('#perfBtn').addEventListener('click',()=>perfToggle(!perfOn));if(localStor
 
 /* ---------- PLAYBACK RECORDING, TILT REPLAY, SAVED LIBRARY & VIDEO EXPORT ---------- */
 const recLogs={};
-let recCur=null,recLastT=0,playOn=false,playRaf=0,playSaved=null,playRecMR=null,playRecChunks=[];
+let playTail=false,recCur=null,recLastT=0,playOn=false,playRaf=0,playSaved=null,playRecMR=null,playRecChunks=[];
 const playSpd=1;
 function recKey(){return typeof bkey==='function'?bkey():(cur&&cur.id||'wall')}
 function recList(){const k=recKey();if(!recLogs[k])recLogs[k]=[];return recLogs[k]}
@@ -4202,8 +4205,9 @@ function recClear(){recLogs[recKey()]=[];recCur=null;recLastT=0}
 function recStart(p){
  if(playOn||demo||(tool!=='draw'&&tool!=='buff')||!W||!H)return;
  const now=performance.now(),G=gDir();
- const gap=recLastT?Math.min(750,Math.max(60,now-recLastT)):0;
+ const gap=recLastT?Math.min(750,Math.max(60,now-recLastT)):0,gapReal=recLastT?Math.min(600000,Math.max(0,now-recLastT)):0,seed=rngFresh();rngSeed(seed);
  recCur={
+  seed,gapReal,wet:wetSet.has(cur.id),bm:typeof buffMode!=='undefined'?buffMode:null,rc:typeof rollCol!=='undefined'?rollCol:null,
   tool,penId:pen.id,fill:pen.fill||null,col:color,angle,leanSet,
   sat:pen.sat??0,flow:pen.flow??1,mix:pen.mix??1,vs:pen.vs??3,life:pen.life??1,
   gap,t0:now,
@@ -4230,6 +4234,7 @@ function recEnd(){
 function updatePlaySpdBtn(){const l=$('#playLbl');if(l)l.textContent='Replaying'}
 function snapshotPlayState(){
  return {
+  wet:wetSet.has(cur.id),rain:rainSet.has(cur.id),bm:typeof buffMode!=='undefined'?buffMode:null,rc:typeof rollCol!=='undefined'?rollCol:null,
   tool,pen,color,angle,leanSet,
   sat:pen.sat,flow:pen.flow,mix:pen.mix,vs:pen.vs,life:pen.life
  };
@@ -4237,6 +4242,8 @@ function snapshotPlayState(){
 function restorePlayState(st){
  if(!st)return;
  tool=st.tool;pen=st.pen;color=st.color;angle=st.angle;leanSet=st.leanSet;
+ if(st.bm){buffMode=st.bm;rollCol=st.rc}
+ if(st.wet!==undefined&&st.wet!==wetSet.has(cur.id)){if(st.wet){wetSet.add(cur.id);if(st.rain)rainSet.add(cur.id)}else{wetSet.delete(cur.id);rainSet.delete(cur.id)}try{bands[0].s=V(cur);renderSurfs();renderReact()}catch(_){}}
  if(st.sat!==undefined)pen.sat=st.sat;
  if(st.flow!==undefined)pen.flow=st.flow;
  if(st.mix!==undefined)pen.mix=st.mix;
@@ -4290,6 +4297,7 @@ function startPlayVideo(){
  }catch(_){toast('Could not start video capture on this device');return false}
 }
 function stopPlayback(showMsg){
+ if(playTail&&!playOn){const sv=playTail;playTail=false;if(sv&&sv!==true)restorePlayState(sv);prepSnap();dirty=true;const h=$('#playHud');if(h)h.classList.remove('on');hudFade(false);return}
  if(!playOn)return;
  playOn=false;playGrav=null;
  if(playRaf){cancelAnimationFrame(playRaf);playRaf=0}
@@ -4304,7 +4312,7 @@ function stopPlayback(showMsg){
 }
 function runPlaybackSeq(seq,extraBrews){
  if(!seq||!seq.length){toast('Nothing recorded on this wall yet — draw a tag first');return}
- if(playOn)stopPlayback(false);
+ if(playOn||playTail)stopPlayback(false);
  closeSheets();
  playSaved=snapshotPlayState();
  resetBoard();compose();dirty=false;
@@ -4320,6 +4328,8 @@ function runPlaybackSeq(seq,extraBrews){
   pen=targetPen;
   if(s.fill&&pen.fill!==s.fill){const b=findBottle(s.fill);if(b)fillPen(pen,b,true)}
   tool=s.tool;color=s.col;angle=s.angle;leanSet=s.leanSet;
+  if(s.bm){buffMode=s.bm;rollCol=s.rc||null}
+  /* the wall was wet or dry when this stroke was written */if(s.wet!==undefined&&s.wet!==wetSet.has(cur.id)){if(s.wet)wetSet.add(cur.id);else{wetSet.delete(cur.id);rainSet.delete(cur.id)}try{bands[0].s=V(cur);renderSurfs();renderReact()}catch(_){}}
   if(pen.squeeze)pen.sat=s.sat;
   pen.flow=s.flow;pen.mix=s.mix;if(s.vs!==undefined)pen.vs=s.vs;pen.life=s.life;
  };
@@ -4342,8 +4352,12 @@ function runPlaybackSeq(seq,extraBrews){
      const tn=performance.now();if(tn<holdEnd||(tn<maxEnd&&fresh()))requestAnimationFrame(keep);else{stopPlayVideo();setTimeout(restore,350)}};
     requestAnimationFrame(keep);
    }else{
-    stopPlayVideo();
-    restorePlayState(playSaved);playSaved=null;prepSnap();dirty=true;
+    /* keep the replay going until the drips, runs and blooms have played out too, the same as the video does */
+    const saved=playSaved,maxEnd=performance.now()+REC_MAX_MS;playSaved=null;playTail=saved||true;
+    const fresh=()=>{try{const t=performance.now();return drips.some(d=>!d.dead&&d.vol>.02)||bleedL.some(b=>b.dur&&t<b.t0+b.dur)||(typeof falls!=='undefined'&&falls.length>0)}catch(_){return false}};
+    const tail=()=>{if(!playTail)return;dirty=true;if(performance.now()<maxEnd&&fresh()){requestAnimationFrame(tail);return}
+     playTail=false;restorePlayState(saved);prepSnap();dirty=true;if(hud)hud.classList.remove('on');hudFade(false);toast('Replay finished')};
+    requestAnimationFrame(tail);return;
    }
    if(hud)hud.classList.remove('on');
    hudFade(false);
@@ -4352,8 +4366,10 @@ function runPlaybackSeq(seq,extraBrews){
   }
   curS=seq[si];
   if(phase==='gap'){
-   if(now-tPhase>=Math.min(curS.gap/playSpd,260)){
-    applyStrokeMeta(curS);
+   const gR=curS.gapReal??curS.gap??0;if(gR>2500&&!curS._ff){curS._ff=1;fastDry=true}
+   const wait=Math.min(gR,2500)/playSpd,ffWait=gR>2500?Math.min(5000,(gR-2500)/6):0;
+   if(now-tPhase>=wait&&(!fastDry||now-tPhase>=wait+ffWait||!curS._ff)){if(curS._ff){fastDry=false;curS._ff=0}
+    applyStrokeMeta(curS);if(curS.seed)rngSeed(curS.seed);
     const pt0=curS.pts[0];
     setGravFromPt(pt0);
     const p={x:pt0[0]*W,y:pt0[1]*H,t:now};
@@ -4363,7 +4379,7 @@ function runPlaybackSeq(seq,extraBrews){
      begin(p,null);feed(p,null);
      if(stroke&&!(pen.valve&&pen.flow<.35))stamp(p.x,p.y,0,null);
     }else if(curS.tool==='buff'){
-     ageDrop();pad.load=0;pad.col=null;pad.stk=null;pad.sb=null;pad.pool=0;pad.ptT=0;pad.runX=null;pad.holdT=0;pad.holdSq=0;pad.sqAcc=0;buffAt(p,p);
+     ageDrop();pad.load=0;pad.col=null;pad.stk=null;pad.sb=null;pad.passId=(pad.passId||0)+1;pad.pool=0;pad.ptT=0;pad.runX=null;pad.holdT=0;pad.holdSq=0;pad.sqAcc=0;buffAt(p,p);
     }
     pi=1;phase='draw';tPhase=now;dirty=true;
    }
