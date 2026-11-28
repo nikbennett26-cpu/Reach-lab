@@ -160,7 +160,7 @@ function drawPoolSegs(x,CP,L,IM,IR){const q={x:L.px,w:L.pw},cw=q.w/CP.n,gl=1-poo
 function ledgeHit(d,xw,col,re){const L0=LDG();if(L0.stone)return cillHit(d,xw,col,re,L0);const L={...L0,y:ledgeY(xw)},k=Math.floor(xw/7),p=(ledP[k]||0)+d.vol,bx=baked.x;ledP[k]=p;ledP[k-1]=(ledP[k-1]||0)+d.vol*.35;ledP[k+1]=(ledP[k+1]||0)+d.vol*.35;
  /* SLOPING HANDRAIL: paint can't sit on a slope — it lands on the rail, runs down along the top of it (a thin wet
     streak following the rail), wraps round and drops off the underside further down. No pools. */
- if(L0.sl){const a0=d.al&&d.al<.97?d.al:1,c0=col[0]==='#'?col:'#808080',fc=a0<1?mixHex(c0,'#ffffff',1-a0):c0,dir=Math.sign(L0.sl)||1,run=8+d.vol*26+Math.random()*24,xe=Math.min(W-2,Math.max(2,xw+dir*run/Math.hypot(1,L0.sl))),w0=Math.max(.8,re*.9);
+ if(L0.sl){const a0=d.al&&d.al<.97?d.al:1,c0=col[0]==='#'?col:'#808080',fc=(f=>(d.mf||1)<.98?mixHex(f,'#'+surfAt(xw,ledgeY(xw)-2).mean.map(v=>Math.round(v).toString(16).padStart(2,'0')).join(''),1-(d.mf||1)):f)(a0<1?mixHex(c0,'#ffffff',1-a0):c0)/* the pool is the same thin film as the runs feeding it */,dir=Math.sign(L0.sl)||1,run=8+d.vol*26+Math.random()*24,xe=Math.min(W-2,Math.max(2,xw+dir*run/Math.hypot(1,L0.sl))),w0=Math.max(.8,re*.9);
   bx.save();if(a0<1)bx.globalCompositeOperation='multiply';bx.fillStyle=fc;bx.strokeStyle=fc;bx.lineCap='round';
   /* the run arriving on the rail: a small wrap over the top */bx.beginPath();bx.ellipse(xw,L.y+1,w0*1.5,w0*1.1,Math.atan(L0.sl),0,TAU);bx.fill();
   /* streak along the upper face of the rail, thinning as it goes */const n=8;for(let q=0;q<n;q++){const t0=q/n,t1=(q+1)/n,x0=xw+(xe-xw)*t0,x1=xw+(xe-xw)*t1;bx.lineWidth=Math.max(.5,w0*.9*(1-t0*.6));bx.globalAlpha=.75*(1-t0*.5);bx.beginPath();bx.moveTo(x0,ledgeY(x0)+1.5);bx.lineTo(x1,ledgeY(x1)+1.5);bx.stroke()}
@@ -170,7 +170,7 @@ function ledgeHit(d,xw,col,re){const L0=LDG();if(L0.stone)return cillHit(d,xw,co
  /* STONE CILL: porous — some of the liquid soaks in, leaving a darker damp stain spreading into the stone round the pool and down the face */
  if(L0.stone){const rr=8+d.vol*10+Math.min(14,p*2),g=bx.createRadialGradient(xw,L.y+4,0,xw,L.y+4,rr*1.6);g.addColorStop(0,'rgba(40,34,26,.22)');g.addColorStop(1,'rgba(40,34,26,0)');bx.save();bx.globalCompositeOperation='multiply';bx.fillStyle=g;bx.beginPath();bx.ellipse(xw,L.y+4+rr*.35,rr*1.6,rr*1.1,0,0,TAU);bx.fill();bx.restore()}
  /* paint spreads along the lip into one continuous bead (neighbouring arrivals merge), and coats the front face with a ragged lower edge */
- const sm=surfAt(xw,L.y-2).mean,a0=d.al&&d.al<.97?d.al:1,c0=col[0]==='#'?col:'#808080',fc=a0<1?mixHex(c0,'#ffffff',1-a0):c0,
+ const sm=surfAt(xw,L.y-2).mean,a0=d.al&&d.al<.97?d.al:1,c0=col[0]==='#'?col:'#808080',fc=(f=>(d.mf||1)<.98?mixHex(f,'#'+surfAt(xw,ledgeY(xw)-2).mean.map(v=>Math.round(v).toString(16).padStart(2,'0')).join(''),1-(d.mf||1)):f)(a0<1?mixHex(c0,'#ffffff',1-a0):c0)/* the pool is the same thin film as the runs feeding it */,
   rx=L0.stone?re*2.2+Math.min(40,d.vol*6+p*5.5):re*1.7+Math.min(22,d.vol*4.5+p*3.2),ry=L0.stone?Math.max(1.4,re)+Math.min(3.6,p*.7):Math.max(1.1,re*.9)+Math.min(2.8,p*.5);/* the pool grows as more runs arrive at the same spot — a deep flat stone cill holds a much wider pool *//* the pool grows as more runs arrive at the same spot */
  /* the run lands on the lip and spreads sideways into a thin bead (soft ends, no hard box), then rolls over the
     front edge as short rounded drops — not a sheet with a cut hem */
