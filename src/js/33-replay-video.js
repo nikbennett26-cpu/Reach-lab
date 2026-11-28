@@ -57,6 +57,25 @@ function restorePlayState(st){
 }
 const REC_HOLD_MS=4000,REC_MAX_MS=30000;/* min hold on the finished tag; fresh ink keeps recording (drips, drying) up to the max */ /* how long the finished tag stays on screen at the end of a recorded replay */
 let lastVidBlob=null,lastVidName='reachlab-replay.mp4',lastVidUrl='';
+/* fixed in-app: a fragmented MP4 from MediaRecorder carries a wrong/zero duration in its header; players then show only the first seconds */
+function mp4FixDuration(u8){try{const d=new DataView(u8.buffer,u8.byteOffset,u8.byteLength),N=u8.length,u32=o=>d.getUint32(o),typ=o=>String.fromCharCode(u8[o+4],u8[o+5],u8[o+6],u8[o+7]);
+ const kids=(s,e)=>{const r=[];let o=s;while(o+8<=e){let sz=u32(o),h=8;if(sz===1){sz=Number(d.getBigUint64(o+8));h=16}else if(sz===0)sz=e-o;if(sz<8||o+sz>e)break;r.push({o,sz,h,t:typ(o)});o+=sz}return r};
+ const top=kids(0,N),moov=top.find(b=>b.t==='moov');if(!moov)return u8;const mk=kids(moov.o+8,moov.o+moov.sz),mvhd=mk.find(b=>b.t==='mvhd'),mvex=mk.find(b=>b.t==='mvex'),trak=mk.find(b=>b.t==='trak');if(!mvhd||!trak)return u8;
+ const v0=u8[mvhd.o+8],mts=u32(mvhd.o+(v0?28:20));const tk=kids(trak.o+8,trak.o+trak.sz),tkhd=tk.find(b=>b.t==='tkhd'),mdia=tk.find(b=>b.t==='mdia');if(!tkhd||!mdia)return u8;const mdhd=kids(mdia.o+8,mdia.o+mdia.sz).find(b=>b.t==='mdhd');if(!mdhd)return u8;
+ const vm=u8[mdhd.o+8],ts=u32(mdhd.o+(vm?28:20));let defDur=0;if(mvex){const trex=kids(mvex.o+8,mvex.o+mvex.sz).find(b=>b.t==='trex');if(trex)defDur=u32(trex.o+20)}
+ let end=0;for(const mf of top.filter(b=>b.t==='moof'))for(const tf of kids(mf.o+8,mf.o+mf.sz).filter(b=>b.t==='traf')){const tb=kids(tf.o+8,tf.o+tf.sz);let base=0,dd=defDur,sum=0;
+  const tfhd=tb.find(b=>b.t==='tfhd');if(tfhd){const fl=u32(tfhd.o+8)&0xffffff;let p=tfhd.o+16;if(fl&1)p+=8;if(fl&2)p+=4;if(fl&8)dd=u32(p)}
+  const tfdt=tb.find(b=>b.t==='tfdt');if(tfdt)base=u8[tfdt.o+8]?Number(d.getBigUint64(tfdt.o+12)):u32(tfdt.o+12);
+  for(const tr of tb.filter(b=>b.t==='trun')){const fl=u32(tr.o+8)&0xffffff,n=u32(tr.o+12);let p=tr.o+16;if(fl&1)p+=4;if(fl&4)p+=4;const per=((fl&0x100)?4:0)+((fl&0x200)?4:0)+((fl&0x400)?4:0)+((fl&0x800)?4:0);
+   for(let i=0;i<n;i++){sum+=(fl&0x100)?u32(p+i*per):dd}}
+  end=Math.max(end,base+sum)}
+ if(!end||!ts)return u8;const mDur=Math.round(end/ts*mts);
+ const put=(o,v,big)=>{if(big)d.setBigUint64(o,BigInt(v));else d.setUint32(o,Math.min(v,0xffffffff))};
+ put(mvhd.o+(v0?32:24),mDur,v0);const vt=u8[tkhd.o+8];put(tkhd.o+(vt?36:28),mDur,vt);put(mdhd.o+(vm?32:24),end,vm);
+ if(!mvex||kids(mvex.o+8,mvex.o+mvex.sz).some(b=>b.t==='mehd')){return u8}
+ /* add the movie-extends header so players that read it know the full length up front */
+ const out=new Uint8Array(N+16),od=new DataView(out.buffer);out.set(u8.subarray(0,mvex.o+8),0);od.setUint32(mvex.o+8,16);out.set([109,101,104,100],mvex.o+12);od.setUint32(mvex.o+16,0);od.setUint32(mvex.o+20,mDur);out.set(u8.subarray(mvex.o+8),mvex.o+24);
+ od.setUint32(moov.o,moov.sz+16);od.setUint32(mvex.o,mvex.sz+16);return out}catch(_){return u8}}
 function openVidModal(blob,name){
  lastVidBlob=blob;lastVidName=name;
  if(lastVidUrl){try{URL.revokeObjectURL(lastVidUrl)}catch(_){}}
@@ -88,10 +107,12 @@ function startPlayVideo(){
    try{stream.getTracks().forEach(t=>t.stop())}catch(_){}
    if(!playRecChunks.length)return;
    const mType=playRecMR.mimeType||mime||'video/webm';
-   const blob=new Blob(playRecChunks,{type:mType});
+   const blob0=new Blob(playRecChunks,{type:mType});
    const ext=mType.includes('mp4')?'mp4':'webm';
    const ts=new Date().toISOString().slice(0,16).replace(/[:T]/g,'-');
-   openVidModal(blob,'reachlab-'+ts+'.'+ext);
+   /* the recorder writes the MP4 in pieces and leaves the header saying it's only a few seconds long: write the real length in */
+   const done=b=>openVidModal(b,'reachlab-'+ts+'.'+ext);
+   if(ext==='mp4')blob0.arrayBuffer().then(ab=>done(new Blob([mp4FixDuration(new Uint8Array(ab))],{type:mType}))).catch(()=>done(blob0));else done(blob0);
   };
   playRecMR.start(500);
   const vb=$('#playVidBtn');if(vb)vb.textContent='Stop rec';
