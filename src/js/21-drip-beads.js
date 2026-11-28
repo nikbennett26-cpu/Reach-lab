@@ -3,11 +3,16 @@ function drawLiveDrips(x){
  if(!drips.length)return;
  const P=dpr,tx=clamp((tilt&&tilt.x)||0,-1,1),ty=clamp((tilt&&tilt.y)||0,-1,1);
  x.save();x.setTransform(P,0,0,P,0,0);
+ /* a run that hasn't let go yet: the bead swells on the letter's lower edge until it's heavy enough to fall */
+ {const now=performance.now();for(const d of drips){if(!d.t0||now>=d.t0||d.soft||d.wash||d.et||!d.tc)continue;const col=d.col;if(typeof col!=='string'||col[0]!=='#')continue;
+  const p=clamp((now-d.tc)/Math.max(1,d.t0-d.tc)),r=Math.max(.8,(d.r||1)*(.45+.75*p)),gx=d.gx||0,gy=d.gy||1,cx=d.x+gx*r*.5*p,cy=d.y+gy*r*.5*p;
+  x.globalCompositeOperation='source-over';x.globalAlpha=d.ink?Math.min(1,d.ink.opacity+.04):1;x.fillStyle=col;x.beginPath();x.ellipse(cx,cy,r,r*(1+.35*p),Math.atan2(gy,gx)-Math.PI/2,0,TAU);x.fill();
+  if(lum(hex(col))<.85){x.globalAlpha=.35*p;x.fillStyle='#ffffff';x.beginPath();x.arc(cx-r*.35,cy-r*.2,Math.max(.35,r*.28),0,TAU);x.fill()}}x.globalAlpha=1}
  for(let i=0;i<drips.length;i++){
   const d=drips[i];
   if(!d.lvis||d.dead||d.soft||d.et||d.wash||d.vol<=0||!d.lre)continue;
   const col=d.lcol||d.col;if(typeof col!=='string'||col[0]!=='#')continue;
-  const vr=clamp(d.vol/(d.v0||1)),hd=d.thick?1.42:1.26;
+  const vr=clamp(d.vol/(d.v0||1)),hd=d.thick?1.22:1.12;
   const rb=Math.max(1.05,d.lre*(.95+.28*(1-vr))*hd);
   const gx=d.gx||0,gy=d.gy||1,an=Math.atan2(gy,gx);
   const bx=d.lx+gx*rb*.34,by=d.ly+gy*rb*.34;

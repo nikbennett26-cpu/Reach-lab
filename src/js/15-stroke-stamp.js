@@ -91,7 +91,7 @@ function seg(a,b,e,dt){const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d<.01)
  stroke.acc=(stroke.acc||0)+d;let k=0;
  while(stroke.acc>=step){stroke.acc-=step;k+=step;const t=Math.min(1,k/d);stamp(a.x+dx*t,a.y+dy*t,spd,e)}
  {const f=flowNow(e),s2=surfAt(b.x,b.y),ik=INK[pen.ink],fs=clamp(spd/3);/* streaks only when the pen genuinely needs it: under-shaken (<65% mixed), starved of ink, running dry or a dried tip — never from speed */
- pen.drain=(pen.drain||0)+d;if(pen.squeeze&&!demo){const sCur=pen.sat??0,wK=Math.max(.55,Math.min(1.8,Math.pow(pen.w/10,.65))),dr=d*.00012*wK+(sCur>1.02?d*.0016*(sCur-1.02):0);/* slow, steady use below 100%; a flooded bottle (over 100%) gives up its excess quickly over the first few marks */let sNext=Math.max(0,sCur-dr);/* pressing harder on the screen squeezes the bottle and pushes Squeeze % back up */if(pressNow>.34&&pen.life>0&&sNext<1.05)sNext=Math.min(1.05,sNext+d*.00155*Math.pow((pressNow-.34)/.66,1.10)*lifeF());/* pressing tops it back up to about full, but never re-floods it — that takes juicing the bottle again */pen.sat=sNext;const nowF=performance.now();if(!pen._sfT||nowF-pen._sfT>60){pen._sfT=nowF;showFlow()}}
+ pen.drain=(pen.drain||0)+d;if(pen.squeeze&&!demo){const sCur=pen.sat??0,wK=Math.max(.55,Math.min(1.8,Math.pow(pen.w/10,.65))),dr=d*(sCur>1?.00007:.00012)*wK+(sCur>1.02?d*.001*(sCur-1.02):0);/* slow, steady use below 100%; a flooded bottle (over 100%) gives up its excess quickly over the first few marks */let sNext=Math.max(0,sCur-dr);/* pressing harder on the screen squeezes the bottle and pushes Squeeze % back up */if(pressNow>.32&&pen.life>0&&sNext<1.3){const pk=Math.pow(clamp((pressNow-.32)/.6),1.05),room=sNext<1.05?1:clamp((1.3-sNext)/.25);sNext=Math.min(1.3,sNext+d*(sNext<1.05?.0026:.0016)*pk*room*lifeF())}/* squeezing as you draw pushes it up: quickly to about full, then more slowly towards 130%. Going higher than that takes juicing the bottle again */pen.sat=sNext;const nowF=performance.now();if(!pen._sfT||nowF-pen._sfT>60){pen._sfT=nowF;showFlow()}}
  /* the nib drains as you draw and refills while it's off the wall: about one and a half tags of non-stop
     drawing before it starts to starve. Felt starves a little sooner; low ink starves much sooner */
  const L0=(DYEINK[pen.ink]?4200:pen.dauber?5000:pen.valve?5600:pen.squeeze?6000:4800)*(.3+Math.min(1,pen.life)*.7),runS=clamp((pen.drain-L0)/(L0*.6))*.28*(pen.valve?clamp((.7-f)/.4):1),/* a primed valve keeps pumping paint into the nib: no drain streaks at full flow */
@@ -246,7 +246,7 @@ function dripSettle(d,s,ex,ey,rb,hd){
  const P=dpr,pts=d.pts;
  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
  for(let i=0;i<pts.length;i+=3){const px=pts[i],py=pts[i+1],pr=pts[i+2]+2;if(px-pr<x0)x0=px-pr;if(py-pr<y0)y0=py-pr;if(px+pr>x1)x1=px+pr;if(py+pr>y1)y1=py+pr}
- if(rb){const mr=rb*(hd||1.3)*1.6+3;x0=Math.min(x0,ex-mr);y0=Math.min(y0,ey-mr);x1=Math.max(x1,ex+mr);y1=Math.max(y1,ey+mr)}
+ if(rb){const mr=rb*(hd||1.15)*1.6+3;x0=Math.min(x0,ex-mr);y0=Math.min(y0,ey-mr);x1=Math.max(x1,ex+mr);y1=Math.max(y1,ey+mr)}
  const X=Math.max(0,Math.floor(x0*P)),Y=Math.max(0,Math.floor(y0*P)),w=Math.min(baked.c.width-X,Math.ceil((x1-x0)*P)),h=Math.min(baked.c.height-Y,Math.ceil((y1-y0)*P));
  if(w<3||h<4)return;
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');
@@ -258,11 +258,11 @@ function dripSettle(d,s,ex,ey,rb,hd){
  }
  if(rb){
   const an=Math.atan2(d.gy||1,d.gx||0),bxC=ex+(d.gx||0)*rb*.28,byC=ey+(d.gy||1)*rb*.28;
-  x.beginPath();x.ellipse(bxC,byC,rb*(hd||1.3),rb*(hd||1.3)*1.28,an-Math.PI/2,0,TAU);x.fill();
+  x.beginPath();x.ellipse(bxC,byC,rb*(hd||1.15),rb*(hd||1.15)*1.38,an-Math.PI/2,0,TAU);x.fill();
  }
  x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='source-in';
  const O=Math.min(1,(d.ov||0)+(s.wet?.4:0)),dark=lum(hex(col))<.3,str=(1-s.absorb)*dripLife();
- /* the run is where the ink pooled: it dries with more pigment per area than the letter, so darker - dyes a lot, paints less, chrome goes to a dark gunmetal */const deepCol=dye?mixHex(col,'#000000',(dark?.72:.55)+.25*O):chr?mixHex(col,'#2b2f35',.68+.15*O):mixHex(col,'#000000',(dark?.4:.3)+.15*O);
+ /* the run is where the ink pooled: it dries with more pigment per area than the letter, so darker - dyes a lot, paints less, chrome goes to a dark gunmetal */const deepCol=dye?mixHex(col,'#000000',(dark?.72:.55)+.25*O):chr?mixHex(col,'#2b2f35',.68+.15*O):mixHex(col,'#000000',((dark?.4:.3)+.15*O)*Math.pow(1-lum(hex(col)),1.5));/* extra pigment makes a paint run richer, not greyer: a white or pale run dries as solid as the letter (reference photos) */
  const wy0=(wetSpan&&wetSpan.y1>wetSpan.y0+8)?wetSpan.y0*P:Y,wy1=(wetSpan&&wetSpan.y1>wetSpan.y0+8)?Math.max(wy0+90*P,wetSpan.y1*P):Y+Math.max(h,90*P);
  const g=x.createLinearGradient(0,wy0-Y,0,wy1-Y);
  g.addColorStop(Math.max(0,.4-.15*O),'rgba(0,0,0,0)');
@@ -337,9 +337,9 @@ function fullDrips(ink,s){const L=stroke.lv||0,thr=(s.wet||SLICK[s.id])?.70:.86,
    t=Math.max(0,t-sl);continue}
   const segPr=pr*clamp((horiz-.35)/.45,0,1);
   for(;t<=sl&&n<cap;t+=gap){if(Math.random()>segPr)continue;n++;const k=t/sl,x=ax+dx*k,y=ay+dy*k,e=tipEdge(x,y,x,y,pen.tip==='chisel'?((Math.random()<.55?1:-1)*r*(.35+Math.random()*.45)):((Math.random()-.5)*r*1.1));
-   drip(e[0],e[1],(.55+Math.random()*Math.random()*1.65)*(1+over*1.5),{ty:pen.ink,col:curCol(),r:Math.max(1.15,Math.min(3.8,r*(.082+Math.random()*.14))),delay:80+Math.random()*1100,src:1,w:r,st0:stroke.dryT0||performance.now()})}t-=sl}
+   const _rf=refRun(r,Math.max(1.15,Math.min(3.8,r*(.082+Math.random()*.14))),juiceK());drip(e[0],e[1],(.55+Math.random()*Math.random()*1.65)*(1+over*1.5)*(_rf.volK||1),{ty:pen.ink,col:curCol(),r:_rf.r,rMax:_rf.rMax,maxT:_rf.maxT,delay:(420+Math.random()*1300)*(.75+.35*clamp(fluidOf(pen.ink).mu,.4,2.2)),src:1,w:r,st0:stroke.dryT0||performance.now()})}t-=sl}
  /* release pooled vertical-stem ink cleanly from the bottom tip/vertex */
- if(hasV&&vPool>r*1.4&&n<cap&&Math.random()<clamp(pr*1.15,0,1)){const e=tipEdge(vBestX,vBestY,vBestX,vBestY,(Math.random()-.5)*r*.45);drip(e[0],e[1],Math.min(2.6,(.75+vPool/140)*(1+over*1.4)),{ty:pen.ink,col:curCol(),r:Math.max(1.3,Math.min(4.0,r*(.095+Math.random()*.13))),delay:100+Math.random()*700,src:1,w:r,st0:stroke.dryT0||performance.now()})}}
+ if(hasV&&vPool>r*1.4&&n<cap&&Math.random()<clamp(pr*1.15,0,1)){const e=tipEdge(vBestX,vBestY,vBestX,vBestY,(Math.random()-.5)*r*.45);const _rv=refRun(r,Math.max(1.3,Math.min(4.0,r*(.095+Math.random()*.13))),juiceK());drip(e[0],e[1],Math.min(2.6,(.75+vPool/140)*(1+over*1.4))*(1+.5*juiceK()),{ty:pen.ink,col:curCol(),r:_rv.r*1.1,rMax:_rv.rMax&&_rv.rMax*1.15,delay:(520+Math.random()*900)*(.75+.35*clamp(fluidOf(pen.ink).mu,.4,2.2)),src:1,w:r,st0:stroke.dryT0||performance.now()})}}
 /* OVERLAP: paint that isn't fully opaque lets the layer underneath count — where a new stroke crosses paint already
    on the wall the two films stack, so the crossing comes out a little darker (more so the more see-through the paint) */
 function overlapDark(){const ink=INK[pen.ink];if(demo||!stroke||!DYEINK[pen.ink]||ink.chrome||ink.solid||ink.etch||ink.comp==='multiply')return null;const op=inkAlpha(ink,stroke.s),k=Math.max(.14,Math.min(.45,(1-op)*3.2));/* see-through inks read darker where they double up; an opaque paint going over itself just blends in — no line shows */
