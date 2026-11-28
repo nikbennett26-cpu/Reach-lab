@@ -36,7 +36,7 @@ const KM_H=4,KM_RG=.9,KM_C0=.65;
    smooth reflectance spectrum (Smits' RGB->spectrum method, 10 bands 380-720 nm, resampled to 18), the paints are mixed
    band by band, and the result is turned back into a colour with the CIE colour-matching functions (Wyman-Sloan-Shirley fit). */
 const SMITS={w:[1,1,1,1,1,1,1,1,1,1],c:[.971,.9426,1.0007,1.0007,1.0007,1.0007,.1564,0,0,0],m:[1,1,.9685,.2229,0,.0458,.8369,1,1,.9959],y:[.0001,0,.1088,.6651,1,1,.9996,.9586,.9685,.984],
- r:[.1012,.0515,0,0,0,0,.8325,1.0149,1.0149,1.0149],g:[0,0,.0273,.7937,1,.9418,.1719,0,0,.0025],b:[1,1,.97,.62,.17,.02,.0003,.0369,.0483,.0496]};
+ r:[.1012,.0515,0,0,0,0,.8325,1.0149,1.0149,1.0149],g:[0,0,.0273,.7937,1,.9418,.1719,0,0,.0025],b:[1,1,.97,.62,.17,.02,.0003,.0369,.0483,.0496]};/* blue basis centred near 460 nm rather than in the violet: Smits' original reads violet once white lifts it, so blue + white went lilac */
 const KM_L=Array.from({length:18},(_,i)=>395+i*18.5),KM_N=KM_L.length;
 const kmSmAt=(arr,l)=>{const t=clamp((l-380)/340*9.999,0,9.999)-.5,i=Math.floor(t);if(i<0)return arr[0];if(i>=9)return arr[9];const f=t-i;return arr[i]*(1-f)+arr[i+1]*f};
 const KM_SMB=Object.fromEntries(Object.entries(SMITS).map(([k,a])=>[k,KM_L.map(l=>kmSmAt(a,l))]));
@@ -56,22 +56,42 @@ function kmParts(g){/* per-colourant K and S per band, calibrated so the coloura
  if(g._km)return g._km;const R=kmSpec(kmLin(g.c,g.k==='dye'?.004:.012));let K,S;
  if(g.k==='dye'){S=R.map(()=>0);K=R.map(r=>Math.max(0,-Math.log(Math.min(r,KM_RG*.999)/KM_RG)/(2*KM_H)))}
  else{const s0=g===PIGS.tio2?2.4:g===PIGS.cblk?.2:g.k==='metal'?(g===PIGS.pearl?.08:.5):.38;/* white scatters several times harder than coloured pigments */S=R.map(()=>s0);K=R.map(r=>s0*(1-r)*(1-r)/(2*r))}
+ /* Calibrate the absorption so this colourant on its own lands on its swatch. The RGB->spectrum step leaves a dark colour's
+    weak channel too dark or too light; fixing that afterwards by multiplying the mixed colour blows the error up in pale mixes
+    (a deep blue dye with white came out pink). So the fix goes into K itself, band by band, weighted by which RGB channel each
+    band feeds: then every mix that contains it is corrected in proportion to how much of it there is. */
+ {const t=kmLin(g.c,g.k==='dye'?.004:.012),W=kmBandW(),C0=1/KM_C0;
+  for(let it=0;it<4;it++){const one=kmRGB(K.map((k,i)=>kmFilm(k*C0,S[i]*C0,KM_RG))).map(v=>clamp(v/KM_RG*.995,1e-4,.999));
+   const f=[0,1,2].map(c=>g.k==='dye'?clamp(Math.log(t[c])/Math.log(one[c]),.2,5):clamp(((1-t[c])**2/(2*t[c]))/((1-one[c])**2/(2*one[c])),.2,5));
+   for(let i=0;i<KM_N;i++)K[i]*=Math.pow(f[0],W[i][0])*Math.pow(f[1],W[i][1])*Math.pow(f[2],W[i][2])}}
  return g._km={K,S}}
+let _kmBW=null;function kmBandW(){/* how much each band feeds linear R, G and B */if(_kmBW)return _kmBW;_kmBW=KM_CMF.map(x=>{const v=kmToRGB(x).map((u,i)=>Math.max(0,u/KM_WB[i])),s=v[0]+v[1]+v[2]||1;return v.map(u=>u/s)});return _kmBW}
 function kmFilm(K,S,Rg){/* reflectance of a KM layer of thickness KM_H over a backing of reflectance Rg */
  S=Math.max(S,1e-5);const a=1+K/S,b=Math.sqrt(a*a-1),x=b*S*KM_H;if(x>30)return a-b;const ct=Math.cosh(x)/Math.sinh(x);return (1-Rg*(a-b*ct))/(a-Rg+b*ct)}
 /* the round trip RGB -> spectrum -> RGB isn't exact, so correct by what a plain white film does */
-function mixColor(m){if(m.add.has('etch'))return '#ece6d6';const a=m.add,sh=pShares(m),C=clamp((m.pot||0)/100,.02,1)/KM_C0;
+/* OKLab, for lightening a colour with white while keeping its hue */
+function okFromLin(c){const l=Math.cbrt(.4122214708*c[0]+.5363325363*c[1]+.0514459929*c[2]),m=Math.cbrt(.2119034982*c[0]+.6806995451*c[1]+.1073969566*c[2]),s=Math.cbrt(.0883024619*c[0]+.2817188376*c[1]+.6299787005*c[2]);return [.2104542553*l+.793617785*m-.0040720468*s,1.9779984951*l-2.428592205*m+.4505937099*s,.0259040371*l+.7827717662*m-.808675766*s]}
+function okToLin(o){const l=(o[0]+.3963377774*o[1]+.2158037573*o[2])**3,m=(o[0]-.1055613458*o[1]-.0638541728*o[2])**3,s=(o[0]-.0894841775*o[1]-1.291485548*o[2])**3;return [4.0767416621*l-3.3077115913*m+.2309699292*s,-1.2684380046*l+2.6097574011*m-.3413193965*s,-.0041960863*l-.7034186147*m+1.707614701*s]}
+function mixColor(m){if(m.add.has('etch'))return '#ece6d6';
+ /* WHITE IN A MIX. White pigment lightens a colour by scattering light back out of it; the colour's hue hardly moves (blue + white
+    is light blue, red + white is pink). Pushing white through the spectral mix did move the hue (deep blue went lilac or pink),
+    so the colourants are mixed with each other first and the white is then worked in as a tint: lightness rises and chroma
+    falls by how much white there is against how strong the colourants are (a strong dye takes a lot of white to go pale). */
+ if(!m._noWhite){const sh0=pShares(m),wSh=(sh0.tio2||0)+(m.base==='paint'&&!m.pigs.has('tio2')?.2:0);let cs=0;for(const id in sh0)if(id!=='tio2'&&PIGS[id]&&PIGS[id].k!=='metal')cs+=sh0[id]*(PIGS[id].ts||3)/3;
+  if(wSh>.001&&cs>0){const pg=new Set([...m.pigs].filter(id=>id!=='tio2')),c0=mixColor({...m,pigs:pg,_noWhite:1}),ws=wSh*1.6,f=ws/(ws+cs);
+   const o=okFromLin(kmLin(c0,1e-5)),w=okFromLin(kmLin(PIGS.tio2.c,1e-5)),L=o[0]+(w[0]-o[0])*Math.pow(f,.85),k=Math.pow(1-f,.6),o2=[L,o[1]*k+w[1]*(1-k),o[2]*k+w[2]*(1-k)];
+   let c='#'+okToLin(o2).map(v=>clamp(Math.round(Math.pow(clamp(v,0,1),1/2.2)*255),0,255).toString(16).padStart(2,'0')).join('');return c}}const a=m.add,sh=pShares(m),C=clamp((m.pot||0)/100,.02,1)/KM_C0;
  const K=new Array(KM_N).fill(0),S=new Array(KM_N).fill(0);const put=(km,c)=>{for(let i=0;i<KM_N;i++){K[i]+=km.K[i]*c;S[i]+=km.S[i]*c}};
  for(const id in sh)put(kmParts(PIGS[id]),sh[id]*C);
  /* extras that colour the mix are colourants too, at their own strength */
  const EX={vio:['#3f108a','dye',.35],meth:['#0a2882','dye',.35],garvey:['#5e0c6e','dye',.35],bitu:['#20140a','dye',.55],oil:['#3d2b12','dye',.15],fecl:['#6e3416','dye',.25],agno3:['#cbc4b8','paint',.25]};
  for(const k in EX)if(a.has(k)){const [c,kd,amt]=EX[k];put(kmParts({c,k:kd}),amt)}
  if(m.base==='oil')put(kmParts({c:'#8a6a3a',k:'dye'}),.04);
- if(m.base==='paint'&&!m.pigs.has('tio2'))put(kmParts({c:'#f2efe6',k:'paint'}),.35);/* paint base carries a little filler */
+ if(m.base==='paint'&&!m.pigs.has('tio2')&&!m._noWhite)put(kmParts({c:'#f2efe6',k:'paint'}),.35);/* paint base carries a little filler */
  if(!Object.keys(sh).length&&!Object.keys(EX).some(k=>a.has(k)))return m.base==='paint'?'#f2efe6':'#d8dce0';
  let out=kmRGB(K.map((k,i)=>kmFilm(k,S[i],KM_RG))).map(v=>v/KM_RG*.995);/* a clean white film reads as the wall's white */
  /* the spectrum round trip shifts some colours a little: correct by each colourant's own shift, weighted by its share squared, so a colour on its own is exact and an even mix keeps its mixed hue */
- {const cor=[1,1,1];for(const id in sh){const g=PIGS[id],km=kmParts(g);if(!km.cor){const one=kmRGB(km.K.map((k,i)=>kmFilm(k,km.S[i],KM_RG))).map(v=>Math.max(1e-4,v/KM_RG*.995)),t=kmLin(g.c,1e-4);km.cor=t.map((v,i)=>clamp(v/one[i],.25,4))}for(let i=0;i<3;i++)cor[i]*=Math.pow(km.cor[i],sh[id]*sh[id])}out=out.map((v,i)=>v*cor[i])}
+ {const cor=[1,1,1];for(const id in sh){const g=PIGS[id],km=kmParts(g);if(!km.cor){const one=kmRGB(km.K.map((k,i)=>kmFilm(k,km.S[i],KM_RG))).map(v=>Math.max(1e-4,v/KM_RG*.995)),t=kmLin(g.c,1e-4);km.cor=t.map((v,i)=>clamp(v/one[i],.7,1.4))}for(let i=0;i<3;i++)cor[i]*=Math.pow(km.cor[i],sh[id]*sh[id])}out=out.map((v,i)=>v*cor[i])}
  let c='#'+out.map(v=>clamp(Math.round(Math.pow(clamp(v,0,1),1/2.2)*255),0,255).toString(16).padStart(2,'0')).join('');
  if(a.has('uv')){const h=hex(c),avg=(h[0]+h[1]+h[2])/3;c='#'+h.map(v=>clamp(Math.round(avg+(v-avg)*1.45+12),0,255).toString(16).padStart(2,'0')).join('')}
  return c}
