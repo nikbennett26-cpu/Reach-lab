@@ -4344,7 +4344,7 @@ function runPlaybackSeq(seq,extraBrews){
    playOn=false;playGrav=null;playRaf=0;down=false;
    if(playRecMR&&playRecMR.state==='recording'){
     /* hold on the finished tag so the video doesn't cut straight back to a blank wall */
-    const holdEnd=performance.now()+REC_HOLD_MS,maxEnd=performance.now()+REC_MAX_MS,fresh=()=>{try{const t=performance.now();return drips.some(d=>!d.dead&&d.vol>.02)||Object.values(WET).some(w=>w.active)||bleedL.some(b=>b.dur&&t<b.t0+b.dur)}catch(_){return false}};
+    const holdEnd=performance.now()+REC_HOLD_MS,maxEnd=performance.now()+REC_MAX_MS,fresh=()=>{try{const t=performance.now();return flowOn||drips.some(d=>!d.dead&&d.vol>.02)||(typeof falls!=='undefined'&&falls.length>0)||Object.values(WET).some(w=>w.active)||bleedL.some(b=>b.dur&&t<b.t0+b.dur)}catch(_){return false}};
     const saved=playSaved;playSaved=null;let restored=false;
     const restore=()=>{if(restored)return;restored=true;restorePlayState(saved);prepSnap();dirty=true};
     const keep=()=>{if(!(playRecMR&&playRecMR.state==='recording')){restore();return}dirty=true;
@@ -4353,9 +4353,9 @@ function runPlaybackSeq(seq,extraBrews){
     requestAnimationFrame(keep);
    }else{
     /* keep the replay going until the drips, runs and blooms have played out too, the same as the video does */
-    const saved=playSaved,maxEnd=performance.now()+REC_MAX_MS;playSaved=null;playTail=saved||true;
-    const fresh=()=>{try{const t=performance.now();return drips.some(d=>!d.dead&&d.vol>.02)||bleedL.some(b=>b.dur&&t<b.t0+b.dur)||(typeof falls!=='undefined'&&falls.length>0)}catch(_){return false}};
-    const tail=()=>{if(!playTail)return;dirty=true;if(performance.now()<maxEnd&&fresh()){requestAnimationFrame(tail);return}
+    const saved=playSaved,maxEnd=performance.now()+REC_MAX_MS,minEnd=performance.now()+3000;playSaved=null;playTail=saved||true;
+    const fresh=()=>{try{const t=performance.now();return flowOn||drips.some(d=>!d.dead&&d.vol>.02)||bleedL.some(b=>b.dur&&t<b.t0+b.dur)||(typeof falls!=='undefined'&&falls.length>0)}catch(_){return false}};
+    const tail=()=>{if(!playTail)return;dirty=true;const tn=performance.now();if(tn<minEnd||(tn<maxEnd&&fresh())){requestAnimationFrame(tail);return}
      playTail=false;restorePlayState(saved);prepSnap();dirty=true;if(hud)hud.classList.remove('on');hudFade(false);toast('Replay finished')};
     requestAnimationFrame(tail);return;
    }
