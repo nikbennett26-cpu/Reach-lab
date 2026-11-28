@@ -6,8 +6,8 @@ android {
     applicationId 'com.rsm.reachlab'
     minSdk 24
     targetSdk 36
-    versionCode 149
-    versionName '7.98.85'
+    versionCode 150
+    versionName '7.98.86'
   }
   signingConfigs {
     release {
