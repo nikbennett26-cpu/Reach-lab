@@ -32,3 +32,6 @@ const FLUID={
 };
 const fluidOf=k=>{const f=FLUID[k]||FLUID.alcpaint;if(typeof pen!=='undefined'&&pen&&pen.ink===k&&pen.props){const pr=pen.props;return {mu:f.mu*(pr.viscMul||1),rho:f.rho,gamma:f.gamma*(pr.bleedAdd>.15?.82:1),ty:f.ty*(pr.tyMul||(pr.viscMul>1.2?1.3:1)),cd:f.cd*(pr.cdMul||1)}}return f};const mixF=()=>pen.shake?.35+.65*pen.mix:1;const primeF=()=>pen.ink==='oil'?(pen.valve?clamp(.15+.85*Math.pow(clamp(pen.flow/.85),.85),.15,1):clamp(.86+.14*clamp((pen.sat??0)*lifeF()),.86,1)):1;
 
+
+/* how far a squeeze pen can be pushed: a correction pen's thin fluid tops out at 130% */
+function satCap(p){p=p||pen;return p&&p.id==='tippex'?1.3:1.6}
