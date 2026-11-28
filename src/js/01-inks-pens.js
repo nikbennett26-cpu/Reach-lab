@@ -34,4 +34,4 @@ const fluidOf=k=>{const f=FLUID[k]||FLUID.alcpaint;if(typeof pen!=='undefined'&&
 
 
 /* how far a squeeze pen can be pushed: a correction pen's thin fluid tops out at 130% */
-function satCap(p){p=p||pen;return p&&p.id==='tippex'?1.3:1.6}
+function satCap(p){p=p||pen;return p&&p.id==='tippex'?1.3:1.5}
