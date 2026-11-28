@@ -15,7 +15,7 @@ android {
       if (f.exists()) { p.load(new FileInputStream(f)); storeFile file(p['storeFile']); storePassword p['storePassword']; keyAlias p['keyAlias']; keyPassword p['keyPassword'] }
     }
   }
-  buildTypes { release { minifyEnabled false; signingConfig signingConfigs.release } }
+  buildTypes { release { minifyEnabled false; if (rootProject.file('keystore.properties').exists()) signingConfig signingConfigs.release } }
   lint { checkReleaseBuilds false; abortOnError false }
   compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
