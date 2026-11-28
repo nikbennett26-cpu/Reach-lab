@@ -1,12 +1,14 @@
 name: android
-# Builds the Play bundle (.aab) and an installable .apk from main.
+# Builds the Play bundle (.aab) and an installable .apk on every push to main (and on PRs that touch android/).
 # Signed with your upload key when these repository secrets exist:
 #   ANDROID_KEYSTORE_B64 (the .jks file, base64), ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
 # Without them it still builds (unsigned), so you can see it works.
 on:
   workflow_dispatch:
   push:
-    tags: ['v*']
+    branches: [main]
+  pull_request:
+    paths: ['android/**', '.github/workflows/android.yml']
 jobs:
   build:
     runs-on: ubuntu-latest
