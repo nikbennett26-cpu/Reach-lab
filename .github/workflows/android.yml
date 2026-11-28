@@ -1,0 +1,51 @@
+name: android
+# Builds the Play bundle (.aab) and an installable .apk on every push to main (and on PRs that touch android/).
+# Signed with your upload key when these repository secrets exist:
+#   ANDROID_KEYSTORE_B64 (the .jks file, base64), ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+# Without them it still builds (unsigned), so you can see it works.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    paths: ['android/**', '.github/workflows/android.yml']
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node tools/build.mjs && node tools/check.mjs
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      # the runner already has the Android SDK (ANDROID_HOME); make sure the platform we compile against is there
+      - run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install 'platforms;android-36' 'build-tools;36.0.0' >/dev/null || true
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '8.11.1' }
+      - name: Upload key
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KSP: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KA: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KP: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > android/upload.jks
+            printf 'storeFile=../upload.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$KSP" "$KA" "$KP" > android/keystore.properties
+            echo "signed=yes" >> "$GITHUB_ENV"
+          else
+            echo "No upload key secrets: building unsigned"; echo "signed=no" >> "$GITHUB_ENV"
+          fi
+      - run: gradle -p android bundleRelease assembleRelease --no-daemon
+      - name: Collect
+        run: |
+          V=$(grep versionName android/app/build.gradle | sed "s/.*'\(.*\)'.*/\1/")
+          mkdir out
+          cp android/app/build/outputs/bundle/release/*.aab out/ReachLab-$V.aab
+          cp android/app/build/outputs/apk/release/*.apk out/ReachLab-$V.apk
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with: { name: reachlab-play, path: out/ }
+      - if: always()
+        run: rm -f android/upload.jks android/keystore.properties

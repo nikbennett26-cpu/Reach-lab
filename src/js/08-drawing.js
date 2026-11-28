@@ -25,7 +25,8 @@ function mixHex(a,b,t){const A=hex(a),B=hex(b);return '#'+A.map((v,i)=>Math.roun
    -> blue-black; pigment paints (carbon black in oil/acrylic/paint sticks) don't shift at all. */
 const CAST=(ty,col)=>{if(!col||col[0]!=='#'||lum(hex(col))>.22)return null;if(ty==='stain'||ty==='bleed')return '#4a3592';if(ty==='alcohol'||ty==='flow'||ty==='future')return '#2c3d84';return null};
 const thinCol=(ty,col,k)=>{const c=CAST(ty,col);return c?mixHex(col,c,k):col};
-const curCol=()=>pen.dirtAmt>.05?mixHex(color,pen.dirtCol,Math.round(pen.dirtAmt*10)/10):color;
+/* a nib that picked up another wet colour writes a mix of the two (pigment mixing, so yellow + blue goes green, not grey), clearing as it writes on */
+const _ccK={k:'',v:''};const curCol=()=>{if(!(pen.dirtAmt>.05))return color;const t=Math.round(pen.dirtAmt*10)/10,k=color+pen.dirtCol+t;if(_ccK.k!==k){_ccK.k=k;try{_ccK.v=kmMix([{c:color,ts:1-t},{c:pen.dirtCol,ts:t}])}catch(_){_ccK.v=mixHex(color,pen.dirtCol,t)}}return _ccK.v};
 function tipPath(x,c,y){const ctx=tipCtx||stk.x,fr=pen.metal?0:pen.fray,sc=curScale;ctx.beginPath();
  if(pen.tip==='chisel'){const rd=pen.round||0,a=angle*Math.PI/180,w=pen.w*MM*(1+fr*.15)*sc*(1+rd*.1)*(1-leanNow*.28),t=pen.th*MM*(1+fr*.5)*Math.max(.35,sc)*(1+rd*.8)*(1-leanNow*.6);ctx.save();ctx.translate(c,y);ctx.rotate(a);if(rd>.05&&ctx.roundRect)ctx.roundRect(-w/2,-t/2,w,t,Math.min(t,w)/2*rd);else ctx.rect(-w/2,-t/2,w,t);
   if(fr>.4&&Math.random()<(fr-.4)*.35){/* a loose fibre on a wrecked nib: the odd fleck right at the edge, not a spray */const u=(Math.random()-.5)*w,v=(Math.random()<.5?-1:1)*(t/2+Math.random()*fr*1.6),rr=.4+fr*.6;ctx.moveTo(u+rr,v);ctx.arc(u,v,rr,0,TAU)}ctx.restore()}
@@ -160,8 +161,12 @@ const gCal={ey:[0,0,0,0],k:-1};
 const rotK=(x,y,k)=>k===0?{x,y}:k===1?{x:y,y:-x}:k===2?{x:-x,y:-y}:{x:-y,y:x};
 addEventListener('devicemotion',e=>{const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;const vx=-(a.x||0)/9.81,vy=(a.y||0)/9.81;
  if(gCal.k<0){const r=scrRot(vx,vy);let best=0,bd=-9;for(let k=0;k<4;k++){const q=rotK(vx,vy,k),d=-Math.hypot(q.x-r.x,q.y-r.y);if(d>bd){bd=d;best=k}}gCal.k=best;gCal.ey=[0,0,0,0];gCal.ey[best]=.25}
- for(let k=0;k<4;k++)gCal.ey[k]+=(rotK(vx,vy,k).y-gCal.ey[k])*.03;
- let top=gCal.k;for(let k=0;k<4;k++)if(gCal.ey[k]>gCal.ey[top]+.3)top=k;gCal.k=top;
+ /* The self-calibration assumes the screen turns itself to stay upright. In the phone app the screen is locked to portrait, so
+    when you hold the phone sideways the 'down' really is the screen's side: keep the calibration from the first second and stop,
+    or it would slowly re-learn sideways as 'down' and the runs would go straight down again. */
+ gCal.n=(gCal.n||0)+1;const locked=document.documentElement.classList.contains('inapp')&&Math.min(screen.width||9e3,screen.height||9e3)<600;
+ if(!locked||gCal.n<70){for(let k=0;k<4;k++)gCal.ey[k]+=(rotK(vx,vy,k).y-gCal.ey[k])*.03;
+ let top=gCal.k;for(let k=0;k<4;k++)if(gCal.ey[k]>gCal.ey[top]+.3)top=k;gCal.k=top}
  const r0=rotK(vx,vy,gCal.k),gx=r0.x,gy=r0.y;if(!grav.live){grav.live=true;grav.x=gx;grav.y=gy}grav.x+=(gx-grav.x)*.08;grav.y+=(gy-grav.y)*.08;grav.m=Math.min(1,Math.hypot(grav.x,grav.y))});
 window.__rlG=()=>[gDir(),gCal.k];window.__rlD=()=>({down,tool,stroke:!!stroke,ptrs:ptrs.size,upright,drips:drips.length,spreads:spreads.length,cells:rainCells.length});window.__rlP=()=>({PENS,pen,openSheet,fillPen,BOTTLES,TC});window.__rlCol=c=>{color=c};window.__rlT=()=>[tilt.x,tilt.y,tilt.tx,tilt.ty];/* manual hold: when the screen can't rotate (rotation lock, in-app browser) or there's no motion sensor, say how the phone is held */
 let gMode=(()=>{try{return localStorage.getItem('rlGrav')||'auto'}catch(e){return 'auto'}})();const GMODES={auto:'Drips: auto (sensor)',down:'Drips: portrait',left:'Drips: phone turned left',right:'Drips: phone turned right',up:'Drips: upside down'},GVEC={down:{x:0,y:1},left:{x:1,y:0},right:{x:-1,y:0},up:{x:0,y:-1}};
