@@ -6,15 +6,19 @@ Practise your handstyle with real pens, inks, drips and buffs on real walls.
 Full description:
 Reach Lab is a handstyle practice wall that behaves like the real thing.
 
-Every pen starts empty. Pick a body — bullet, chisel, needle, squeezer, dauber or paint stick — then fill it from a shelf of inks and paints, each with its own flow, drip and finish. Shake and prime your pen, then write on a glass window, black or white plastic, or a subway stairwell.
+Every pen starts empty. Pick a body — bullet, chisel, needle, squeezer, dauber or paint stick — then mix your own inks in the Brew Lab — alcohol, water, oil or paint bases, pigment load, binder, thinner and additives — and every brew flows, drips and dries its own way. Your brews sit in the colour circle, ready to swap mid-session. Shake and prime your pen, then write on a glass window, black or white plastic, or a subway stairwell.
 
-• Ink that acts like ink: runs drip from the bottom of your letters, pool on ledges and stairs, and sag where you press hard.
-• Pigment settles to the bottom of a fresh tag and the edges dry darker, just like the real thing.
+• Drips that pool, then run: long straight runs with weighted ends, which follow each other down the same wet channel and blend as the colour changes.
+• Squeeze harder and the pen pushes out more ink.
+• Wet crossings behave by carrier: alcohol inks stack and show the mix, oil and paint drag and blend.
+• Pigment settles down a wet tag and the edges dry darker. Oil dries glossy, alcohol dries matte, and paint pens cast a darker shadow on glass.
 • Slam the nib in and the ink bursts and splatters.
 • Wet walls bleed, and every wall is wet in its own way.
 • Weather, and an ageing slider to see your tag months later.
 • Buff it with a rag, solvent, paint roller or jet wash. Staining inks ghost back through.
 • Chisel angle, lean and pressure change your line like a real nib.
+• Trace your own tag to practise it again and again.
+• Back up your brews to a file and load them on another phone.
 • Works offline. No account, no ads, no tracking.
 
 Practise anywhere, without leaving a mark.
@@ -24,4 +28,4 @@ Contains ads: No
 Content rating: answer the questionnaire. No violence, no user content shared in-app, no purchases.
 Data safety: no data collected or shared.
 Privacy policy URL: https://raw.githack.com/nikbennett26-cpu/Reach-lab/main/privacy.html (or wherever the site is hosted)
-Graphics: play-icon-512.png (512x512), feature-graphic.png (1024x500), shot0-5.png (1080x1920 phone screenshots)
+Graphics: play-icon-512.png (512x512), feature-graphic.png (1024x500), shot0-6.png (1080x1920 phone screenshots)

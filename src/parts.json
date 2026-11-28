@@ -38,6 +38,7 @@
  "js/33-replay-video.js",
  "js/33b-trace.js",
  "js/33c-pen-colours.js",
+ "js/33d-backup.js",
  "js/34-replay-library.js",
  "tail.html"
 ]

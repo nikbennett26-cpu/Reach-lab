@@ -248,7 +248,7 @@ body.fs #status{opacity:.85;pointer-events:none;transform:none}body.fs #status .
   <span class="lbl sg">Physics</span><div class="row"><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="gravBtn">Drips: auto (sensor)</button><button class="btn" id="calBtn">Calibrate finger</button><button class="btn" id="perfBtn" aria-pressed="false">Frame time: off</button></div>
   <span class="lbl sg">Practice</span><div class="row"><button class="btn pri" id="traceWall">Trace this tag</button><button class="btn" id="traceToggle" aria-pressed="false" disabled>Guide: none</button><button class="btn" id="traceClear" disabled>Remove guide</button></div>
   <div style="margin:-4px 0 10px"><label class="lbl" for="traceA">Guide strength — <span id="traceAV">35%</span></label><input type="range" id="traceA" min="5" max="80" value="35" style="width:100%" disabled></div>
-  <span class="lbl sg">Share &amp; app</span><div class="row"><button class="btn pri" id="playBtn">Replay tag</button><button class="btn pri" id="playRecShareBtn">Record video</button><button class="btn" id="wallShare">Share wall</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button></div>
+  <span class="lbl sg">Share &amp; app</span><div class="row"><button class="btn pri" id="playBtn">Replay tag</button><button class="btn pri" id="playRecShareBtn">Record video</button><button class="btn" id="wallShare">Share wall</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="brewSave">Back up brews</button><button class="btn" id="brewLoad">Load brews</button><input type="file" id="brewFile" accept="application/json,.json" hidden><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button></div>
   <div id="tipsBox"><div class="row" style="justify-content:space-between;align-items:center"><span class="lbl">Tips <span style="opacity:.6;text-transform:none">· red dot = new</span></span><button class="btn" id="tipsClear">Clear</button></div><ol id="tipsList" class="small" style="margin:0 0 12px;padding-left:20px;max-height:180px;overflow:auto;line-height:1.45"><li style="opacity:.6">Tips from your drawing show up here.</li></ol></div>
   <div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Version 7.98 · 26 Nov · responsive modal buttons, smooth playback, no in-app saved playbacks</div>
   <p class="small">A simulation: pens modelled on real ones, dry times sped up, surface physics modelled rather than measured.</p>
@@ -4420,6 +4420,22 @@ function pickBrew(id){const b=BOTTLES.find(q=>q.id===id);if(!b)return;
  q('cbrews')&&q('cbrews').addEventListener('click',e=>{const b=e.target.closest('[data-brew]');if(b)pickBrew(b.dataset.brew)});
  try{renderBrewPick()}catch(_){}
  /* stock colours added in 7.98.79-81 are gone: forget them */try{localStorage.removeItem('rlCols')}catch(_){}})();
+/* ---------- BACK UP YOUR BREWS ----------
+   Your brews live in the app's own storage. Moving to the Play Store version (or a new phone) means a fresh install, which starts
+   empty, so they can be saved to a file and loaded back in. Loading adds brews; it never deletes the ones you have. */
+function brewBackupBlob(){let mx=[];try{mx=JSON.parse(localStorage.getItem('rlMixes')||'[]')}catch(_){}
+ return new Blob([JSON.stringify({app:'reachlab',kind:'brews',v:1,saved:new Date().toISOString(),brews:mx},null,1)],{type:'application/json'})}
+function brewRestore(txt){let o;try{o=JSON.parse(txt)}catch(_){toast('That file isn\'t a Reach Lab backup');return}
+ const L=Array.isArray(o)?o:(o&&Array.isArray(o.brews)?o.brews:null);if(!L){toast('That file isn\'t a Reach Lab backup');return}
+ let mx=[];try{mx=JSON.parse(localStorage.getItem('rlMixes')||'[]')}catch(_){}let added=0;
+ for(const b of L){if(!b||!b.id||!Array.isArray(b.colors))continue;if(mx.some(m=>m.id===b.id)||BOTTLES.some(q=>q.id===b.id))continue;mx.push(b);BOTTLES.unshift(b);added++}
+ try{localStorage.setItem('rlMixes',JSON.stringify(mx))}catch(_){}try{mixMigrate()}catch(_){}try{renderMine();renderFill();renderCSheet()}catch(_){}
+ toast(added?`${added} brew${added>1?'s':''} loaded`:'Those brews are already here')}
+(()=>{const q=id=>document.getElementById(id);
+ q('brewSave')&&q('brewSave').addEventListener('click',async()=>{const n=(()=>{try{return JSON.parse(localStorage.getItem('rlMixes')||'[]').length}catch(_){return 0}})();if(!n){toast('No brews to back up yet');return}
+  const d=new Date(),stamp=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');await saveOrShareBlob(brewBackupBlob(),`reachlab-brews-${stamp}.json`,false)});
+ const fi=q('brewFile');q('brewLoad')&&q('brewLoad').addEventListener('click',()=>fi&&fi.click());
+ fi&&fi.addEventListener('change',()=>{const f=fi.files&&fi.files[0];fi.value='';if(!f)return;f.text().then(brewRestore).catch(()=>toast('Couldn\'t read that file'))})})();
 /* ---------- SAVED PLAYBACKS LIBRARY (localStorage) ---------- */
 
 
