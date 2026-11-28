@@ -28,4 +28,4 @@ Contains ads: No
 Content rating: answer the questionnaire. No violence, no user content shared in-app, no purchases.
 Data safety: no data collected or shared.
 Privacy policy URL: https://raw.githack.com/nikbennett26-cpu/Reach-lab/main/privacy.html (or wherever the site is hosted)
-Graphics: play-icon-512.png (512x512), feature-graphic.png (1024x500), shot0-6.png (1080x1920 phone screenshots)
+Graphics: play-icon-512.png (512x512), feature-graphic.png (1024x500), shot0-7.png (1080x1920 phone screenshots)

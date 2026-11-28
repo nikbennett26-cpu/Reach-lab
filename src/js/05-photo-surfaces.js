@@ -197,7 +197,7 @@ function ledgeHit(d,xw,col,re){const L0=LDG();if(L0.stone)return cillHit(d,xw,co
  }
  bx.restore();
  markInk(xw,L.y,rx,d.id,col);{const ix=idm.x;ix.save();ix.fillStyle=`rgb(${d.id*20},0,0)`;ix.fillRect(xw-rx,L.y-ry,rx*2,L.h+ry);ix.restore()}
- const ovf=L0.stone?2.4:.55;/* the stone cill is deep and flat: it fills up and spreads before it spills over the edge */if(p>ovf&&Math.random()<.7+Math.min(.25,(p-ovf)*.3)){/* the pool overflows and drips off the front of the ledge */ledgeLetGo(xw,L.y+L.h*.95,Math.min(Math.max(d.v0*.9,.6),.5+(p-ovf)*.7+Math.random()*.6),d.r,col,ovf);ledP[k]=p*.55;return true}
+ const ovf=L0.stone?2.4:.9;/* the stone cill is deep and flat: it fills up and spreads before it spills over the edge */if(p>ovf&&Math.random()<.4+Math.min(.25,(p-ovf)*.25)){/* the pool overflows and drips off the front of the ledge */ledgeLetGo(xw,L.y+L.h*.95,Math.min(Math.max(d.v0*.9,.6),.5+(p-ovf)*.7+Math.random()*.6),d.r,col,ovf);ledP[k]=p*.55;return true}
  return true}
 const C=8;let GW=1,GH_=1,water=new Float32Array(1),waterOn=false;const waterCv=document.createElement('canvas'),wctx=waterCv.getContext('2d');const mist=[];
 let wg=new Float32Array(1),wt=new Float32Array(1),wgOn=false;

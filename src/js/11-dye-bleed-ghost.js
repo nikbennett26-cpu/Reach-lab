@@ -56,7 +56,10 @@ function dyeSplit(s,col){const cast=CAST(pen.ink,col);if(!cast||demo||!upright)r
  /* patchy curtain of crisp violet/blue runs */
  wetWash(s,INK[pen.ink],col,{dye});
  /* crisp black letter body stays on top */
- {const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.globalCompositeOperation='source-in';x.fillStyle=col;x.fillRect(0,0,w,h);bleedL.push({c,x:x0,y:y0,t0:now,dur:1,a:1,top:1})}
+ {const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.globalCompositeOperation='source-in';x.fillStyle=col;x.fillRect(0,0,w,h);
+  /* but on a wet wall the dye still sinks: thin the body where settle() lightened the top, so the light top isn't buried */
+  const G=stroke.settleGS;if(G&&G.a>.03){x.globalCompositeOperation='destination-out';const m=x.createLinearGradient(G.sx-x0,G.sy-y0,G.ex-x0,G.ey-y0),O=G.O;m.addColorStop(0,`rgba(0,0,0,${G.a.toFixed(2)})`);m.addColorStop(G.LM1,`rgba(0,0,0,${(G.a*Math.min(1,G.LA1)).toFixed(2)})`);m.addColorStop(G.LM2,'rgba(0,0,0,0)');x.fillStyle=m;x.fillRect(0,0,w,h)}
+  bleedL.push({c,x:x0,y:y0,t0:now,dur:1,a:1,top:1})}
  {const tops=bleedL.filter(q=>q.top),rest=bleedL.filter(q=>!q.top);bleedL.length=0;bleedL.push(...rest,...tops)}
  stroke.split=1;return true}
 function wetDyeCurtain(s,ink,col,dcol){
@@ -104,10 +107,14 @@ function wetDyeCurtain(s,ink,col,dcol){
    }
    /* Optional fine horizontal capillary feather/wicking branch where a tendril crosses a wet bead */
    const tickAt=wk0>.42&&Math.random()<.34?(2+Math.floor(Math.random()*Math.max(1,segs-2))):-1;
-   strands.push({pts,w0,al,dly:Math.random()*420,dur:1100+Math.random()*1700,tickAt,tickW:(3+Math.random()*9)*(.6+wk0*.6)});
+   /* the dye travels down the wet film at the pace of the runs beside it (wet runs creep ~15-30 px/s), after the same pool-then-go wait, so curtain and drips move together */
+   const vS=(13+Math.random()*13)*(.7+wk0*.5)*Math.min(1.3,flowK);
+   strands.push({pts,w0,al,dly:650+Math.random()*1900,dur:Math.max(900,len/vS*1000),tickAt,tickW:(3+Math.random()*9)*(.6+wk0*.6)});
   }
   t-=sl;
  }
+ /* the dye curtain runs in the wall's water film and stops at the ledge: cut each tendril where it meets it */
+ if(ledgeLive()&&!LDG().sl){for(let k=strands.length-1;k>=0;k--){const p=strands[k].pts;let j=0;for(;j<p.length;j+=2)if(p[j+1]>ledgeY(p[j])-1)break;if(j<p.length){if(j<4){strands.splice(k,1);continue}strands[k].pts=p.slice(0,j)}}}
  if(!strands.length)return;
  /* Compute tight bounding box for the curtain canvas */
  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
@@ -121,13 +128,13 @@ function wetDyeCurtain(s,ink,col,dcol){
  const X1=Math.min(baked.c.width,Math.ceil((maxX+pad)*P)),Y1=Math.min(baked.c.height,Math.ceil((maxY+pad)*P));
  const cw=X1-X0,ch=Y1-Y0;if(cw<4||ch<4)return;
  const c=document.createElement('canvas');c.width=cw;c.height=ch;const x=c.getContext('2d');
- const now=performance.now(),totalDur=3100,isDkSurf=s.id==='plastic';
+ const now=performance.now(),totalDur=strands.reduce((m,q)=>Math.max(m,q.dly+q.dur),0)+120,isDkSurf=s.id==='plastic';
  const baseCol=dcol||col,paleCol=washTint(baseCol);
  const L={
   sid:stroke,c,x:X0,y:Y0,t0:now,dur:totalDur,a:isDkSurf?.86:.92,
   comp:isDkSurf?'source-over':'multiply',live:1,lastT:0,
   upd(tNow){
-   if(tNow-this.lastT<42&&tNow<this.t0+this.dur)return;
+   if(tNow-this.lastT<80&&tNow<this.t0+this.dur)return;
    this.lastT=tNow;
    x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,cw,ch);
    x.setTransform(P,0,0,P,-X0,-Y0);
@@ -135,7 +142,7 @@ function wetDyeCurtain(s,ink,col,dcol){
    for(let si=0;si<strands.length;si++){
     const st=strands[si],el=tNow-(now+st.dly);
     if(el<=0)continue;
-    const prog=sm(clamp(el/st.dur,0,1));
+    const u=clamp(el/st.dur,0,1),prog=u<.06?u*u/.12:1-Math.pow(1-u,1.45)*.97;/* a quick start once it lets go, a steady creep, then easing to a stop like a run */
     const nPts=st.pts.length/2,maxSeg=(nPts-1)*prog,full=Math.floor(maxSeg),frac=maxSeg-full;
     /* Soft capillary outer halo along the tendril so dense clusters merge into ragged vertical dye sheets */
     x.strokeStyle=paleCol;x.globalAlpha=st.al*.32;x.lineWidth=st.w0*2.15;

@@ -120,7 +120,7 @@ function tapPrime(){if(tool!=='draw'||!stroke||!stroke.p0||!last)return;const no
  if((pen.empty||pen.fillReq)&&!pen.fill)return;if(pen.life<=0){toast('Empty — tapping can’t prime it. Refill it or grab a new pen');return}
  pen.drain=Math.max(0,(pen.drain||0)-2200*tapS.n);pen.tipDry=Math.max(0,pen.tipDry-.35);if(pen.flow!==undefined&&!pen.valve)pen.flow=Math.min(1,(pen.flow||.8)+.25);
  if(pen.valve)pump(p);
- if(pen.squeeze){const s0=pen.sat??0,bump=tapS.n>=2?.22:.14;pen.sat=Math.min(1.6,s0+bump);showFlow();if(s0<1.05&&pen.sat>=1.05)toast('Juiced over 100% — ready to drip');else if(s0<1.35&&pen.sat>=1.35)toast('Felt soaked — super juicy, it’ll drip');if(pen.sat>1.25&&upright)drip(p.x,p.y+R()*.5,.65+(pen.sat-1)*1.8)}
+ if(pen.squeeze){const s0=pen.sat??0,bump=tapS.n>=2?.22:.14;pen.sat=Math.min(satCap(),s0+bump);showFlow();if(s0<1.05&&pen.sat>=1.05)toast('Juiced over 100% — ready to drip');else if(s0<1.35&&pen.sat>=1.35)toast('Felt soaked — super juicy, it’ll drip');if(pen.sat>1.25&&upright)drip(p.x,p.y+R()*.5,.65+(pen.sat-1)*1.8)}
  if(!pen.metal&&!INK[pen.ink].solid&&tapS.n>=2){const s=surfAt(p.x,p.y);blob(p.x,p.y,R()*Math.min(1.6,.55+.16*tapS.n),s);if(tapS.n>=4&&upright)drip(p.x,p.y+R()*.5,.5+.25*tapS.n*(INK[pen.ink].drip||.6))}
  if(!saidTap++)toast('Priming — dab the tip to push ink in. The line runs solid again');uiDirty=true}
 function pump(p){if(!pen.valve)return;const lf=lifeF();if(lf<=0){toast('Empty — nothing left to prime. Grab a new pen');return}

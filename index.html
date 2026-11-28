@@ -248,7 +248,7 @@ body.fs #status{opacity:.85;pointer-events:none;transform:none}body.fs #status .
   <span class="lbl sg">Physics</span><div class="row"><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="gravBtn">Drips: auto (sensor)</button><button class="btn" id="calBtn">Calibrate finger</button><button class="btn" id="perfBtn" aria-pressed="false">Frame time: off</button></div>
   <span class="lbl sg">Practice</span><div class="row"><button class="btn pri" id="traceWall">Trace this tag</button><button class="btn" id="traceToggle" aria-pressed="false" disabled>Guide: none</button><button class="btn" id="traceClear" disabled>Remove guide</button></div>
   <div style="margin:-4px 0 10px"><label class="lbl" for="traceA">Guide strength — <span id="traceAV">35%</span></label><input type="range" id="traceA" min="5" max="80" value="35" style="width:100%" disabled></div>
-  <span class="lbl sg">Share &amp; app</span><div class="row"><button class="btn pri" id="playBtn">Replay tag</button><button class="btn pri" id="playRecShareBtn">Record video</button><button class="btn" id="wallShare">Share wall</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="brewSave">Back up brews</button><button class="btn" id="brewLoad">Load brews</button><input type="file" id="brewFile" accept="application/json,.json" hidden><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button></div>
+  <span class="lbl sg">Share &amp; app</span><div class="row"><button class="btn pri" id="playBtn">Replay tag</button><button class="btn pri" id="playRecShareBtn">Record video</button><button class="btn" id="wallShare">Share wall</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="brewSave">Back up brews</button><button class="btn" id="brewLoad">Load brews</button><input type="file" id="brewFile" accept="application/json,.json" hidden><button class="btn" id="tagSave">Save tag recording</button><button class="btn" id="tagLoad">Play a tag recording</button><input type="file" id="tagFile" accept="application/json,.json" hidden><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button></div>
   <div id="tipsBox"><div class="row" style="justify-content:space-between;align-items:center"><span class="lbl">Tips <span style="opacity:.6;text-transform:none">· red dot = new</span></span><button class="btn" id="tipsClear">Clear</button></div><ol id="tipsList" class="small" style="margin:0 0 12px;padding-left:20px;max-height:180px;overflow:auto;line-height:1.45"><li style="opacity:.6">Tips from your drawing show up here.</li></ol></div>
   <div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Version 7.98 · 26 Nov · responsive modal buttons, smooth playback, no in-app saved playbacks</div>
   <p class="small">A simulation: pens modelled on real ones, dry times sped up, surface physics modelled rather than measured.</p>
@@ -287,7 +287,10 @@ body.fs #status{opacity:.85;pointer-events:none;transform:none}body.fs #status .
  </div><div id="coachBar" hidden><i></i></div></div>
 </div>
 
-<script>
+<script>/* seedable randomness: every stroke reseeds it with a number saved in its recording, so a replay rolls the same splats, drips and wobbles */
+const _rngNative=Math.random;let _rngS=(_rngNative()*4294967296)>>>0;Math.random=function(){_rngS=(_rngS+0x6D2B79F5)>>>0;let t=_rngS;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296};
+function rngSeed(s){_rngS=(s>>>0)||1}function rngFresh(){return((_rngNative()*4294967296)>>>0)||1}
+
 /* safety net: some embedded viewers (in-app previews, hidden tabs) hand the page a 0-size canvas; drawing from one throws
    on every frame. An empty canvas has nothing to draw, so just skip it. */
 {const P=CanvasRenderingContext2D.prototype,d0=P.drawImage;P.drawImage=function(im){if(im&&(im instanceof HTMLCanvasElement||(typeof OffscreenCanvas!=='undefined'&&im instanceof OffscreenCanvas))&&(!im.width||!im.height))return;return d0.apply(this,arguments)};
@@ -333,6 +336,9 @@ const FLUID={
 };
 const fluidOf=k=>{const f=FLUID[k]||FLUID.alcpaint;if(typeof pen!=='undefined'&&pen&&pen.ink===k&&pen.props){const pr=pen.props;return {mu:f.mu*(pr.viscMul||1),rho:f.rho,gamma:f.gamma*(pr.bleedAdd>.15?.82:1),ty:f.ty*(pr.tyMul||(pr.viscMul>1.2?1.3:1)),cd:f.cd*(pr.cdMul||1)}}return f};const mixF=()=>pen.shake?.35+.65*pen.mix:1;const primeF=()=>pen.ink==='oil'?(pen.valve?clamp(.15+.85*Math.pow(clamp(pen.flow/.85),.85),.15,1):clamp(.86+.14*clamp((pen.sat??0)*lifeF()),.86,1)):1;
 
+
+/* how far a squeeze pen can be pushed: a correction pen's thin fluid tops out at 130% */
+function satCap(p){p=p||pen;return p&&p.id==='tippex'?1.3:1.6}
 /* ---------- tileable value noise ---------- */
 const lats={};
 function lat(nx,ny){const k=nx+'x'+ny;if(!lats[k]){let s=(nx*7919+ny*104729)>>>0;const d=new Float32Array(nx*ny);for(let i=0;i<d.length;i++){s=(Math.imul(s,1103515245)+12345)>>>0;d[i]=s/4294967296}lats[k]=d}return lats[k]}
@@ -714,7 +720,7 @@ function ledgeHit(d,xw,col,re){const L0=LDG();if(L0.stone)return cillHit(d,xw,co
  }
  bx.restore();
  markInk(xw,L.y,rx,d.id,col);{const ix=idm.x;ix.save();ix.fillStyle=`rgb(${d.id*20},0,0)`;ix.fillRect(xw-rx,L.y-ry,rx*2,L.h+ry);ix.restore()}
- const ovf=L0.stone?2.4:.55;/* the stone cill is deep and flat: it fills up and spreads before it spills over the edge */if(p>ovf&&Math.random()<.7+Math.min(.25,(p-ovf)*.3)){/* the pool overflows and drips off the front of the ledge */ledgeLetGo(xw,L.y+L.h*.95,Math.min(Math.max(d.v0*.9,.6),.5+(p-ovf)*.7+Math.random()*.6),d.r,col,ovf);ledP[k]=p*.55;return true}
+ const ovf=L0.stone?2.4:.9;/* the stone cill is deep and flat: it fills up and spreads before it spills over the edge */if(p>ovf&&Math.random()<.4+Math.min(.25,(p-ovf)*.25)){/* the pool overflows and drips off the front of the ledge */ledgeLetGo(xw,L.y+L.h*.95,Math.min(Math.max(d.v0*.9,.6),.5+(p-ovf)*.7+Math.random()*.6),d.r,col,ovf);ledP[k]=p*.55;return true}
  return true}
 const C=8;let GW=1,GH_=1,water=new Float32Array(1),waterOn=false;const waterCv=document.createElement('canvas'),wctx=waterCv.getContext('2d');const mist=[];
 let wg=new Float32Array(1),wt=new Float32Array(1),wgOn=false;
@@ -778,7 +784,7 @@ function landPulse(S){
  /* RE-GRAB: every new stroke squeezes the bottle again as the finger lands. How far it pulls Squeeze % back up depends on how hard
     you press: a light touch tops it up a little, a firm one brings it most of the way back. Only ever lifts a level that has sagged. */
  if(pen.squeeze&&!demo&&pen.life>0){const pk0=Math.max(S.pPeak||0,pressNow),h0=clamp((pk0-.2)/.6),s0=pen.sat??0,tgt=Math.min(1.05,.5+.55*h0);
-  if(s0<tgt){pen.sat=Math.min(1.6,s0+(tgt-s0)*(.3+.5*h0)*lifeF());S.regrab=pen.sat-s0;showFlow()}
+  if(s0<tgt){pen.sat=Math.min(satCap(),s0+(tgt-s0)*(.3+.5*h0)*lifeF());S.regrab=pen.sat-s0;showFlow()}
   /* a firm landing is a priming squeeze: every new letter put down with pressure pushes Squeeze % further up (a light touch adds nothing) */
   if(h0>.25){const s1=pen.sat??0;if(s1<1)pen.sat=Math.min(1,s1+(.04+.16*h0)*lifeF());S.regrab=(S.regrab||0)+(pen.sat-s1);showFlow()}}
  if(demo||!fh||!upright||!S.p0||!flowable())return;
@@ -1005,7 +1011,7 @@ function tapPrime(){if(tool!=='draw'||!stroke||!stroke.p0||!last)return;const no
  if((pen.empty||pen.fillReq)&&!pen.fill)return;if(pen.life<=0){toast('Empty — tapping can’t prime it. Refill it or grab a new pen');return}
  pen.drain=Math.max(0,(pen.drain||0)-2200*tapS.n);pen.tipDry=Math.max(0,pen.tipDry-.35);if(pen.flow!==undefined&&!pen.valve)pen.flow=Math.min(1,(pen.flow||.8)+.25);
  if(pen.valve)pump(p);
- if(pen.squeeze){const s0=pen.sat??0,bump=tapS.n>=2?.22:.14;pen.sat=Math.min(1.6,s0+bump);showFlow();if(s0<1.05&&pen.sat>=1.05)toast('Juiced over 100% — ready to drip');else if(s0<1.35&&pen.sat>=1.35)toast('Felt soaked — super juicy, it’ll drip');if(pen.sat>1.25&&upright)drip(p.x,p.y+R()*.5,.65+(pen.sat-1)*1.8)}
+ if(pen.squeeze){const s0=pen.sat??0,bump=tapS.n>=2?.22:.14;pen.sat=Math.min(satCap(),s0+bump);showFlow();if(s0<1.05&&pen.sat>=1.05)toast('Juiced over 100% — ready to drip');else if(s0<1.35&&pen.sat>=1.35)toast('Felt soaked — super juicy, it’ll drip');if(pen.sat>1.25&&upright)drip(p.x,p.y+R()*.5,.65+(pen.sat-1)*1.8)}
  if(!pen.metal&&!INK[pen.ink].solid&&tapS.n>=2){const s=surfAt(p.x,p.y);blob(p.x,p.y,R()*Math.min(1.6,.55+.16*tapS.n),s);if(tapS.n>=4&&upright)drip(p.x,p.y+R()*.5,.5+.25*tapS.n*(INK[pen.ink].drip||.6))}
  if(!saidTap++)toast('Priming — dab the tip to push ink in. The line runs solid again');uiDirty=true}
 function pump(p){if(!pen.valve)return;const lf=lifeF();if(lf<=0){toast('Empty — nothing left to prime. Grab a new pen');return}
@@ -1219,7 +1225,10 @@ function dyeSplit(s,col){const cast=CAST(pen.ink,col);if(!cast||demo||!upright)r
  /* patchy curtain of crisp violet/blue runs */
  wetWash(s,INK[pen.ink],col,{dye});
  /* crisp black letter body stays on top */
- {const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.globalCompositeOperation='source-in';x.fillStyle=col;x.fillRect(0,0,w,h);bleedL.push({c,x:x0,y:y0,t0:now,dur:1,a:1,top:1})}
+ {const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.globalCompositeOperation='source-in';x.fillStyle=col;x.fillRect(0,0,w,h);
+  /* but on a wet wall the dye still sinks: thin the body where settle() lightened the top, so the light top isn't buried */
+  const G=stroke.settleGS;if(G&&G.a>.03){x.globalCompositeOperation='destination-out';const m=x.createLinearGradient(G.sx-x0,G.sy-y0,G.ex-x0,G.ey-y0),O=G.O;m.addColorStop(0,`rgba(0,0,0,${G.a.toFixed(2)})`);m.addColorStop(G.LM1,`rgba(0,0,0,${(G.a*Math.min(1,G.LA1)).toFixed(2)})`);m.addColorStop(G.LM2,'rgba(0,0,0,0)');x.fillStyle=m;x.fillRect(0,0,w,h)}
+  bleedL.push({c,x:x0,y:y0,t0:now,dur:1,a:1,top:1})}
  {const tops=bleedL.filter(q=>q.top),rest=bleedL.filter(q=>!q.top);bleedL.length=0;bleedL.push(...rest,...tops)}
  stroke.split=1;return true}
 function wetDyeCurtain(s,ink,col,dcol){
@@ -1267,10 +1276,14 @@ function wetDyeCurtain(s,ink,col,dcol){
    }
    /* Optional fine horizontal capillary feather/wicking branch where a tendril crosses a wet bead */
    const tickAt=wk0>.42&&Math.random()<.34?(2+Math.floor(Math.random()*Math.max(1,segs-2))):-1;
-   strands.push({pts,w0,al,dly:Math.random()*420,dur:1100+Math.random()*1700,tickAt,tickW:(3+Math.random()*9)*(.6+wk0*.6)});
+   /* the dye travels down the wet film at the pace of the runs beside it (wet runs creep ~15-30 px/s), after the same pool-then-go wait, so curtain and drips move together */
+   const vS=(13+Math.random()*13)*(.7+wk0*.5)*Math.min(1.3,flowK);
+   strands.push({pts,w0,al,dly:650+Math.random()*1900,dur:Math.max(900,len/vS*1000),tickAt,tickW:(3+Math.random()*9)*(.6+wk0*.6)});
   }
   t-=sl;
  }
+ /* the dye curtain runs in the wall's water film and stops at the ledge: cut each tendril where it meets it */
+ if(ledgeLive()&&!LDG().sl){for(let k=strands.length-1;k>=0;k--){const p=strands[k].pts;let j=0;for(;j<p.length;j+=2)if(p[j+1]>ledgeY(p[j])-1)break;if(j<p.length){if(j<4){strands.splice(k,1);continue}strands[k].pts=p.slice(0,j)}}}
  if(!strands.length)return;
  /* Compute tight bounding box for the curtain canvas */
  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
@@ -1284,13 +1297,13 @@ function wetDyeCurtain(s,ink,col,dcol){
  const X1=Math.min(baked.c.width,Math.ceil((maxX+pad)*P)),Y1=Math.min(baked.c.height,Math.ceil((maxY+pad)*P));
  const cw=X1-X0,ch=Y1-Y0;if(cw<4||ch<4)return;
  const c=document.createElement('canvas');c.width=cw;c.height=ch;const x=c.getContext('2d');
- const now=performance.now(),totalDur=3100,isDkSurf=s.id==='plastic';
+ const now=performance.now(),totalDur=strands.reduce((m,q)=>Math.max(m,q.dly+q.dur),0)+120,isDkSurf=s.id==='plastic';
  const baseCol=dcol||col,paleCol=washTint(baseCol);
  const L={
   sid:stroke,c,x:X0,y:Y0,t0:now,dur:totalDur,a:isDkSurf?.86:.92,
   comp:isDkSurf?'source-over':'multiply',live:1,lastT:0,
   upd(tNow){
-   if(tNow-this.lastT<42&&tNow<this.t0+this.dur)return;
+   if(tNow-this.lastT<80&&tNow<this.t0+this.dur)return;
    this.lastT=tNow;
    x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,cw,ch);
    x.setTransform(P,0,0,P,-X0,-Y0);
@@ -1298,7 +1311,7 @@ function wetDyeCurtain(s,ink,col,dcol){
    for(let si=0;si<strands.length;si++){
     const st=strands[si],el=tNow-(now+st.dly);
     if(el<=0)continue;
-    const prog=sm(clamp(el/st.dur,0,1));
+    const u=clamp(el/st.dur,0,1),prog=u<.06?u*u/.12:1-Math.pow(1-u,1.45)*.97;/* a quick start once it lets go, a steady creep, then easing to a stop like a run */
     const nPts=st.pts.length/2,maxSeg=(nPts-1)*prog,full=Math.floor(maxSeg),frac=maxSeg-full;
     /* Soft capillary outer halo along the tendril so dense clusters merge into ragged vertical dye sheets */
     x.strokeStyle=paleCol;x.globalAlpha=st.al*.32;x.lineWidth=st.w0*2.15;
@@ -1931,18 +1944,20 @@ function mergeRuns(dt){const G=gDir(),gm=Math.hypot(G.x,G.y)||1,ux=G.x/gm,uy=G.y
 function endSize(d){if(d.endK)return d.endK;const vr=clamp((d.vol||0)/(d.v0||1)),stub=d.maxT&&(d.tr||0)<=d.maxT*1.2;let k=vr<.08?.55+Math.random()*.2:.78+.5*clamp(vr*1.6);if(stub)k*=.82;if(Math.random()<.08)k*=1.3;return d.endK=clamp(k*(.9+Math.random()*.2),.5,1.45)}
 function runHaze(xa,ya,xb,yb,r,a,col){const P=dpr,pad=Math.ceil(16+r*2),X=Math.max(0,Math.floor((Math.min(xa,xb)-pad)*P)),Y=Math.max(0,Math.floor((Math.min(ya,yb)-pad)*P)),w=Math.ceil((Math.abs(xb-xa)+pad*2)*P),h=Math.ceil((Math.abs(yb-ya)+pad*2)*P);if(w<2||h<2)return;
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');try{x.filter=`blur(${(4.2+r*.55)*P}px)`}catch(_){}x.strokeStyle=col||'#5a3aa8';x.lineCap='round';x.lineWidth=(r*2.4+3.5)*P;x.beginPath();x.moveTo(xa*P-X,ya*P-Y);x.lineTo(xb*P-X,yb*P-Y);x.stroke();x.filter='none';
+ /* the haze is dye carried in the wall's water film: it stops at the ledge like the runs do, it doesn't carry on behind it */
+ if(ledgeLive()&&!LDG().sl){const xl=X/P,xr=(X+w)/P;x.globalCompositeOperation='destination-out';x.beginPath();x.moveTo(0,ledgeY(xl)*P-Y);x.lineTo(w,ledgeY(xr)*P-Y);x.lineTo(w,h);x.lineTo(0,h);x.closePath();x.fill();x.globalCompositeOperation='source-over'}
  bleedL.push({c,x:X,y:Y,t0:performance.now()+140,dur:1700,a,comp:'multiply'})}
 /* smooth 1-D value noise for drip wander */
 function vnz(t,sd){const i=Math.floor(t),f=t-i,u=f*f*(3-2*f),h=k=>{let v=Math.imul((k+sd*7919)|0,374761393)>>>0;v=Math.imul(v^(v>>>13),1274126177)>>>0;return((v^(v>>>16))>>>0)/4294967296};return h(i)+(h(i+1)-h(i))*u}
 /* DROPS THAT LET GO: a bead hanging off an overhang (a ledge or cill edge) swells until its weight beats surface tension,
    pinches off and falls clear of the wall — you see it drop, it doesn't paint the wall on the way down */
 const falls=[];
-function dropFall(x,y,r,col){if(falls.length>40||!col||col[0]!=='#')return;falls.push({x,y,r:Math.max(1,r),col,vy:20,vx:0,t:0,hang:.18+Math.random()*.35})}
+function dropFall(x,y,r,col){if(falls.length>40||!col||col[0]!=='#')return;falls.push({x,y,r:Math.max(1,r),col,vy:10,vx:0,t:0,hang:.45+Math.random()*.7})}
 /* A FULL LEDGE LETS GO IN DROPLETS: paint that spills off the lip hangs as a bead and falls clear as round drops (one to three,
    staggered) — it doesn't start a new run down the wall below the ledge */
-function ledgeLetGo(x,y,vol,r,col){const n=vol>1.3?3:vol>.7?2:1;for(let k=0;k<n;k++){const rr=Math.min(4.2,Math.max(1.5,(r||1)*1.25+vol*(k?.5:.7))),b=falls.length;
+function ledgeLetGo(x,y,vol,r,col){const n=vol>1.3?2:1;for(let k=0;k<n;k++){const rr=Math.min(4.2,Math.max(1.5,(r||1)*1.25+vol*(k?.5:.7))),b=falls.length;
   dropFall(x+(k?(Math.random()-.5)*7:0),y,rr,col);if(falls.length>b)falls[falls.length-1].hang+=k*(.25+Math.random()*.35)}}
-function runFalls(dt){for(let i=falls.length-1;i>=0;i--){const f=falls[i];f.t+=dt;if(f.t<f.hang)continue;const G=gDir(),gm=Math.hypot(G.x,G.y)||1;f.vy+=980*dt*(G.y/gm);f.vx+=980*dt*(G.x/gm);f.x+=f.vx*dt;f.y+=f.vy*dt;if(f.y>H+30||f.x<-30||f.x>W+30)falls.splice(i,1)}if(falls.length)dirty=true}
+function runFalls(dt){for(let i=falls.length-1;i>=0;i--){const f=falls[i];f.t+=dt;if(f.t<f.hang)continue;const G=gDir(),gm=Math.hypot(G.x,G.y)||1;f.vy+=520*dt*(G.y/gm);f.vx+=520*dt*(G.x/gm);f.vy=Math.min(f.vy,900);/* a heavy drop peels off slowly and falls slower than free-fall at this scale */f.x+=f.vx*dt;f.y+=f.vy*dt;if(f.y>H+30||f.x<-30||f.x>W+30)falls.splice(i,1)}if(falls.length)dirty=true}
 function drawFalls(x){if(!falls.length)return;x.save();x.setTransform(dpr,0,0,dpr,0,0);for(const f of falls){const hang=f.t<f.hang,k=hang?f.t/f.hang:1,sp=Math.hypot(f.vx,f.vy),st=Math.min(5,sp*.012),r=f.r*(hang?.7+.45*k:1);
   x.fillStyle=f.col;x.globalAlpha=.95;x.beginPath();x.ellipse(f.x,f.y+(hang?r*.6*k:0),r*(hang?1:.85),r*(hang?1+.4*k:1+st*.35),0,0,TAU);x.fill();
   if(!hang&&st>.3){x.globalAlpha=.35;x.beginPath();x.ellipse(f.x,f.y-r*st*.8,r*.5,r*st,0,0,TAU);x.fill()}
@@ -1984,7 +1999,7 @@ function runDrips(dt){runFalls(dt);runLedFeed();if(!drips.length)return;mergeRun
   /* Navier-Stokes creeping-bead balance: terminal speed v ~ (rho*g*r^2)/(3*mu_app), with shear-thinning & drying viscosity */
   const dryMu=1/(0.28+0.72*Math.pow(clamp(d.visc||1,.15,1),1.4)),shearThin=1/(1+(d.spd||0)*(fl.ty>.1?.0065:.0015)),muApp=fl.mu*dryMu*shearThin*(d.thick?1.35:1),
    headDrive=(18+d.vol*28)*(fl.rho/Math.max(.35,muApp))*(.65+.35*clamp(d.r/1.5,.5,2.1)),
-   vTerm=clamp(headDrive,6,115)*.58*/* runs creep: about half a centimetre a second at this scale for a juiced dye, slower for paint */(1-s.absorb*.58)*(1-s.rough*.48)*(d.wet?(.95+wf*.95):1)*(gr?.18:1)*gEff*easeIn*easeOut,y0=d.y,x0=d.x;
+   vTerm=clamp(headDrive,6,115)*.58*/* runs creep: about half a centimetre a second at this scale for a juiced dye, slower for paint */(1-s.absorb*.58)*(1-s.rough*.48)*(d.wet?(.62+wf*.2):1)/* a wet wall carries the run along, but it still creeps: slower than before so it reads as a heavy drip, not a trickle */*(gr?.18:1)*gEff*easeIn*easeOut,y0=d.y,x0=d.x;
   if(!d.gx){d.gx=G.x;d.gy=G.y;d.spd=vTerm*.35}if(ledgeLive()&&!d.led&&!d.et&&d.y<ledgeY(d.x))d.preL=1;const nowT=performance.now();
   const pz=d.pz&&nowT<d.pz;if(d.pz&&!pz){d.pz=0;d.bd=0}if(d.visc<1)d.visc=Math.max(.22,d.visc-dt*.028);
   /* PINCH-OFF LURCH: once a heavy head has swollen enough it breaks away from the run and surges ahead on a thin thread *//* SKINNING: the run's surface dries as it goes — fast for alcohol dyes, slow for paint, faster on a thirsty wall, slower
@@ -2068,7 +2083,7 @@ function runDrips(dt){runFalls(dt);runLedFeed();if(!drips.length)return;mergeRun
   if(!under&&!skip&&d.ink.chrome&&(CHQ[s.id]??.3)>.7){const bx=baked.x;bx.save();bx.fillStyle='rgba(255,255,255,.8)';if(Math.abs(d.gy)>.97){bx.fillRect(xw-d.r*.55,y0,Math.max(.6,d.r*.45),d.y-y0+.3);bx.fillStyle='rgba(40,44,50,.45)';bx.fillRect(xw+d.r*.35,y0,Math.max(.5,d.r*.4),d.y-y0+.3)}bx.restore()}
   if(!under&&doAux){/* a run dries from the top down: each stretch goes wet as the head passes, and a fat, full stretch holds its liquid longer than the thin tail of a spent run */const _cw=(typeof CARRY_WET!=='undefined'&&d.props&&CARRY_WET[d.props.base])||1;markWet(xw,yw,d.r+2,.9,TAUS[d.wk]*(d.wet?2.5:1)*1.3*_cw*(.6+.7*clamp(vr*1.2)+.15*Math.min(2,d.r)));if(d.col&&d.col[0]==='#')markInk(xw,yw,d.r+1,d.id,d.col);stampDripBuff(d,px0,py0,xw,yw,re,s);/* Wet surface: dye blooms organically at random spots along the drip as it crosses wet beads */
 if((s.wet||d.wet)&&d.em&&!d.soft&&!d.et&&!d.pigRun&&(DYEINK[d.ty]||(d.bp&&d.bp.ghost>=.42))&&blooms.length<850){ const wfB=typeof wetF==='function'?wetF(xw,yw):.55; d.blmD=(d.blmD||0)+Math.hypot(xw-px0,yw-py0); if(d.blmD>(14+Math.random()*28)&&Math.random()<(.16+wfB*.34)){  d.blmD=0;  const dTint=(d.bp&&d.bp.tint)||((d.ty==='stain'||d.ty==='bleed')&&typeof d.col==='string'&&d.col[0]==='#'&&lum(hex(d.col))<.24?'#5e24c4':d.col);  if(typeof dTint==='string'&&dTint[0]==='#'){   const bCol=washTint(dTint),bRad=Math.max(2.6,re*(2.2+Math.random()*4.2)*(0.7+wfB*.7));   blooms.push({x:xw+(Math.random()-.5)*re*1.8,y:yw,r:bRad,t0:performance.now(),life:1100+Math.random()*1300,col:bCol,ty:d.ty||'stain',next:0,dripped:1,drip:1,al:.036+Math.random()*.028,sx:.65+Math.random()*.55});  } }}}
-  const w=WET[d.wk];w.active=true;w.until=Math.max(w.until,performance.now()+TAUS[d.wk]*4500);if(done){if(d.et)etchRunDry(d);if(d.led&&!d.stp&&!d.et&&d.v0>.35&&d.vol<=0&&Math.random()<.8)dropFall(xw,yw+d.r,d.r*(1.1+Math.min(1,d.v0*.4)),typeof d.col==='string'?d.col:null);if(!d.settled){d.settled=1;dripSettle(d,s,xw,yw,Math.max(reD,d.r*(d.pin?.8:.62))*endSize(d),d.thick?1.2:1.12)}if(!d.et&&!d.wash){/* the bulb at the end is the last of the liquid: it stays wet well after the run above has skinned over */const _cw=(typeof CARRY_WET!=='undefined'&&d.props&&CARRY_WET[d.props.base])||1;markWet(xw,yw+d.r*.4,Math.max(3,d.r*2.2),1,TAUS[d.wk]*(d.wet?2.5:1)*3.2*_cw)}drips.splice(i,1)}}
+  const w=WET[d.wk];w.active=true;w.until=Math.max(w.until,performance.now()+TAUS[d.wk]*4500);if(done){if(d.et)etchRunDry(d);if(d.led&&!d.stp&&!d.et&&d.v0>.35&&d.vol<=0&&Math.random()<.45)dropFall(xw,yw+d.r,d.r*(1.1+Math.min(1,d.v0*.4)),typeof d.col==='string'?d.col:null);if(!d.settled){d.settled=1;dripSettle(d,s,xw,yw,Math.max(reD,d.r*(d.pin?.8:.62))*endSize(d),d.thick?1.2:1.12)}if(!d.et&&!d.wash){/* the bulb at the end is the last of the liquid: it stays wet well after the run above has skinned over */const _cw=(typeof CARRY_WET!=='undefined'&&d.props&&CARRY_WET[d.props.base])||1;markWet(xw,yw+d.r*.4,Math.max(3,d.r*2.2),1,TAUS[d.wk]*(d.wet?2.5:1)*3.2*_cw)}drips.splice(i,1)}}
  dirty=true}
 const SMOOTH=s=>s.absorb<.05&&s.rough<.05;
 /* HAND MIXED: colours lie side by side across the stick face at a fixed angle (how you hold it), drifting a little as the stick twists */
@@ -2250,7 +2265,7 @@ function seg(a,b,e,dt){const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d<.01)
  stroke.acc=(stroke.acc||0)+d;let k=0;
  while(stroke.acc>=step){stroke.acc-=step;k+=step;const t=Math.min(1,k/d);stamp(a.x+dx*t,a.y+dy*t,spd,e)}
  {const f=flowNow(e),s2=surfAt(b.x,b.y),ik=INK[pen.ink],fs=clamp(spd/3);/* streaks only when the pen genuinely needs it: under-shaken (<65% mixed), starved of ink, running dry or a dried tip — never from speed */
- pen.drain=(pen.drain||0)+d;if(pen.squeeze&&!demo){const sCur=pen.sat??0,wK=Math.max(.55,Math.min(1.8,Math.pow(pen.w/10,.65))),dr=d*(sCur>1?.00007:.00012)*wK+(sCur>1.02?d*.001*(sCur-1.02):0);/* slow, steady use below 100%; a flooded bottle (over 100%) gives up its excess quickly over the first few marks */let sNext=Math.max(0,sCur-dr);/* pressing harder on the screen squeezes the bottle and pushes Squeeze % back up */if(pressNow>.32&&pen.life>0&&sNext<1.3){const pk=Math.pow(clamp((pressNow-.32)/.6),1.05),room=sNext<1.05?1:clamp((1.3-sNext)/.25);sNext=Math.min(1.3,sNext+d*(sNext<1.05?.0026:.0016)*pk*room*lifeF())}/* squeezing as you draw pushes it up: quickly to about full, then more slowly towards 130%. Going higher than that takes juicing the bottle again */pen.sat=sNext;const nowF=performance.now();if(!pen._sfT||nowF-pen._sfT>60){pen._sfT=nowF;showFlow()}}
+ pen.drain=(pen.drain||0)+d;if(pen.squeeze&&!demo){const sCur=pen.sat??0,wK=Math.max(.55,Math.min(1.8,Math.pow(pen.w/10,.65))),dr=d*(sCur>1?.00007:.00012)*wK+(sCur>1.02?d*.001*(sCur-1.02):0);/* slow, steady use below 100%; a flooded bottle (over 100%) gives up its excess quickly over the first few marks */let sNext=Math.max(0,sCur-dr);/* pressing harder on the screen squeezes the bottle and pushes Squeeze % back up */if(pressNow>.32&&pen.life>0&&sNext<1.3){const pk=Math.pow(clamp((pressNow-.32)/.6),1.05),room=sNext<1.05?1:clamp((1.3-sNext)/.25);sNext=Math.min(1.3,sNext+d*(sNext<1.05?.0026:.0016)*pk*room*lifeF())}/* squeezing as you draw pushes it up: quickly to about full, then more slowly towards 130%. Going higher than that takes juicing the bottle again */pen.sat=Math.min(satCap(),sNext);const nowF=performance.now();if(!pen._sfT||nowF-pen._sfT>60){pen._sfT=nowF;showFlow()}}
  /* the nib drains as you draw and refills while it's off the wall: about one and a half tags of non-stop
     drawing before it starts to starve. Felt starves a little sooner; low ink starves much sooner */
  const L0=(DYEINK[pen.ink]?4200:pen.dauber?5000:pen.valve?5600:pen.squeeze?6000:4800)*(.3+Math.min(1,pen.life)*.7),runS=clamp((pen.drain-L0)/(L0*.6))*.28*(pen.valve?clamp((.7-f)/.4):1),/* a primed valve keeps pumping paint into the nib: no drain streaks at full flow */
@@ -2445,22 +2460,24 @@ function rgbaOf(hx,a){const c=hex(hx);return `rgba(${c[0]},${c[1]},${c[2]},${a})
 /* a dye film made more concentrated: each colour channel's transmission raised to a power (Beer's law), so yellow deepens to amber
    and blue to navy, keeping its hue, instead of greying toward black (mixing with black turned yellow olive) */
 function dyeDeep(col,k){const L=hex(col).map(v=>Math.pow(clamp(v/255,.002,1),2.2));return '#'+L.map(v=>Math.round(Math.pow(Math.pow(v,k),1/2.2)*255).toString(16).padStart(2,'0')).join('')}
-function settle(col,s){if(demo||!upright||s.absorb>.5)return;const ink=INK[pen.ink];if(!DYEINK[pen.ink]||ink.solid||ink.chrome||ink.etch)return;
+function settle(col,s){if(demo||!upright||s.absorb>.5)return;const ink=INK[pen.ink];if((!DYEINK[pen.ink]&&!s.wet)||ink.solid||ink.chrome||ink.etch)return;/* paint only settles when the wall is wet: the water film lets the pigment sink before the binder grabs */
  const P=dpr,x0=Math.max(0,Math.floor(stroke.x0*P)),y0=Math.max(0,Math.floor(stroke.y0*P)),w=Math.min(stk.c.width-x0,Math.ceil((stroke.x1-stroke.x0)*P)),h=Math.min(stk.c.height-y0,Math.ceil((stroke.y1-stroke.y0)*P));if(w<3||h<6)return;
- const span=Math.max(h,90*P),top0=y0+h-span,now=(stroke.dryT0=stroke.dryT0||performance.now()),dark=lum(hex(col))<.3,str=(DYEINK[pen.ink]?1:.7)*(1-s.absorb)*dripLife()*(s.wet?1:.5);if(str<.03)return;/* on a wet wall the dye has water to sink through, so it settles a long way down the letter; on a dry wall it mostly sets where it lands */
+ const span=Math.max(h,90*P),top0=y0+h-span,now=(stroke.dryT0=stroke.dryT0||performance.now()),dark=lum(hex(col))<.3,str=(DYEINK[pen.ink]?1:.7)*(1-s.absorb)*dripLife()*(s.wet?1:.3);if(str<.03)return;/* on a wet wall the dye has water to sink through, so it settles a long way down the letter; on a dry wall it mostly sets where it lands */
  /* OVER-PRIMED: a flooded nib lays a much heavier wet film, so gravity drags far more of the dye down — the top thins right out and the bottom goes near-black */
- const ov=pen.valve?clamp((pen.flow-.95)/.35):pen.squeeze?clamp(((pen.sat??0)-.98)/.25):clamp((flowNow(null)-.95)/.4),wv=s.wet?.4:0,O=Math.min(1,ov+wv);
+ const ov=pen.valve?clamp((pen.flow-.95)/.35):pen.squeeze?clamp(((pen.sat??0)-.98)/.25):clamp((flowNow(null)-.95)/.4),wv=s.wet?.7:0,O=Math.min(1,ov+wv);const wk=s.wet?1:0;/* a wet wall lets far more of the dye sink: paler top, heavier bottom */
  /* light end / dark end follow gravity, and span every stroke that's still wet together, so a crossbar added
    to fresh letters takes the tone of where it sits in the tag */
  {const t=now;if(t-wetSpan.t>(TAUS[pen.ink]||1.5)*3500){wetSpan={x0:stroke.x0,y0:stroke.y0,x1:stroke.x1,y1:stroke.y1,t}}else{wetSpan.x0=Math.min(wetSpan.x0,stroke.x0);wetSpan.y0=Math.min(wetSpan.y0,stroke.y0);wetSpan.x1=Math.max(wetSpan.x1,stroke.x1);wetSpan.y1=Math.max(wetSpan.y1,stroke.y1);wetSpan.t=t}}
  const Gd=gDir(),cxw=(wetSpan.x0+wetSpan.x1)/2,cyw=(wetSpan.y0+wetSpan.y1)/2,gexw=(Math.abs(Gd.x)*(wetSpan.x1-wetSpan.x0)+Math.abs(Gd.y)*(wetSpan.y1-wetSpan.y0))/2,gspw=Math.max(2*gexw,90),ewx=cxw+Gd.x*gexw,ewy=cyw+Gd.y*gexw,
   GS={ex:ewx*P-x0,ey:ewy*P-y0,sx:(ewx-Gd.x*gspw)*P-x0,sy:(ewy-Gd.y*gspw)*P-y0};
+ const LM1=.6-.12*O+.06*wk,LA1=.35-.1*O+.4*wk,LM2=Math.min(.92,.75-.1*O+.12*wk);
+ stroke.settleGS={sx:GS.sx+x0,sy:GS.sy+y0,ex:GS.ex+x0,ey:GS.ey+y0,O,LM1,LA1,LM2,a:Math.min(1,(.92+.08*O)*str)};/* the wet black-body layer (dyeSplit) is thinned with this same gradient, so the light top shows through on a wet wall */
  const mk=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
  /* light top: the thinned film lets the wall and the dye's own hue through */
- {const c=mk(),x=c.getContext('2d');x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.globalCompositeOperation='source-in';const g=x.createLinearGradient(GS.sx,GS.sy,GS.ex,GS.ey),wall='#'+s.mean.map(v=>Math.round(v).toString(16).padStart(2,'0')).join(''),lite=dark?(CAST(pen.ink,col)?mixHex(col,CAST(pen.ink,col),.5+.35*O):mixHex(col,wall,.36+.42*O)):mixHex(col,wall,.58+.3*O);
-  g.addColorStop(0,lite);g.addColorStop(.55,lite);g.addColorStop(1,col);x.fillStyle=g;x.fillRect(0,0,w,h);x.globalCompositeOperation='destination-in';const m=x.createLinearGradient(GS.sx,GS.sy,GS.ex,GS.ey);m.addColorStop(0,'rgba(0,0,0,1)');m.addColorStop(.6-.12*O,`rgba(0,0,0,${(.35-.1*O).toFixed(2)})`);m.addColorStop(.75-.1*O,'rgba(0,0,0,0)');x.fillStyle=m;x.fillRect(0,0,w,h);/* overlaps only ever go darker: the thinned light top never lightens ink that was already there */x.globalCompositeOperation='destination-out';x.drawImage(idm.c,x0,y0,w,h,0,0,w,h);bleedL.push({sid:stroke,c,x:x0,y:y0,t0:now+300,dur:8200,a:Math.min(1,(.92+.08*O)*str)})}
+ {const c=mk(),x=c.getContext('2d');x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.globalCompositeOperation='source-in';const g=x.createLinearGradient(GS.sx,GS.sy,GS.ex,GS.ey),wall='#'+s.mean.map(v=>Math.round(v).toString(16).padStart(2,'0')).join(''),lite0=dark?(CAST(pen.ink,col)?mixHex(col,CAST(pen.ink,col),.5+.35*O):mixHex(col,wall,.36+.42*O)):mixHex(col,wall,.58+.3*O),lite=wk?mixHex(lite0,wall,dark?.42:.3):lite0;
+  g.addColorStop(0,lite);g.addColorStop(.55,lite);g.addColorStop(1,col);x.fillStyle=g;x.fillRect(0,0,w,h);x.globalCompositeOperation='destination-in';const m=x.createLinearGradient(GS.sx,GS.sy,GS.ex,GS.ey);m.addColorStop(0,'rgba(0,0,0,1)');m.addColorStop(LM1,`rgba(0,0,0,${LA1.toFixed(2)})`);m.addColorStop(LM2,'rgba(0,0,0,0)');x.fillStyle=m;x.fillRect(0,0,w,h);/* overlaps only ever go darker: the thinned light top never lightens ink that was already there */x.globalCompositeOperation='destination-out';x.drawImage(idm.c,x0,y0,w,h,0,0,w,h);bleedL.push({sid:stroke,c,x:x0,y:y0,t0:now+300,dur:8200,a:Math.min(1,(.92+.08*O)*str)})}
  /* dark bottom: pigment piles up */
- {const c=mk(),x=c.getContext('2d');x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.globalCompositeOperation='source-in';x.fillStyle=dyeDeep(col,1.6+((dark?.72:.55)+.25*O)*.9);x.fillRect(0,0,w,h);x.globalCompositeOperation='destination-in';const m=x.createLinearGradient(GS.sx,GS.sy,GS.ex,GS.ey);m.addColorStop(.4-.15*O,'rgba(0,0,0,0)');m.addColorStop(.75-.1*O,`rgba(0,0,0,${(.85+.15*O).toFixed(2)})`);m.addColorStop(1,'rgba(0,0,0,1)');x.fillStyle=m;x.fillRect(0,0,w,h);stroke.settleL={sid:stroke,c,x:x0,y:y0,t0:now+500,dur:8600,a:Math.min(1,(.95+.05*O)*str)}}}
+ {const c=mk(),x=c.getContext('2d');x.drawImage(stk.c,x0,y0,w,h,0,0,w,h);x.globalCompositeOperation='source-in';x.fillStyle=dyeDeep(col,1.6+((dark?.72:.55)+.25*O)*.9+.7*wk);x.fillRect(0,0,w,h);x.globalCompositeOperation='destination-in';const m=x.createLinearGradient(GS.sx,GS.sy,GS.ex,GS.ey);m.addColorStop(.4-.15*O-.1*wk,'rgba(0,0,0,0)');m.addColorStop(.75-.1*O,`rgba(0,0,0,${(.85+.15*O).toFixed(2)})`);m.addColorStop(1,'rgba(0,0,0,1)');x.fillStyle=m;x.fillRect(0,0,w,h);stroke.settleL={sid:stroke,c,x:x0,y:y0,t0:now+500,dur:8600,a:Math.min(1,(.95+.05*O)*str)}}}
 
 /* DRIP SETTLING: dye runs go through the exact same drying & heavy-pigment settling stages as the main tag */
 function dripSettle(d,s,ex,ey,rb,hd){
@@ -2542,7 +2559,7 @@ function sagCurtain(s){if(demo||!stroke||!upright||s.absorb>.5)return;const ink=
  const F=document.createElement('canvas');F.width=w;F.height=H2;{const fx=F.getContext('2d');fx.drawImage(C,0,0);cut(fx);stroke.sagF={c:F,x:X,y:Y};if(lightOn&&!ink.etch){const BW=baked.c.width,BH=baked.c.height;if(!GLW||GLW.width!==BW||GLW.height!==BH){GLW=document.createElement('canvas');GLW.width=BW;GLW.height=BH}const gx=GLW.getContext('2d');gx.save();gx.setTransform(1,0,0,1,0,0);gx.drawImage(F,X,Y);gx.restore();wgOn2=true;lForce=true;slForce=true}{const shK=SHEEN[pen.ink]||0;if(shK>0){const sx=satC().getContext('2d');sx.save();sx.setTransform(1,0,0,1,0,0);sx.globalAlpha=shK*(ink.gloss?1:.85);sx.drawImage(F,X,Y);sx.restore();satOn=true;lForce=true;slForce=true}}for(const Lb of bleedL)if((Lb.tk===stroke||Lb.rim===stroke)&&Lb.c){const lx=Lb.c.getContext('2d');lx.save();lx.globalCompositeOperation='destination-out';lx.drawImage(F,X-Lb.x,Y-Lb.y);if(Lb.rim===stroke){lx.drawImage(F,X-Lb.x,Y-Lb.y-Math.max(3,3.5*P));lx.drawImage(F,X-Lb.x,Y-Lb.y-Math.max(5,6*P))}lx.restore()}}
  /* LIVE: sag curtain slides downward inside F and shares the EXACT same settle() drying curve, gradient & opacity as the letter */
  const Wc=document.createElement('canvas');Wc.width=w;Wc.height=H2;const wx=Wc.getContext('2d'),now=stroke.dryT0||performance.now(),T=(2600+L/P*55)*(s.wet?1.5:1)/(WX&&WX.dry||1),t0=now+120;let lastF=-1,lastS=-1;
- const baseA=Math.min(1,inkAlpha(ink,s)*mixF()*primeF()),isDyeSag=!!DYEINK[pen.ink]&&!s.wet&&s.absorb<=.5,sCol=lowCol(s),sDark=lum(hex(sCol))<.3,sOv=pen.valve?clamp((pen.flow-.95)/.35):pen.squeeze?clamp(((pen.sat??0)-.98)/.25):clamp((flowNow(null)-.95)/.4),sO=Math.min(1,sOv),sStr=(1-s.absorb)*dripLife(),sDeep=mixHex(sCol,'#000000',(sDark?.72:.55)+.25*sO),sWall='#'+s.mean.map(v=>Math.round(v).toString(16).padStart(2,'0')).join(''),sLite=sDark?(CAST(pen.ink,sCol)?mixHex(sCol,CAST(pen.ink,sCol),.5+.35*sO):mixHex(sCol,sWall,.36+.42*sO)):mixHex(sCol,sWall,.58+.3*sO),sDur=isDyeSag?Math.max(T,9100):T;
+ const baseA=Math.min(1,inkAlpha(ink,s)*mixF()*primeF()),isDyeSag=!!DYEINK[pen.ink]&&s.absorb<=.5,sCol=lowCol(s),sDark=lum(hex(sCol))<.3,sOv=pen.valve?clamp((pen.flow-.95)/.35):pen.squeeze?clamp(((pen.sat??0)-.98)/.25):clamp((flowNow(null)-.95)/.4),sO=Math.min(1,sOv),sStr=(1-s.absorb)*dripLife()*(s.wet?1:.3)/* same as settle(): strong on a wet wall, light on a dry one */,sDeep=s.wet?dyeDeep(sCol,1.6+((sDark?.72:.55)+.25*sO)*.9+.7):mixHex(sCol,'#000000',(sDark?.72:.55)+.25*sO),sWall='#'+s.mean.map(v=>Math.round(v).toString(16).padStart(2,'0')).join(''),sLite=(v=>s.wet?mixHex(v,sWall,sDark?.42:.3):v)(sDark?(CAST(pen.ink,sCol)?mixHex(sCol,CAST(pen.ink,sCol),.5+.35*sO):mixHex(sCol,sWall,.36+.42*sO)):mixHex(sCol,sWall,.58+.3*sO)),sDur=isDyeSag?Math.max(T,9100):T;
  const wy0=(wetSpan&&wetSpan.y1>wetSpan.y0+8)?wetSpan.y0*P:Y,wy1=(wetSpan&&wetSpan.y1>wetSpan.y0+8)?Math.max(wy0+90*P,wetSpan.y1*P):Y+Math.max(h,90*P);
  const Lr={sid:stroke,c:Wc,x:X,y:Y,t0,dur:sDur,a:1,live:1,upd(t){const f=1-Math.pow(1-clamp((t-t0)/T),2.2),sp=isDyeSag?sm(clamp((t-(now+500))/8600)):0,spL=isDyeSag?sm(clamp((t-(now+300))/8200)):0;if(Math.abs(f-lastF)<.012&&Math.abs(sp-lastS)<.018&&(f<1||sp<1))return;lastF=f;lastS=sp;wx.globalCompositeOperation='copy';wx.clearRect(0,0,w,H2);wx.globalCompositeOperation='source-over';wx.globalAlpha=baseA;
    for(let i=0;i<w;i+=st){if(!D[i])continue;wx.drawImage(C,i,0,st,H2,i,-(1-f)*D[i],st,H2)}wx.globalAlpha=1;wx.globalCompositeOperation='destination-in';wx.drawImage(F,0,0);
@@ -2802,7 +2819,7 @@ cv.addEventListener('pointerdown',e=>{try{e.preventDefault();setTimeout(audio,0)
   if(pen.tip==='chisel'){const [p,q]=[...ptrs.values()];twist={base:angle,a0:Math.atan2(q.y-p.y,q.x-p.x),mid:{x:(p.x+q.x)/2,y:(p.y+q.y)/2}};dirty=true}
   else toast('Two-finger twist turns chisel tips');return}
  if(ptrs.size>2){ptrs.clear();twist=null;down=false;if(stroke)abortStroke();ptrs.set(e.pointerId,pt(e))}/* stale touches left by a rotation must never block a new tag */
- if(playOn){stopPlayback(true);return}if(tool==='draw'&&(pen.empty||pen.fillReq)&&(!pen.fill||pen.life<=0)){showRefills(pen.fill?'Out of ink — refill it':'This marker is empty — pick an ink to fill it');return}hudFade(true);down=true;downId=e.pointerId;saidDry=0;saidSpray=0;push();last=pt(e);recStart(last);if(tool==='draw'){begin(last,e);feed(last,e);if(stroke&&!(pen.valve&&pen.flow<.35)){stamp(last.x,last.y,0,e);compose();dirty=false}}else if(tool==='buff'){ageDrop();pad.load=0;pad.col=null;pad.stk=null;pad.sb=null;pad.passId=(pad.passId||0)+1;pad.pool=0;pad.ptT=0;pad.runX=null;pad.holdT=0;pad.holdSq=0;pad.sqAcc=0;buffAt(last,last)}}catch(err){try{resetPointerState()}catch(_){}toast('Touch problem: '+(err&&err.message||err))}});
+ if(playOn||playTail){stopPlayback(true);return}if(tool==='draw'&&(pen.empty||pen.fillReq)&&(!pen.fill||pen.life<=0)){showRefills(pen.fill?'Out of ink — refill it':'This marker is empty — pick an ink to fill it');return}hudFade(true);down=true;downId=e.pointerId;saidDry=0;saidSpray=0;push();last=pt(e);recStart(last);if(tool==='draw'){begin(last,e);feed(last,e);if(stroke&&!(pen.valve&&pen.flow<.35)){stamp(last.x,last.y,0,e);compose();dirty=false}}else if(tool==='buff'){ageDrop();pad.load=0;pad.col=null;pad.stk=null;pad.sb=null;pad.passId=(pad.passId||0)+1;pad.pool=0;pad.ptT=0;pad.runX=null;pad.holdT=0;pad.holdSq=0;pad.sqAcc=0;buffAt(last,last)}}catch(err){try{resetPointerState()}catch(_){}toast('Touch problem: '+(err&&err.message||err))}});
 const RAW='onpointerrawupdate' in window;let livePt=null,predPt=null,lastC=0;
 const mv=e=>{if(e.type==='pointermove'&&RAW&&down&&e.pointerId===downId&&tool==='draw'&&!twist){if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,pt(e));return}if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,pt(e));
  if(twist&&ptrs.size===2){const [p,q]=[...ptrs.values()],d=Math.atan2(q.y-p.y,q.x-p.x)-twist.a0;setAngle(twist.base+d*180/Math.PI);twist.mid={x:(p.x+q.x)/2,y:(p.y+q.y)/2};dirty=true;return}
@@ -2846,7 +2863,7 @@ if(tool==='draw'&&!pen.squeeze&&!stroke.ink.solid&&!pen.dauber&&stroke.dwell>.25
   tipScale=1+Math.min(g,.15);stamp(last.x,last.y,0,null);tipScale=1;if(g>.06){if(!stroke.bseed||Math.hypot(last.x-stroke.bx,last.y-stroke.by)>2){stroke.bseed=(Math.random()*1e6)|0;stroke.bx=last.x;stroke.by=last.y}const X=stk.x;X.save();X.fillStyle=inkPat(stroke.s,curCol(),0);X.beginPath();puddlePath(X,last.x,last.y+sg*.5,R()*(1+g),upright?g*.55:0,stroke.bseed,.06+g*.05,0);X.fill();X.restore()}
   if(upright&&flowable()&&!stroke.ink.fluid&&g>.5&&stroke.s.absorb<.6&&(!stroke.bdT||stroke.dwell-stroke.bdT>1.6)){stroke.bdT=stroke.dwell;drip(last.x+(Math.random()-.5)*R()*.4,last.y+sg+R()*(1+g)*.85,.45+g*.9*(stroke.ink.drip??.6))}}}if(pen.valve){stroke.priming=1;stroke.primeAcc=(stroke.primeAcc||0)+dt;if(stroke.primeAcc>(stroke.pumped?.28:.3)){stroke.primeAcc=0;stroke.pumped=1;pump(last)}dirty=true}const s=surfAt(last.x,last.y),ink=stroke.ink,b=ink.bleed*s.absorb;
   if(b>.03&&stroke.dwell<4){bleedAt(last.x,last.y,R()*(1+b*(1.1+stroke.dwell*1.4)),b*.035,s.gx);dirty=true}
-  if(ink.future)poolAt(last.x,last.y,R()*1.25,0);if(pen.squeeze&&!pen.dauber&&!stroke.bu&&stroke.dwell>.8&&Math.random()<dt*(.03+clamp(1-pen.life)*.12)){stroke.bu=1;burp(last.x,last.y,s)}if(pen.squeeze&&!demo&&pen.life>0&&stroke.dwell>.12){const lScale=.25+.75*Math.pow(clamp(pen.life),.7);pen.sat=Math.min(1.6,(pen.sat??0)+dt*((.2+.16*clamp(pressNow/.45))+Math.max(0,pressNow-.30)*1.15)*lScale);const nowF=performance.now();if(!pen._sfT||nowF-pen._sfT>60){pen._sfT=nowF;showFlow()}}if(pen.squeeze&&stroke.dwell>.6&&stroke.dwell<2.5){blob(last.x,last.y,R()*(pen.dauber?Math.min(.45,.25+stroke.dwell*.1):ink.fluid?Math.min(.95,.6+stroke.dwell*.25):pen.w>8?.55+stroke.dwell*.35:1+stroke.dwell*1.6),s);if(!ink.fluid&&(!FLOWDRIPS||!flowable())&&Math.random()<dt*ink.drip*(.4+Math.pow(Math.max(0,pressNow-.35)/.65,1.6)*3.4))drip(last.x+(Math.random()-.5)*R(),last.y+R()*.5,.6+stroke.dwell*.5);dirty=true}}
+  if(ink.future)poolAt(last.x,last.y,R()*1.25,0);if(pen.squeeze&&!pen.dauber&&!stroke.bu&&stroke.dwell>.8&&Math.random()<dt*(.03+clamp(1-pen.life)*.12)){stroke.bu=1;burp(last.x,last.y,s)}if(pen.squeeze&&!demo&&pen.life>0&&stroke.dwell>.12){const lScale=.25+.75*Math.pow(clamp(pen.life),.7);pen.sat=Math.min(satCap(),(pen.sat??0)+dt*((.2+.16*clamp(pressNow/.45))+Math.max(0,pressNow-.30)*1.15)*lScale);const nowF=performance.now();if(!pen._sfT||nowF-pen._sfT>60){pen._sfT=nowF;showFlow()}}if(pen.squeeze&&stroke.dwell>.6&&stroke.dwell<2.5){blob(last.x,last.y,R()*(pen.dauber?Math.min(.45,.25+stroke.dwell*.1):ink.fluid?Math.min(.95,.6+stroke.dwell*.25):pen.w>8?.55+stroke.dwell*.35:1+stroke.dwell*1.6),s);if(!ink.fluid&&(!FLOWDRIPS||!flowable())&&Math.random()<dt*ink.drip*(.4+Math.pow(Math.max(0,pressNow-.35)/.65,1.6)*3.4))drip(last.x+(Math.random()-.5)*R(),last.y+R()*.5,.6+stroke.dwell*.5);dirty=true}}
  if(!down)for(const k in WET){const w=WET[k];if(!w.active)continue;w.acc+=ddt*DRYALL;w.until-=(dk*DRYALL-1)*dt*1000;const kk=1-Math.exp(-w.acc/(TAUS[k]*(bands[0]&&bands[0].s.wet?2.5:1)));
   if(kk>(LOWGPU&&drips.length?.1:.035)){w.x.save();w.x.setTransform(1,0,0,1,0,0);w.x.globalCompositeOperation='destination-out';w.x.globalAlpha=kk;w.x.fillRect(0,0,w.c.width,w.c.height);w.x.restore();w.acc=0;dirty=true}
   if(now>w.until){/* the last of the wet sheen fades out over half a second rather than vanishing */w.fo=(w.fo||0)+1;w.x.save();w.x.setTransform(1,0,0,1,0,0);w.x.globalCompositeOperation='destination-out';w.x.globalAlpha=.14;w.x.fillRect(0,0,w.c.width,w.c.height);w.x.restore();dirty=true;if(w.fo>=30){w.fo=0;w.c.width=w.c.height=1;w.active=false}}else w.fo=0}
@@ -4080,7 +4097,7 @@ $('#mxSw').addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(
 $('#moreBtn').addEventListener('click',()=>{$('#moreBtn').classList.remove('newtip');openSheet('moreSheet')});
 $('#tipsClear').addEventListener('click',()=>{tips.length=0;$('#tipsList').innerHTML='<li style="opacity:.6">Tips from your drawing show up here.</li>'});
 for(const ev of ['pointerdown','pointerup'])cv.addEventListener(ev,()=>{canvasT=performance.now()},true);
-(()=>{const st=$('#status');let dragBar=null;const setFlowFromX=(el,cx)=>{const m=el.querySelector('.meter')||el,r=m.getBoundingClientRect(),t=clamp((cx-r.left)/Math.max(1,r.width));if(pen.squeeze){pen.sat=+(t*1.6).toFixed(2);showFlow()}else if(pen.valve){pen.flow=+(0.1+t*1.4).toFixed(2);showFlow()}};{const tb=document.querySelector('.bar.top'),place=()=>{try{st.style.top=Math.round(tb.getBoundingClientRect().bottom+6)+'px'}catch(_){}};place();try{new ResizeObserver(place).observe(tb)}catch(_){}addEventListener('resize',place);setTimeout(place,300)}let moved=0;st.addEventListener('pointerdown',e=>{const b=e.target.closest('.sbar');if(!b)return;if(b.dataset.bar==='flow'&&(pen.squeeze||pen.valve)){e.stopPropagation();dragBar=b;moved=1;try{st.setPointerCapture(e.pointerId)}catch(_){}setFlowFromX(b,e.clientX)}});st.addEventListener('pointermove',e=>{if(dragBar){e.stopPropagation();setFlowFromX(dragBar,e.clientX)}});const endDrag=()=>{if(dragBar){dragBar=null;save();setTimeout(()=>{moved=0},350)}};st.addEventListener('pointerup',endDrag);st.addEventListener('pointercancel',endDrag);st.addEventListener('click',e=>{if(moved)return;if(st.classList.contains('min')){st.classList.remove('min');return}const b=e.target.closest('.sbar');if(!b){st.classList.add('min');return}const k=b.dataset.bar;if(k==='mix'){shake()}else if(k==='flow'){if(pen.squeeze||pen.valve){setFlowFromX(b,e.clientX);save()}else toast('Felt nib — steady flow')}else if(k==='life'){if(pen.empty||pen.fillReq){showRefills('Pick an ink to refill '+penNm(pen))}else{pen.life=1;showFlow();save();toast('Fresh barrel — 100% ink')}}else if(k==='fray'){if(pen.metal)toast('Metal tip — no wear');else{pen.fray=0;pen.tipDry=0;pen.mush=0;pen.round=0;showFlow();save();toast('Fresh nib fitted')}}});})();
+(()=>{const st=$('#status');let dragBar=null;const setFlowFromX=(el,cx)=>{const m=el.querySelector('.meter')||el,r=m.getBoundingClientRect(),t=clamp((cx-r.left)/Math.max(1,r.width));if(pen.squeeze){pen.sat=+Math.min(satCap(),t*1.6).toFixed(2);showFlow()}else if(pen.valve){pen.flow=+(0.1+t*1.4).toFixed(2);showFlow()}};{const tb=document.querySelector('.bar.top'),place=()=>{try{st.style.top=Math.round(tb.getBoundingClientRect().bottom+6)+'px'}catch(_){}};place();try{new ResizeObserver(place).observe(tb)}catch(_){}addEventListener('resize',place);setTimeout(place,300)}let moved=0;st.addEventListener('pointerdown',e=>{const b=e.target.closest('.sbar');if(!b)return;if(b.dataset.bar==='flow'&&(pen.squeeze||pen.valve)){e.stopPropagation();dragBar=b;moved=1;try{st.setPointerCapture(e.pointerId)}catch(_){}setFlowFromX(b,e.clientX)}});st.addEventListener('pointermove',e=>{if(dragBar){e.stopPropagation();setFlowFromX(dragBar,e.clientX)}});const endDrag=()=>{if(dragBar){dragBar=null;save();setTimeout(()=>{moved=0},350)}};st.addEventListener('pointerup',endDrag);st.addEventListener('pointercancel',endDrag);st.addEventListener('click',e=>{if(moved)return;if(st.classList.contains('min')){st.classList.remove('min');return}const b=e.target.closest('.sbar');if(!b){st.classList.add('min');return}const k=b.dataset.bar;if(k==='mix'){shake()}else if(k==='flow'){if(pen.squeeze||pen.valve){setFlowFromX(b,e.clientX);save()}else toast('Felt nib — steady flow')}else if(k==='life'){if(pen.empty||pen.fillReq){showRefills('Pick an ink to refill '+penNm(pen))}else{pen.life=1;showFlow();save();toast('Fresh barrel — 100% ink')}}else if(k==='fray'){if(pen.metal)toast('Metal tip — no wear');else{pen.fray=0;pen.tipDry=0;pen.mush=0;pen.round=0;showFlow();save();toast('Fresh nib fitted')}}});})();
 const coach=$('#coach'),seen=(()=>{try{return localStorage.getItem('mtbCoach')}catch(_){return 1}})();
 /* INTRO: a title card every time the app opens; the app starts when you press Start writing. The first time, the steps
    show and the quick-start card follows. */
@@ -4180,7 +4197,7 @@ try{$('#perfBtn').addEventListener('click',()=>perfToggle(!perfOn));if(localStor
 
 /* ---------- PLAYBACK RECORDING, TILT REPLAY, SAVED LIBRARY & VIDEO EXPORT ---------- */
 const recLogs={};
-let recCur=null,recLastT=0,playOn=false,playRaf=0,playSaved=null,playRecMR=null,playRecChunks=[];
+let playTail=false,recCur=null,recLastT=0,playOn=false,playRaf=0,playSaved=null,playRecMR=null,playRecChunks=[];
 const playSpd=1;
 function recKey(){return typeof bkey==='function'?bkey():(cur&&cur.id||'wall')}
 function recList(){const k=recKey();if(!recLogs[k])recLogs[k]=[];return recLogs[k]}
@@ -4188,8 +4205,9 @@ function recClear(){recLogs[recKey()]=[];recCur=null;recLastT=0}
 function recStart(p){
  if(playOn||demo||(tool!=='draw'&&tool!=='buff')||!W||!H)return;
  const now=performance.now(),G=gDir();
- const gap=recLastT?Math.min(750,Math.max(60,now-recLastT)):0;
+ const gap=recLastT?Math.min(750,Math.max(60,now-recLastT)):0,gapReal=recLastT?Math.min(600000,Math.max(0,now-recLastT)):0,seed=rngFresh();rngSeed(seed);
  recCur={
+  seed,gapReal,wet:wetSet.has(cur.id),bm:typeof buffMode!=='undefined'?buffMode:null,rc:typeof rollCol!=='undefined'?rollCol:null,
   tool,penId:pen.id,fill:pen.fill||null,col:color,angle,leanSet,
   sat:pen.sat??0,flow:pen.flow??1,mix:pen.mix??1,vs:pen.vs??3,life:pen.life??1,
   gap,t0:now,
@@ -4216,6 +4234,7 @@ function recEnd(){
 function updatePlaySpdBtn(){const l=$('#playLbl');if(l)l.textContent='Replaying'}
 function snapshotPlayState(){
  return {
+  wet:wetSet.has(cur.id),rain:rainSet.has(cur.id),bm:typeof buffMode!=='undefined'?buffMode:null,rc:typeof rollCol!=='undefined'?rollCol:null,
   tool,pen,color,angle,leanSet,
   sat:pen.sat,flow:pen.flow,mix:pen.mix,vs:pen.vs,life:pen.life
  };
@@ -4223,6 +4242,8 @@ function snapshotPlayState(){
 function restorePlayState(st){
  if(!st)return;
  tool=st.tool;pen=st.pen;color=st.color;angle=st.angle;leanSet=st.leanSet;
+ if(st.bm){buffMode=st.bm;rollCol=st.rc}
+ if(st.wet!==undefined&&st.wet!==wetSet.has(cur.id)){if(st.wet){wetSet.add(cur.id);if(st.rain)rainSet.add(cur.id)}else{wetSet.delete(cur.id);rainSet.delete(cur.id)}try{bands[0].s=V(cur);renderSurfs();renderReact()}catch(_){}}
  if(st.sat!==undefined)pen.sat=st.sat;
  if(st.flow!==undefined)pen.flow=st.flow;
  if(st.mix!==undefined)pen.mix=st.mix;
@@ -4233,6 +4254,25 @@ function restorePlayState(st){
 }
 const REC_HOLD_MS=4000,REC_MAX_MS=30000;/* min hold on the finished tag; fresh ink keeps recording (drips, drying) up to the max */ /* how long the finished tag stays on screen at the end of a recorded replay */
 let lastVidBlob=null,lastVidName='reachlab-replay.mp4',lastVidUrl='';
+/* fixed in-app: a fragmented MP4 from MediaRecorder carries a wrong/zero duration in its header; players then show only the first seconds */
+function mp4FixDuration(u8){try{const d=new DataView(u8.buffer,u8.byteOffset,u8.byteLength),N=u8.length,u32=o=>d.getUint32(o),typ=o=>String.fromCharCode(u8[o+4],u8[o+5],u8[o+6],u8[o+7]);
+ const kids=(s,e)=>{const r=[];let o=s;while(o+8<=e){let sz=u32(o),h=8;if(sz===1){sz=Number(d.getBigUint64(o+8));h=16}else if(sz===0)sz=e-o;if(sz<8||o+sz>e)break;r.push({o,sz,h,t:typ(o)});o+=sz}return r};
+ const top=kids(0,N),moov=top.find(b=>b.t==='moov');if(!moov)return u8;const mk=kids(moov.o+8,moov.o+moov.sz),mvhd=mk.find(b=>b.t==='mvhd'),mvex=mk.find(b=>b.t==='mvex'),trak=mk.find(b=>b.t==='trak');if(!mvhd||!trak)return u8;
+ const v0=u8[mvhd.o+8],mts=u32(mvhd.o+(v0?28:20));const tk=kids(trak.o+8,trak.o+trak.sz),tkhd=tk.find(b=>b.t==='tkhd'),mdia=tk.find(b=>b.t==='mdia');if(!tkhd||!mdia)return u8;const mdhd=kids(mdia.o+8,mdia.o+mdia.sz).find(b=>b.t==='mdhd');if(!mdhd)return u8;
+ const vm=u8[mdhd.o+8],ts=u32(mdhd.o+(vm?28:20));let defDur=0;if(mvex){const trex=kids(mvex.o+8,mvex.o+mvex.sz).find(b=>b.t==='trex');if(trex)defDur=u32(trex.o+20)}
+ let end=0;for(const mf of top.filter(b=>b.t==='moof'))for(const tf of kids(mf.o+8,mf.o+mf.sz).filter(b=>b.t==='traf')){const tb=kids(tf.o+8,tf.o+tf.sz);let base=0,dd=defDur,sum=0;
+  const tfhd=tb.find(b=>b.t==='tfhd');if(tfhd){const fl=u32(tfhd.o+8)&0xffffff;let p=tfhd.o+16;if(fl&1)p+=8;if(fl&2)p+=4;if(fl&8)dd=u32(p)}
+  const tfdt=tb.find(b=>b.t==='tfdt');if(tfdt)base=u8[tfdt.o+8]?Number(d.getBigUint64(tfdt.o+12)):u32(tfdt.o+12);
+  for(const tr of tb.filter(b=>b.t==='trun')){const fl=u32(tr.o+8)&0xffffff,n=u32(tr.o+12);let p=tr.o+16;if(fl&1)p+=4;if(fl&4)p+=4;const per=((fl&0x100)?4:0)+((fl&0x200)?4:0)+((fl&0x400)?4:0)+((fl&0x800)?4:0);
+   for(let i=0;i<n;i++){sum+=(fl&0x100)?u32(p+i*per):dd}}
+  end=Math.max(end,base+sum)}
+ if(!end||!ts)return u8;const mDur=Math.round(end/ts*mts);
+ const put=(o,v,big)=>{if(big)d.setBigUint64(o,BigInt(v));else d.setUint32(o,Math.min(v,0xffffffff))};
+ put(mvhd.o+(v0?32:24),mDur,v0);const vt=u8[tkhd.o+8];put(tkhd.o+(vt?36:28),mDur,vt);put(mdhd.o+(vm?32:24),end,vm);
+ if(!mvex||kids(mvex.o+8,mvex.o+mvex.sz).some(b=>b.t==='mehd')){return u8}
+ /* add the movie-extends header so players that read it know the full length up front */
+ const out=new Uint8Array(N+16),od=new DataView(out.buffer);out.set(u8.subarray(0,mvex.o+8),0);od.setUint32(mvex.o+8,16);out.set([109,101,104,100],mvex.o+12);od.setUint32(mvex.o+16,0);od.setUint32(mvex.o+20,mDur);out.set(u8.subarray(mvex.o+8),mvex.o+24);
+ od.setUint32(moov.o,moov.sz+16);od.setUint32(mvex.o,mvex.sz+16);return out}catch(_){return u8}}
 function openVidModal(blob,name){
  lastVidBlob=blob;lastVidName=name;
  if(lastVidUrl){try{URL.revokeObjectURL(lastVidUrl)}catch(_){}}
@@ -4264,10 +4304,12 @@ function startPlayVideo(){
    try{stream.getTracks().forEach(t=>t.stop())}catch(_){}
    if(!playRecChunks.length)return;
    const mType=playRecMR.mimeType||mime||'video/webm';
-   const blob=new Blob(playRecChunks,{type:mType});
+   const blob0=new Blob(playRecChunks,{type:mType});
    const ext=mType.includes('mp4')?'mp4':'webm';
    const ts=new Date().toISOString().slice(0,16).replace(/[:T]/g,'-');
-   openVidModal(blob,'reachlab-'+ts+'.'+ext);
+   /* the recorder writes the MP4 in pieces and leaves the header saying it's only a few seconds long: write the real length in */
+   const done=b=>openVidModal(b,'reachlab-'+ts+'.'+ext);
+   if(ext==='mp4')blob0.arrayBuffer().then(ab=>done(new Blob([mp4FixDuration(new Uint8Array(ab))],{type:mType}))).catch(()=>done(blob0));else done(blob0);
   };
   playRecMR.start(500);
   const vb=$('#playVidBtn');if(vb)vb.textContent='Stop rec';
@@ -4276,6 +4318,7 @@ function startPlayVideo(){
  }catch(_){toast('Could not start video capture on this device');return false}
 }
 function stopPlayback(showMsg){
+ if(playTail&&!playOn){const sv=playTail;playTail=false;if(sv&&sv!==true)restorePlayState(sv);prepSnap();dirty=true;const h=$('#playHud');if(h)h.classList.remove('on');hudFade(false);return}
  if(!playOn)return;
  playOn=false;playGrav=null;
  if(playRaf){cancelAnimationFrame(playRaf);playRaf=0}
@@ -4290,7 +4333,7 @@ function stopPlayback(showMsg){
 }
 function runPlaybackSeq(seq,extraBrews){
  if(!seq||!seq.length){toast('Nothing recorded on this wall yet — draw a tag first');return}
- if(playOn)stopPlayback(false);
+ if(playOn||playTail)stopPlayback(false);
  closeSheets();
  playSaved=snapshotPlayState();
  resetBoard();compose();dirty=false;
@@ -4306,6 +4349,8 @@ function runPlaybackSeq(seq,extraBrews){
   pen=targetPen;
   if(s.fill&&pen.fill!==s.fill){const b=findBottle(s.fill);if(b)fillPen(pen,b,true)}
   tool=s.tool;color=s.col;angle=s.angle;leanSet=s.leanSet;
+  if(s.bm){buffMode=s.bm;rollCol=s.rc||null}
+  /* the wall was wet or dry when this stroke was written */if(s.wet!==undefined&&s.wet!==wetSet.has(cur.id)){if(s.wet)wetSet.add(cur.id);else{wetSet.delete(cur.id);rainSet.delete(cur.id)}try{bands[0].s=V(cur);renderSurfs();renderReact()}catch(_){}}
   if(pen.squeeze)pen.sat=s.sat;
   pen.flow=s.flow;pen.mix=s.mix;if(s.vs!==undefined)pen.vs=s.vs;pen.life=s.life;
  };
@@ -4320,7 +4365,7 @@ function runPlaybackSeq(seq,extraBrews){
    playOn=false;playGrav=null;playRaf=0;down=false;
    if(playRecMR&&playRecMR.state==='recording'){
     /* hold on the finished tag so the video doesn't cut straight back to a blank wall */
-    const holdEnd=performance.now()+REC_HOLD_MS,maxEnd=performance.now()+REC_MAX_MS,fresh=()=>{try{const t=performance.now();return drips.some(d=>!d.dead&&d.vol>.02)||Object.values(WET).some(w=>w.active)||bleedL.some(b=>b.dur&&t<b.t0+b.dur)}catch(_){return false}};
+    const holdEnd=performance.now()+REC_HOLD_MS,maxEnd=performance.now()+REC_MAX_MS,fresh=()=>{try{const t=performance.now();return flowOn||drips.some(d=>!d.dead&&d.vol>.02)||(typeof falls!=='undefined'&&falls.length>0)||Object.values(WET).some(w=>w.active)||bleedL.some(b=>b.dur&&t<b.t0+b.dur)}catch(_){return false}};
     const saved=playSaved;playSaved=null;let restored=false;
     const restore=()=>{if(restored)return;restored=true;restorePlayState(saved);prepSnap();dirty=true};
     const keep=()=>{if(!(playRecMR&&playRecMR.state==='recording')){restore();return}dirty=true;
@@ -4328,8 +4373,12 @@ function runPlaybackSeq(seq,extraBrews){
      const tn=performance.now();if(tn<holdEnd||(tn<maxEnd&&fresh()))requestAnimationFrame(keep);else{stopPlayVideo();setTimeout(restore,350)}};
     requestAnimationFrame(keep);
    }else{
-    stopPlayVideo();
-    restorePlayState(playSaved);playSaved=null;prepSnap();dirty=true;
+    /* keep the replay going until the drips, runs and blooms have played out too, the same as the video does */
+    const saved=playSaved,maxEnd=performance.now()+REC_MAX_MS,minEnd=performance.now()+3000;playSaved=null;playTail=saved||true;
+    const fresh=()=>{try{const t=performance.now();return flowOn||drips.some(d=>!d.dead&&d.vol>.02)||bleedL.some(b=>b.dur&&t<b.t0+b.dur)||(typeof falls!=='undefined'&&falls.length>0)}catch(_){return false}};
+    const tail=()=>{if(!playTail)return;dirty=true;const tn=performance.now();if(tn<minEnd||(tn<maxEnd&&fresh())){requestAnimationFrame(tail);return}
+     playTail=false;restorePlayState(saved);prepSnap();dirty=true;if(hud)hud.classList.remove('on');hudFade(false);toast('Replay finished')};
+    requestAnimationFrame(tail);return;
    }
    if(hud)hud.classList.remove('on');
    hudFade(false);
@@ -4338,8 +4387,10 @@ function runPlaybackSeq(seq,extraBrews){
   }
   curS=seq[si];
   if(phase==='gap'){
-   if(now-tPhase>=Math.min(curS.gap/playSpd,260)){
-    applyStrokeMeta(curS);
+   const gR=curS.gapReal??curS.gap??0;if(gR>2500&&!curS._ff){curS._ff=1;fastDry=true}
+   const wait=Math.min(gR,2500)/playSpd,ffWait=gR>2500?Math.min(5000,(gR-2500)/6):0;
+   if(now-tPhase>=wait&&(!fastDry||now-tPhase>=wait+ffWait||!curS._ff)){if(curS._ff){fastDry=false;curS._ff=0}
+    applyStrokeMeta(curS);if(curS.seed)rngSeed(curS.seed);
     const pt0=curS.pts[0];
     setGravFromPt(pt0);
     const p={x:pt0[0]*W,y:pt0[1]*H,t:now};
@@ -4349,7 +4400,7 @@ function runPlaybackSeq(seq,extraBrews){
      begin(p,null);feed(p,null);
      if(stroke&&!(pen.valve&&pen.flow<.35))stamp(p.x,p.y,0,null);
     }else if(curS.tool==='buff'){
-     ageDrop();pad.load=0;pad.col=null;pad.stk=null;pad.sb=null;pad.pool=0;pad.ptT=0;pad.runX=null;pad.holdT=0;pad.holdSq=0;pad.sqAcc=0;buffAt(p,p);
+     ageDrop();pad.load=0;pad.col=null;pad.stk=null;pad.sb=null;pad.passId=(pad.passId||0)+1;pad.pool=0;pad.ptT=0;pad.runX=null;pad.holdT=0;pad.holdSq=0;pad.sqAcc=0;buffAt(p,p);
     }
     pi=1;phase='draw';tPhase=now;dirty=true;
    }
@@ -4436,6 +4487,21 @@ function brewRestore(txt){let o;try{o=JSON.parse(txt)}catch(_){toast('That file 
   const d=new Date(),stamp=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');await saveOrShareBlob(brewBackupBlob(),`reachlab-brews-${stamp}.json`,false)});
  const fi=q('brewFile');q('brewLoad')&&q('brewLoad').addEventListener('click',()=>fi&&fi.click());
  fi&&fi.addEventListener('change',()=>{const f=fi.files&&fi.files[0];fi.value='';if(!f)return;f.text().then(brewRestore).catch(()=>toast('Couldn\'t read that file'))})})();
+/* ---------- SAVE / PLAY A TAG RECORDING ----------
+   Every stroke on the wall is recorded (pen, colour, pressure, lean, timing, gravity) in screen-relative coordinates,
+   so a tag saved on one phone replays at the same place and pace on any other screen. */
+function tagBlob(){const seq=recList().slice();if(!seq.length)return null;/* carry the brews it was written with, so it replays in the same inks on a phone that doesn't have them */const ids=new Set(seq.map(r=>r.fill).filter(Boolean)),brews=BOTTLES.filter(b=>ids.has(b.id)&&/^mix/.test(b.id));
+ return new Blob([JSON.stringify({app:'reachlab',kind:'tag',v:1,saved:new Date().toISOString(),wall:cur&&cur.id,w:W,h:H,brews,seq})],{type:'application/json'})}
+function tagPlay(txt){let o;try{o=JSON.parse(txt)}catch(_){toast('That file isn\'t a Reach Lab tag');return}
+ if(o&&o.kind==='brews'){brewRestore(txt);return}
+ const seq=o&&Array.isArray(o.seq)?o.seq:null;if(!seq||!seq.length){toast('That file isn\'t a Reach Lab tag');return}
+ if(o.wall&&cur&&o.wall!==cur.id){const sf=SURF.find(q=>q.id===o.wall);if(sf){try{goSurface(sf)}catch(_){}}}
+ setTimeout(()=>runPlaybackSeq(seq,Array.isArray(o.brews)?o.brews:null),250)}
+(()=>{const q=id=>document.getElementById(id);
+ q('tagSave')&&q('tagSave').addEventListener('click',async()=>{const b=tagBlob();if(!b){toast('Write a tag on this wall first');return}
+  const d=new Date(),stamp=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'-'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');await saveOrShareBlob(b,`reachlab-tag-${stamp}.json`,false)});
+ const fi=q('tagFile');q('tagLoad')&&q('tagLoad').addEventListener('click',()=>fi&&fi.click());
+ fi&&fi.addEventListener('change',()=>{const f=fi.files&&fi.files[0];fi.value='';if(!f)return;f.text().then(tagPlay).catch(()=>toast('Couldn\'t read that file'))})})();
 /* ---------- SAVED PLAYBACKS LIBRARY (localStorage) ---------- */
 
 

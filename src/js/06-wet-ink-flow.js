@@ -55,7 +55,7 @@ function landPulse(S){
  /* RE-GRAB: every new stroke squeezes the bottle again as the finger lands. How far it pulls Squeeze % back up depends on how hard
     you press: a light touch tops it up a little, a firm one brings it most of the way back. Only ever lifts a level that has sagged. */
  if(pen.squeeze&&!demo&&pen.life>0){const pk0=Math.max(S.pPeak||0,pressNow),h0=clamp((pk0-.2)/.6),s0=pen.sat??0,tgt=Math.min(1.05,.5+.55*h0);
-  if(s0<tgt){pen.sat=Math.min(1.6,s0+(tgt-s0)*(.3+.5*h0)*lifeF());S.regrab=pen.sat-s0;showFlow()}
+  if(s0<tgt){pen.sat=Math.min(satCap(),s0+(tgt-s0)*(.3+.5*h0)*lifeF());S.regrab=pen.sat-s0;showFlow()}
   /* a firm landing is a priming squeeze: every new letter put down with pressure pushes Squeeze % further up (a light touch adds nothing) */
   if(h0>.25){const s1=pen.sat??0;if(s1<1)pen.sat=Math.min(1,s1+(.04+.16*h0)*lifeF());S.regrab=(S.regrab||0)+(pen.sat-s1);showFlow()}}
  if(demo||!fh||!upright||!S.p0||!flowable())return;
