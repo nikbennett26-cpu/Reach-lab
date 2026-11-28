@@ -17,7 +17,7 @@ function loadDeposit(x,y,spd,f){if(demo)return;const c=ldCtx(),r=pen.w*MM/2*curS
 function metalPaint(){return !!pen.metal&&!DYEINK[pen.ink]&&!INK[pen.ink].chrome&&!INK[pen.ink].solid}
 function flowable(){const k=INK[pen.ink];return !!k&&!k.solid&&!k.etch&&!pen.dauber&&(!pen.metal||metalPrimed())}
 /* a steel rollerball only feeds a run once it's fully primed — then the ball floods and it drips like any other pen, just a bit less */
-function metalPrimed(){return pen.squeeze?(pen.sat??0)>=.98:flowNow(null)>=.95}
+function metalPrimed(){return pen.squeeze?(pen.sat??0)>=.9:flowNow(null)>=.95}
 /* where the painted edge of the current nib is, below a point: walks across the tip at the given offset and returns the
    lowest point that is still ink (just inside it), using the real tip shape — a rotated chisel or a round nib */
 function tipEdge(cx,cy,ox,oy,jit){const G=gDir(),vt=Math.abs(G.y)>=Math.abs(G.x),ux=vt?0:Math.sign(G.x)||1,uy=vt?Math.sign(G.y)||1:0,nx=-uy,ny=ux,sc=curScale;let dx=(ox-cx)*nx+(oy-cy)*ny+(jit||0),lo,hi;
@@ -37,11 +37,11 @@ const DRYFULL=1.55,FULLK=1.65;function flowDeposit(x,y,spd,f,s,dwell){if(!fh||de
   dP=Math.max(.05,(pen.squeeze?(.28+pressNow*1.35)*(0.45+.55*(pen.sat??0)):pen.valve?(.22+Math.max(0,pen.flow-.4)*1.35+pressNow*.6):(.18+pressNow*.42))*(pen.adjust?Math.pow((pen.vs||3)/3,1.25):1)),
   vBern=fl.cd*Math.sqrt(2*dP/Math.max(.4,fl.rho)),
   juice=(pen.valve?.65+Math.max(0,pen.flow-.65)*1.4:1)*(pen.squeeze?.68+(pen.sat??0)*.32+pressNow*.52:1)*(pen.adjust?Math.pow((pen.vs||3)/5,1.5)*1.5:1)*clamp(.56+.44*vBern,.48,1.5),
-  lvl=pen.valve?pen.flow:pen.squeeze?(pen.sat??0):0,pF=clamp((pressNow-.42)/.45),prK=clamp((lvl-.90)/.10),sqOver=pen.squeeze?Math.max(0,lvl-1):0,sqDrip=pen.squeeze?(lvl<.16?0:lvl<1?(clamp((lvl-.14)/.22,0,1)*(.56+.44*Math.pow(clamp(lvl),.85))):(1.2+sqOver*1.6)):1,
+  lvl=pen.valve?pen.flow:pen.squeeze?(pen.sat??0):0,pF=clamp((pressNow-.42)/.45),prK=clamp((lvl-.90)/.10),sqOver=pen.squeeze?Math.max(0,lvl-1):0,sqDrip=pen.squeeze?(lvl<.16?0:lvl<1?(clamp((lvl-.14)/.22,0,1)*(.56+.44*Math.pow(clamp(lvl),.85))):(1.45+sqOver*1.3)):1,
   /* on dry walls, require either real pressure, slow speed, or dwell to flood; wet walls still run freely */
   fw0=prK*(s.wet?(.65+.35*pF):(.24+.76*Math.max(pF,pen.squeeze?.3:0,clamp(sqOver*1.6),clamp(1-spd*1.4)*.55,clamp(dw/.35)*.85))),
   dryCalm=s.wet?1:.62,
-  dk0=ink.drip??.6,amt=.078*sqDrip*dryCalm*dwellBoost*Math.pow(clamp(f,0,1.6),2)*(.55+pressNow*.85)*(.28+.72*Math.max(pF,prK*.68))*(1+prK*.38)*Math.pow(dripLife(),1.3)*juice*(dk0+fw0*(Math.max(dk0,.55)*FULLK*(1+Math.max(0,lvl-1)*2.0)-dk0))*(1-s.absorb*.85)*slow*(R()/7.5+.42+fw0*Math.max(0,DRYFULL-R()/7.5-.42))*(s.wet?2.1:1)*WX.run*(ink.chrome?.5:1)*(pen.metal?.65:pen.tip==='bullet'&&!s.wet?1.2:1)*(pen.squeeze&&lvl>1?1+.3*clamp(sqOver/.1):1),tau=(2.2+(TAUS[pen.ink]||1.5)*2.6)*(pen.props&&pen.props.tauMul?pen.props.tauMul:1),id=Object.keys(INK).indexOf(pen.ink)+1,col=curCol(),thick=THICK()?1:0;
+  dk0=ink.drip??.6,amt=.078*sqDrip*dryCalm*dwellBoost*Math.pow(clamp(f,0,1.6),2)*(.55+pressNow*.85)*(.28+.72*Math.max(pF,prK*.68))*(1+prK*.38)*Math.pow(dripLife(),1.3)*juice*(dk0+fw0*(Math.max(dk0,.55)*FULLK*(1.2+Math.max(0,lvl-1)*1.7)-dk0))*(1-s.absorb*.85)*slow*(R()/7.5+.42+fw0*Math.max(0,DRYFULL-R()/7.5-.42))*(s.wet?2.1:1)*WX.run*(ink.chrome?.5:1)*(pen.metal?.65:pen.tip==='bullet'&&!s.wet?1.2:1)*(pen.squeeze&&lvl>1?1+.3*clamp(sqOver/.1):1),tau=(2.2+(TAUS[pen.ink]||1.5)*2.6)*(pen.props&&pen.props.tauMul?pen.props.tauMul:1),id=Object.keys(INK).indexOf(pen.ink)+1,col=curCol(),thick=THICK()?1:0;
  /* momentum: part of the ink is thrown ahead along the stroke */if(stroke){stroke.lv=Math.max(stroke.lv||0,lvl);stroke.pmax=Math.max(stroke.pmax||0,pressNow)}const S=stroke,v=S&&S.v?Math.min(2.5,S.v):0,ax=v>.05?S.vx/v:0,ay=v>.05?S.vy/v:0,ahead=Math.min(r*1.1,v*r*.7);
  const put=(px,py,a,rr,own)=>{for(let gy=Math.max(0,Math.floor((py-rr)/C));gy<=Math.min(GH_-1,Math.floor((py+rr)/C));gy++)for(let gx=Math.max(0,Math.floor((px-rr)/C));gx<=Math.min(GW-1,Math.floor((px+rr)/C));gx++){const d=Math.hypot(gx*C+C/2-px,gy*C+C/2-py);if(d>rr+C*.5)continue;const i=gy*GW+gx,_ov=(inkG[i]||fh[i]>.05)?(1.45+.55*prK):1;fh[i]+=a*(1-d/(rr+C))*_ov;fw[i]=1;ft[i]=tau;fid[i]=id;fcol[i]=thinCol(pen.ink,col,.3);fRad[i]=R();fk[i]=thick;if(own||!frt[i]||fh[i]<=a){const e=tipEdge(x,y,gx*C+C/2,gy*C+C/2,(Math.random()-.5)*C*.6);fax[i]=e[0];fay[i]=e[1];frt[i]=1}}};
  put(x,y,amt*.7,r,1);if(ahead>1)put(x+ax*ahead,y+ay*ahead,amt*.3,r*.7,0);flowOn=true}
@@ -59,15 +59,19 @@ function landPulse(S){
   /* a firm landing is a priming squeeze: every new letter put down with pressure pushes Squeeze % further up (a light touch adds nothing) */
   if(h0>.25){const s1=pen.sat??0;if(s1<1)pen.sat=Math.min(1,s1+(.04+.16*h0)*lifeF());S.regrab=(S.regrab||0)+(pen.sat-s1);showFlow()}}
  if(demo||!fh||!upright||!S.p0||!flowable())return;
- const pk=Math.max(S.pPeak||0,pressNow),hard=clamp((pk-.55)/.30);if(hard<=.05)return;
- const sat=pen.squeeze?(pen.sat??0):pen.valve?pen.flow:1,
+ /* how hard the nib met the wall. A phone only reports pressure from how much fingertip is on the glass, so an ordinary firm landing
+    counts from about a third of the scale. On a squeezer above 100% the bottle is already pushing ink into the ball, so even a light
+    touchdown puts a bead on the wall (most letters, not every one) */
+ const sat=pen.squeeze?(pen.sat??0):pen.valve?pen.flow:1,pk=Math.max(S.pPeak||0,pressNow),
+  hard=Math.max(clamp((pk-.32)/.33),pen.squeeze?clamp((sat-.98)/.14)*.75:0);if(hard<=.05||Math.random()>.4+.6*hard)return;
+ const
   load=pen.squeeze?clamp((sat-.2)/.35):pen.valve?clamp((pen.flow-.3)/.45):clamp(flowNow(null)),
   land=hard*load*dripLife()*Math.min(1.2,INK[pen.ink].drip??.6)*(pen.valve?.7:1)*(pen.metal?.65:1);S.land=land;
  if(land<.12)return;
  const G=gDir();if(G.flat||G.m<.14)return;
  const s=S.s||surfAt(S.p0.x,S.p0.y),fl=fluidOf(pen.ink),thick=THICK()?1:0,gEff=Math.max(.3,gEffOf(G.m)),
   pin=FPIN*(.68+.32*fl.gamma),thr=(s.wet?(thick?.74:.42):(thick?.92:.58))*fl.gamma+fl.ty*.60,
-  target=pin+(thr/(fl.rho*gEff))*(.80+.40*land)*(.94+Math.random()*.12),
+  target=pin+(thr/(fl.rho*gEff))*(1.04+.45*land)*(.94+Math.random()*.12),
   e=tipEdge(S.p0.x,S.p0.y,S.p0.x,S.p0.y,0),gx=Math.floor(e[0]/C),gy=Math.floor(e[1]/C),
   vt=Math.abs(G.y)>=Math.abs(G.x),lx=vt?1:0,ly=vt?0:1,
   tau=(2.2+(TAUS[pen.ink]||1.5)*2.6)*(pen.props&&pen.props.tauMul?pen.props.tauMul:1),id=Object.keys(INK).indexOf(pen.ink)+1,col=curCol();
@@ -79,7 +83,7 @@ function landPulse(S){
    stroke and lets go from the lowest edge (drip() walks down the stroke's own ink to its underside) */
 function landRun(S){
  if(!S||!S.land||S.landRan||demo||!upright||!S.p0||tool!=='draw'||!flowable())return;S.landRan=1;
- if(Math.random()>clamp((S.land-.35)/.5))return;
+ if(Math.random()>clamp((S.land-.18)/.45))return;
  if(drips.some(d=>d.sid===S.sid&&!d.soft&&!d.wash))return;
  drip(S.p0.x,S.p0.y+R()*.4,Math.min(1.6,.5+.8*S.land))}
 function flowStep(dt){if(!flowOn||!fh)return;dt=Math.min(dt,.05);const G=gDir(),vert=Math.abs(G.y)>=Math.abs(G.x),ddx=vert?0:Math.sign(G.x),ddy=vert?Math.sign(G.y):0,ldx=-ddy,ldy=ddx,keys=Object.keys(INK),now=performance.now();let any=false;
@@ -120,7 +124,10 @@ function flowStep(dt){if(!flowOn||!fh)return;dt=Math.min(dt,.05);const G=gDir(),
    let tooClose=false;for(let q=drips.length-1;q>=0;q--){const dq=drips[q];if(!dq.soft&&!dq.wash&&Math.hypot(dq.x-ox,dq.y-oy)<rtMin){tooClose=true;break}}
    if(tooClose){fcd[i]=now+220;continue}
    const _J=fk[i]||DYEINK[ty]||ty===pen.ink?juiceK():0,_rf=refRun(fRad[i],Math.min(4.4,rr*1.32*(.72+.3*muK)),_J);
-   drip(ox,oy,vol*(.78+.26*muK)*(1+.18*pooled)*(_rf.volK||1),{ty,col:fcol[i]||curCol(),r:_rf.r*(1+.22*clamp(pooled-.6,0,1)),rMax:_rf.rMax,maxT:_rf.maxT,thick:!!fk[i],visc:.35+.65*fw[i],src:1,pool:1,srcCell:i,w:fRad[i]});fh[i]-=Math.min(ex,vol*(fk[i]?.8:.55));fcd[i]=now+(fk[i]?820:360)+Math.random()*540}}
+   /* the run belongs to the letter it hangs from, not to whatever letter is being drawn now (a pooled bead often lets go while you're
+      already on the next one, and a run tagged with the new letter is thrown away because it isn't on that letter's ink) */
+   let _sid=0;for(let k=0;k<=8&&!_sid;k+=2)_sid=lmAt((ox-ddx*k)|0,(oy-ddy*k)|0);
+   drip(ox,oy,vol*(.78+.26*muK)*(1+.18*pooled)*(_rf.volK||1),{sid:_sid||undefined,ty,col:fcol[i]||curCol(),r:_rf.r*(1+.22*clamp(pooled-.6,0,1)),rMax:_rf.rMax,maxT:_rf.maxT,thick:!!fk[i],visc:.35+.65*fw[i],src:1,pool:1,srcCell:i,w:fRad[i]});fh[i]-=Math.min(ex,vol*(fk[i]?.8:.55));fcd[i]=now+(fk[i]?820:360)+Math.random()*540}}
  flowOn=any}
 let LM=new Uint16Array(1),LMW=1,LMH=1,lmSeq=1;
 function lmAlloc(){LMW=Math.ceil(W/2)+1;LMH=Math.ceil(H/2)+1;LM=new Uint16Array(LMW*LMH);SM=new Uint8Array(LMW*LMH)}
