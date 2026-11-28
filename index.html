@@ -2459,7 +2459,12 @@ let wetSpan={x0:0,y0:0,x1:0,y1:0,t:0};
 function rgbaOf(hx,a){const c=hex(hx);return `rgba(${c[0]},${c[1]},${c[2]},${a})`}
 /* a dye film made more concentrated: each colour channel's transmission raised to a power (Beer's law), so yellow deepens to amber
    and blue to navy, keeping its hue, instead of greying toward black (mixing with black turned yellow olive) */
-function dyeDeep(col,k){const L=hex(col).map(v=>Math.pow(clamp(v/255,.002,1),2.2));return '#'+L.map(v=>Math.round(Math.pow(Math.pow(v,k),1/2.2)*255).toString(16).padStart(2,'0')).join('')}
+function dyeDeep(col,k){const L=hex(col).map(v=>Math.pow(clamp(v/255,.002,1),2.2)),B=L.map(v=>Math.pow(v,k));
+ /* Beer's law darkens each channel by its own absorbance, which also swings the hue (a yellow film would go orange, then red).
+    Real heavy films of one colourant read as a deeper, richer version of the same colour, so keep the darkening and the
+    extra saturation but hold the hue within a few degrees of the ink's own */
+ let out=B;try{const o0=okFromLin(L),oB=okFromLin(B),h0=Math.atan2(o0[2],o0[1]),hB=Math.atan2(oB[2],oB[1]),cB=Math.hypot(oB[1],oB[2]);if(cB>.02&&Math.hypot(o0[1],o0[2])>.02){let dh=hB-h0;dh=Math.atan2(Math.sin(dh),Math.cos(dh));const h=h0+Math.max(-.07,Math.min(.07,dh)),Lk=Math.min(oB[0],o0[0]*(1-.16*Math.max(0,k-1)));out=okToLin([Lk,cB*Math.cos(h),cB*Math.sin(h)]).map(v=>clamp(v,0,1))}}catch(_){}
+ return '#'+out.map(v=>Math.round(Math.pow(v,1/2.2)*255).toString(16).padStart(2,'0')).join('')}
 function settle(col,s){if(demo||!upright||s.absorb>.5)return;const ink=INK[pen.ink];if((!DYEINK[pen.ink]&&!s.wet)||ink.solid||ink.chrome||ink.etch)return;/* paint only settles when the wall is wet: the water film lets the pigment sink before the binder grabs */
  const P=dpr,x0=Math.max(0,Math.floor(stroke.x0*P)),y0=Math.max(0,Math.floor(stroke.y0*P)),w=Math.min(stk.c.width-x0,Math.ceil((stroke.x1-stroke.x0)*P)),h=Math.min(stk.c.height-y0,Math.ceil((stroke.y1-stroke.y0)*P));if(w<3||h<6)return;
  const span=Math.max(h,90*P),top0=y0+h-span,now=(stroke.dryT0=stroke.dryT0||performance.now()),dark=lum(hex(col))<.3,str=(DYEINK[pen.ink]?1:.7)*(1-s.absorb)*dripLife()*(s.wet?1:.3);if(str<.03)return;/* on a wet wall the dye has water to sink through, so it settles a long way down the letter; on a dry wall it mostly sets where it lands */
