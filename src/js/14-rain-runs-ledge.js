@@ -90,12 +90,12 @@ function runDrips(dt){runFalls(dt);runLedFeed();if(!drips.length)return;mergeRun
   /* Navier-Stokes creeping-bead balance: terminal speed v ~ (rho*g*r^2)/(3*mu_app), with shear-thinning & drying viscosity */
   const dryMu=1/(0.28+0.72*Math.pow(clamp(d.visc||1,.15,1),1.4)),shearThin=1/(1+(d.spd||0)*(fl.ty>.1?.0065:.0015)),muApp=fl.mu*dryMu*shearThin*(d.thick?1.35:1),
    headDrive=(18+d.vol*28)*(fl.rho/Math.max(.35,muApp))*(.65+.35*clamp(d.r/1.5,.5,2.1)),
-   vTerm=clamp(headDrive,6,115)*(1-s.absorb*.58)*(1-s.rough*.48)*(d.wet?(.95+wf*.95):1)*(gr?.18:1)*gEff*easeIn*easeOut,y0=d.y,x0=d.x;
+   vTerm=clamp(headDrive,6,115)*.58*/* runs creep: about half a centimetre a second at this scale for a juiced dye, slower for paint */(1-s.absorb*.58)*(1-s.rough*.48)*(d.wet?(.95+wf*.95):1)*(gr?.18:1)*gEff*easeIn*easeOut,y0=d.y,x0=d.x;
   if(!d.gx){d.gx=G.x;d.gy=G.y;d.spd=vTerm*.35}if(ledgeLive()&&!d.led&&!d.et&&d.y<ledgeY(d.x))d.preL=1;const nowT=performance.now();
   const pz=d.pz&&nowT<d.pz;if(d.pz&&!pz){d.pz=0;d.bd=0}if(d.visc<1)d.visc=Math.max(.22,d.visc-dt*.028);
   /* PINCH-OFF LURCH: once a heavy head has swollen enough it breaks away from the run and surges ahead on a thin thread *//* SKINNING: the run's surface dries as it goes — fast for alcohol dyes, slow for paint, faster on a thirsty wall, slower
      on a wet one and for a fat run. It slows as it skins and stops where it is, leaving the paint still in its head as a fat bulb */
-  d.age=(d.age||0)+dt;const _skO=!!(d.props&&d.props.skinOver),dryT=(TAUS[d.ty]||1.5)*2.2*(_skO?.68:1)*(d.wet?3:1)*(1-s.absorb*.5)*(1+Math.min(1.5,(d.v0||.5)*.6)),skin=d.soft||d.et||d.led||d.wash?0:clamp((d.age-dryT)/(dryT*(_skO?1.05:1.5)));
+  d.age=(d.age||0)+dt;const _skO=!!(d.props&&d.props.skinOver),dryT=(TAUS[d.ty]||1.5)*2.2*1.65*(_skO?.68:1)*(d.wet?3:1)*(1-s.absorb*.5)*(1+Math.min(1.5,(d.v0||.5)*.6)),skin=d.soft||d.et||d.led||d.wash?0:clamp((d.age-dryT)/(dryT*(_skO?1.05:1.5)));
   if(skin>=1&&d.em&&!d.sk){d.sk=1;d.skv=clamp(d.vol/(d.v0||1));d.vol=0}
   const chBoost=1+.55*(d.inCh||0),pinBurst=(d.pin&&d.pin<1)?(1.85+.75*Math.sin(d.pin*Math.PI)):1;/* STOP-START: a run that's losing ink catches on the wall, stalls while its head swells, then lets go and lurches on - leaving a bulge where it waited. Gritty walls and paints with body catch more; a run fed from above lets go sooner */
   const _tk=DYEINK[d.ty]?0:clamp((fl.mu-1.1)/.8)*.6+clamp((fl.ty-.15)/.3)*.4+(d.thick?.2:0);/* how much body the ink has: thick paint stutters all the way down, thin dye mostly near the end */
@@ -122,7 +122,7 @@ function runDrips(dt){runFalls(dt);runLedFeed();if(!drips.length)return;mergeRun
    /* riding a wet track: it picks up the ink lying in it and fattens, up to a third of the line it came from */if(w>.25){const cap=Math.max(1.1,(d.w||R())*.55);if(d.r<cap)d.r=Math.min(cap,d.r+dt*.35*w);d.vol+=dt*.05*w}}else d.inCh=0;
    chanAdd(d.x,d.y,d.uid,(TAUS[d.ty]||1.5)*4200*(d.wet?2.5:1)*((typeof CARRY_WET!=='undefined'&&d.props&&CARRY_WET[d.props.base])||1))}
   
-  if(still)d.vol-=dt*.07;if(d.maxT&&(d.tr||0)>d.maxT&&!d.led)d.vol-=dt*(1.4+d.vol*.8);/* this run has reached as far as its share of the water will carry it: it slows and stops with a bead */if(!stalled)d.vol-=(d.lk||1)*dt*.58*(1-.45*(d.inCh||0))*((.26+s.absorb*.9+s.rough*.5)*(d.wet?(1.20-wf*.70):1)+(gr?.68:0));
+  if(still)d.vol-=dt*.042;if(d.maxT&&(d.tr||0)>d.maxT&&!d.led)d.vol-=dt*(1.4+d.vol*.8);/* this run has reached as far as its share of the water will carry it: it slows and stops with a bead */if(!stalled)d.vol-=(d.lk||1)*dt*.58*.6*/* runs move ~0.58x as fast, so they spend ink per second slower too: same length, just slower */(1-.45*(d.inCh||0))*((.26+s.absorb*.9+s.rough*.5)*(d.wet?(1.20-wf*.70):1)+(gr?.68:0));
   if(d.rT&&d.r<d.rT)d.r=Math.min(d.rT,d.r+dt*.6);if(d.wet)d.r=Math.max(.8,d.r*(1-dt*.02));if(d.et)d.r=Math.max(.45,d.r*(1-dt*.6));
   if(d.sy===undefined){d.sy=y0;d.sx=x0;d.fq=.025+Math.random()*.035}
   /* EMERGING: use ONLY actual painted pixels (lmAt / smAt — never the coarse 8px fh grid, which hid drips 8-16px below the tag!).
