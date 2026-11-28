@@ -248,7 +248,7 @@ body.fs #status{opacity:.85;pointer-events:none;transform:none}body.fs #status .
   <span class="lbl sg">Physics</span><div class="row"><button class="btn" id="upright" aria-pressed="true">Drips: on</button><button class="btn" id="gravBtn">Drips: auto (sensor)</button><button class="btn" id="calBtn">Calibrate finger</button><button class="btn" id="perfBtn" aria-pressed="false">Frame time: off</button></div>
   <span class="lbl sg">Practice</span><div class="row"><button class="btn pri" id="traceWall">Trace this tag</button><button class="btn" id="traceToggle" aria-pressed="false" disabled>Guide: none</button><button class="btn" id="traceClear" disabled>Remove guide</button></div>
   <div style="margin:-4px 0 10px"><label class="lbl" for="traceA">Guide strength — <span id="traceAV">35%</span></label><input type="range" id="traceA" min="5" max="80" value="35" style="width:100%" disabled></div>
-  <span class="lbl sg">Share &amp; app</span><div class="row"><button class="btn pri" id="playBtn">Replay tag</button><button class="btn pri" id="playRecShareBtn">Record video</button><button class="btn" id="wallShare">Share wall</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="brewSave">Back up brews</button><button class="btn" id="brewLoad">Load brews</button><input type="file" id="brewFile" accept="application/json,.json" hidden><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button></div>
+  <span class="lbl sg">Share &amp; app</span><div class="row"><button class="btn pri" id="playBtn">Replay tag</button><button class="btn pri" id="playRecShareBtn">Record video</button><button class="btn" id="wallShare">Share wall</button><button class="btn" id="fsBtn">Full screen</button><button class="btn" id="dlApp" hidden>Download app (HTML)</button><button class="btn" id="snd" aria-pressed="true">Sound on</button><button class="btn" id="brewSave">Back up brews</button><button class="btn" id="brewLoad">Load brews</button><input type="file" id="brewFile" accept="application/json,.json" hidden><button class="btn" id="tagSave">Save tag recording</button><button class="btn" id="tagLoad">Play a tag recording</button><input type="file" id="tagFile" accept="application/json,.json" hidden><button class="btn" id="coachBtn">Quick start</button><button class="btn" id="getAppBtn">Get the app</button></div>
   <div id="tipsBox"><div class="row" style="justify-content:space-between;align-items:center"><span class="lbl">Tips <span style="opacity:.6;text-transform:none">· red dot = new</span></span><button class="btn" id="tipsClear">Clear</button></div><ol id="tipsList" class="small" style="margin:0 0 12px;padding-left:20px;max-height:180px;overflow:auto;line-height:1.45"><li style="opacity:.6">Tips from your drawing show up here.</li></ol></div>
   <div class="small" id="buildTag" style="width:100%;text-align:center;opacity:.6;margin-top:6px">Version 7.98 · 26 Nov · responsive modal buttons, smooth playback, no in-app saved playbacks</div>
   <p class="small">A simulation: pens modelled on real ones, dry times sped up, surface physics modelled rather than measured.</p>
@@ -4447,6 +4447,21 @@ function brewRestore(txt){let o;try{o=JSON.parse(txt)}catch(_){toast('That file 
   const d=new Date(),stamp=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');await saveOrShareBlob(brewBackupBlob(),`reachlab-brews-${stamp}.json`,false)});
  const fi=q('brewFile');q('brewLoad')&&q('brewLoad').addEventListener('click',()=>fi&&fi.click());
  fi&&fi.addEventListener('change',()=>{const f=fi.files&&fi.files[0];fi.value='';if(!f)return;f.text().then(brewRestore).catch(()=>toast('Couldn\'t read that file'))})})();
+/* ---------- SAVE / PLAY A TAG RECORDING ----------
+   Every stroke on the wall is recorded (pen, colour, pressure, lean, timing, gravity) in screen-relative coordinates,
+   so a tag saved on one phone replays at the same place and pace on any other screen. */
+function tagBlob(){const seq=recList().slice();if(!seq.length)return null;/* carry the brews it was written with, so it replays in the same inks on a phone that doesn't have them */const ids=new Set(seq.map(r=>r.fill).filter(Boolean)),brews=BOTTLES.filter(b=>ids.has(b.id)&&/^mix/.test(b.id));
+ return new Blob([JSON.stringify({app:'reachlab',kind:'tag',v:1,saved:new Date().toISOString(),wall:cur&&cur.id,w:W,h:H,brews,seq})],{type:'application/json'})}
+function tagPlay(txt){let o;try{o=JSON.parse(txt)}catch(_){toast('That file isn\'t a Reach Lab tag');return}
+ if(o&&o.kind==='brews'){brewRestore(txt);return}
+ const seq=o&&Array.isArray(o.seq)?o.seq:null;if(!seq||!seq.length){toast('That file isn\'t a Reach Lab tag');return}
+ if(o.wall&&cur&&o.wall!==cur.id){const sf=SURF.find(q=>q.id===o.wall);if(sf){try{goSurface(sf)}catch(_){}}}
+ setTimeout(()=>runPlaybackSeq(seq,Array.isArray(o.brews)?o.brews:null),250)}
+(()=>{const q=id=>document.getElementById(id);
+ q('tagSave')&&q('tagSave').addEventListener('click',async()=>{const b=tagBlob();if(!b){toast('Write a tag on this wall first');return}
+  const d=new Date(),stamp=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'-'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');await saveOrShareBlob(b,`reachlab-tag-${stamp}.json`,false)});
+ const fi=q('tagFile');q('tagLoad')&&q('tagLoad').addEventListener('click',()=>fi&&fi.click());
+ fi&&fi.addEventListener('change',()=>{const f=fi.files&&fi.files[0];fi.value='';if(!f)return;f.text().then(tagPlay).catch(()=>toast('Couldn\'t read that file'))})})();
 /* ---------- SAVED PLAYBACKS LIBRARY (localStorage) ---------- */
 
 
